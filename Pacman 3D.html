@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pac-Man 3D</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000411; font-family: 'Courier New', monospace; touch-action: none; user-select: none; -webkit-user-select: none; }
+        
+        /* Game UI Overlay */
+        #ui { display: none; position: absolute; top: 10px; width: 100%; text-align: center; color: #00f2ff; font-size: 16px; pointer-events: none; z-index: 10; font-weight: bold; text-shadow: 2px 2px 0 #000; }
+        
+        #joystick-container { display: none; position: absolute; bottom: 30px; left: 30px; width: 100px; height: 100px; background: rgba(0, 242, 255, 0.1); border: 2px solid #00f2ff; border-radius: 50%; align-items: center; justify-content: center; z-index: 30; }
+        #joystick-knob { width: 40px; height: 40px; background: #00f2ff; border-radius: 50%; box-shadow: 0 0 10px #00f2ff; }
+        
+        #controls-right { display: none; position: absolute; bottom: 30px; right: 30px; flex-direction: column; gap: 10px; align-items: center; z-index: 30; }
+        .btn { width: 80px; height: 80px; background: rgba(0, 255, 0, 0.3); border: 2px solid #00ff00; border-radius: 50%; color: #00ff00; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; -webkit-tap-highlight-color: transparent; box-shadow: 0 0 15px #00ff00; cursor: pointer; }
+        
+        /* State Modals */
+        #menu-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #000411 0%, #001133 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; text-align: center; color: #ffff00; }
+        #menu-screen h1 { font-size: 48px; text-shadow: 0 0 20px #ffff00; margin-bottom: 5px; letter-spacing: 4px; }
+        #menu-screen h2 { font-size: 20px; color: #00f2ff; margin-bottom: 40px; text-shadow: 0 0 10px #00f2ff; }
+        
+        .menu-btn { padding: 15px 40px; font-weight: bold; cursor: pointer; border: 3px solid #00f2ff; background: rgba(0,242,255,0.1); color: #00f2ff; font-size: 24px; border-radius: 12px; font-family: 'Courier New', monospace; box-shadow: 0 0 15px rgba(0,242,255,0.4); transition: all 0.3s ease; }
+        .menu-btn:hover { background: #00f2ff; color: #000; box-shadow: 0 0 30px #00f2ff; }
+        
+        #victory, #gameover, #mythical-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
+        #victory { background: rgba(0,0,0,0.9); color: #00ff00; }
+        #gameover { background: rgba(200,0,0,0.95); color: white; }
+        
+        /* Mythical 256 Screen styling */
+        #mythical-screen { background: #000; color: #00ff00; overflow: hidden; font-family: monospace; }
+        .glitch-split { width: 100%; height: 100%; display: flex; }
+        .glitch-left { width: 50%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-right: 2px dashed #00ff00; }
+        .glitch-right { width: 50%; height: 100%; padding: 10px; background: #050505; color: #ff00ff; word-break: break-all; font-size: 10px; overflow: hidden; opacity: 0.8; text-align: left; }
+        
+        .bar-container { display: none; width: 250px; height: 12px; border: 2px solid white; border-radius: 6px; margin: 5px auto; overflow: hidden; background: #000; }
+        .bar-label { font-size: 10px; position: absolute; width: 250px; text-align: center; margin-top: -1px; color: #fff; text-shadow: 1px 1px 0 #000; }
+        #powerBar { width: 100%; height: 100%; background: #0055ff; }
+        #laserBar { width: 100%; height: 100%; background: #ff6400; }
+        #speedBar { width: 100%; height: 100%; background: #00ff00; }
+        #freezeBar { width: 100%; height: 100%; background: #00ffff; }
+        
+        .retry-btn { padding: 15px 40px; margin-top: 20px; font-weight: bold; cursor: pointer; border: none; font-size: 20px; border-radius: 10px; }
+        #camera-hint { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); color: rgba(255,255,255,0.4); font-size: 12px; pointer-events: none; text-align: center; }
+        
+        .floating-text { position: absolute; color: yellow; font-weight: bold; font-size: 20px; pointer-events: none; animation: floatUp 1s ease-out forwards; text-shadow: 2px 2px 0 #000; z-index: 50; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0; } }
+    </style>
+</head>
+<body>
+    <!-- Main Menu -->
+    <div id="menu-screen">
+        <h1>PAC-MAN 3D</h1>
+        <h2>3D LABYRINTH</h2>
+        <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY</button>
+    </div>
+
+    <div id="ui">
+        LEVEL: <span id="level">1</span> | SCORE: <span id="score">0</span> | LIVES: <span id="lives">3</span><br>
+        DOTS LEFT: <span id="remaining">0</span>
+        <div id="powerBarContainer" class="bar-container"><div class="bar-label">POWER PELLET</div><div id="powerBar"></div></div>
+        <div id="laserBarContainer" class="bar-container"><div class="bar-label">LASER</div><div id="laserBar"></div></div>
+        <div id="speedBarContainer" class="bar-container"><div class="bar-label">SPEED BOOST</div><div id="speedBar"></div></div>
+        <div id="freezeBarContainer" class="bar-container"><div class="bar-label">GHOST FREEZE</div><div id="freezeBar"></div></div>
+        <div id="fruitIndicator" style="display:none; color: #ff00ff; margin-top: 10px; font-size: 18px; animation: pulse 1s infinite;">FRUIT APPEARED!</div>
+    </div>
+    
+    <div id="victory">
+        <h1 id="vic-title">LEVEL CLEARED!</h1>
+        <p>Prepare for the next stage...</p>
+    </div>
+    
+    <div id="gameover">
+        <h1>GAME OVER</h1>
+        <p id="go-reason"></p>
+        <button class="retry-btn" style="background:white; color:red;" onclick="window.location.reload()">PLAY AGAIN</button>
+    </div>
+
+    <!-- Mythical Split Screen Level 256 Victory -->
+    <div id="mythical-screen">
+        <div class="glitch-split">
+            <div class="glitch-left">
+                <p style="color:#00ff00; font-size:16px; font-weight:bold; margin-top:20px;">VICTORY!</p>
+                <button class="retry-btn" style="background:#ffff00; color:#000;" onclick="window.location.reload()">REPLAY ADVENTURE</button>
+            </div>
+            <div id="glitch-matrix" class="glitch-right"></div>
+        </div>
+    </div>
+    
+    <div id="joystick-container"><div id="joystick-knob"></div></div>
+    
+    <div id="camera-hint">↕ Drag here ↔<br>to rotate</div>
+
+    <div id="controls-right">
+        <div id="btnJump" class="btn">JUMP</div>
+    </div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- GAME STATE ---
+        let level = 1;
+        let score = 0, lives = 3, remainingDots = 0;
+        let nextLifeThreshold = 10000; // Extra life system
+        let gameState = 'lobby'; // lobby, playing, dying, level_transition, victory256
+        let ghostCombo = 0;
+        
+        // Powerups
+        let powerUp = false, laserMode = false, speedMode = false, freezeMode = false;
+        let powerTimeLeft = 0, laserTimeLeft = 0, speedTimeLeft = 0, freezeTimeLeft = 0;
+        let laserCooldown = 0;
+        
+        // Physics / Movement
+        let velocityY = 0, isJumping = false;
+        let pacBaseSpeed = 0.15;
+        let ghostSpeedMult = 1.0;
+        
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(f, d=0.1, t='sine', vol=0.05) {
+            try {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
+                g.gain.setValueAtTime(vol, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + d);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(); o.stop(audioCtx.currentTime + d);
+            } catch(e){}
+        }
+
+        function showFloatingText(text, pos3D) {
+            const div = document.createElement('div');
+            div.className = 'floating-text';
+            div.innerText = text;
+            
+            const p = pos3D.clone();
+            p.project(camera);
+            const x = (p.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (p.y * -0.5 + 0.5) * window.innerHeight;
+            
+            div.style.left = `${x}px`;
+            div.style.top = `${y}px`;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 1000);
+        }
+
+        // --- PAC-MAN CREATION ---
+        const pacman = new THREE.Group();
+        const pmMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00, side: THREE.DoubleSide });
+        
+        const topGeo = new THREE.SphereGeometry(0.8, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+        const topHalf = new THREE.Mesh(topGeo, pmMaterial);
+        const bottomGeo = new THREE.SphereGeometry(0.8, 32, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+        const bottomHalf = new THREE.Mesh(bottomGeo, pmMaterial);
+
+        const eyeGeo = new THREE.SphereGeometry(0.12, 16, 16);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.35, 0.4, 0.6);
+        const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(-0.35, 0.4, 0.6);
+        
+        topHalf.add(rightEye); topHalf.add(leftEye);
+        pacman.add(topHalf); pacman.add(bottomHalf);
+        scene.add(pacman);
+
+        let mouthTimer = 0;
+        let isMoving = false;
+        let deathTimer = 1.0; 
+
+        // --- START GAME ---
+        window.startGame = function() {
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('ui').style.display = 'block';
+            document.getElementById('joystick-container').style.display = 'flex';
+            document.getElementById('controls-right').style.display = 'flex';
+            
+            gameState = 'playing';
+            playSfx(500, 0.5, 'triangle');
+        };
+
+        // --- MAP GENERATION ---
+        // 1: Wall, 0: Dot, 2: Super(Blue), 3: Empty(GhostBox), 4: Laser(Orange), 5: Speed(Green), 6: Freeze(Cyan)
+        const mapTemplate = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,4,0,0,0,5,1,0,0,1,6,0,0,0,4,1],
+            [1,0,1,1,1,0,1,0,0,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,0,1,1,0,3,3,3,3,0,1,1,0,1,1],
+            [1,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1],
+            [1,0,1,1,0,1,0,0,0,0,1,0,1,1,0,1],
+            [1,2,0,0,0,0,5,0,0,6,0,0,0,0,2,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let walls = []; let dots = [];
+        const floorMat = new THREE.MeshPhongMaterial({ color: 0x000a22 });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // Solid Ghost Box Walls: ONLY Ghost Box area (accessible by ghosts, restricted for players)
+        const ghostBoxWalls = [];
+        const boxMat = new THREE.MeshPhongMaterial({ color: 0xff00ff, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
+
+        function buildMap() {
+            walls.forEach(w => scene.remove(w.mesh));
+            ghostBoxWalls.forEach(gW => scene.remove(gW.mesh));
+            dots.forEach(d => scene.remove(d));
+            
+            walls = []; 
+            ghostBoxWalls.length = 0;
+            dots = []; 
+            remainingDots = 0;
+
+            mapTemplate.forEach((row, z) => {
+                row.forEach((cell, x) => {
+                    const pos = [x * 4 - 30, 0, z * 4 - 16];
+                    
+                    if (cell === 1) {
+                        const wall = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), new THREE.MeshPhongMaterial({ color: 0x0033ff }));
+                        wall.position.set(...pos); scene.add(wall);
+                        walls.push({ box: new THREE.Box3().setFromObject(wall), mesh: wall });
+                    } else if (cell === 3) {
+                        // Construir paredes de Ghost Box (restricted area)
+                        if (x === 6 || x === 9 || (z === 4 && (x === 7 || x === 8))) {
+                           const gWall = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 4), boxMat);
+                           gWall.position.set(...pos); scene.add(gWall);
+                           ghostBoxWalls.push({ box: new THREE.Box3().setFromObject(gWall), mesh: gWall });
+                        }
+                    } else if (cell !== 3) {
+                        let color, scale = 0.2;
+                        if(cell === 0) color = 0xffffff;
+                        else if(cell === 2) { color = 0x0055ff; scale = 0.6; } // Super
+                        else if(cell === 4) { color = 0xff6400; scale = 0.6; } // Laser
+                        else if(cell === 5) { color = 0x00ff00; scale = 0.6; } // Speed
+                        else if(cell === 6) { color = 0x00ffff; scale = 0.6; } // Freeze
+
+                        const dot = new THREE.Mesh(new THREE.SphereGeometry(scale), new THREE.MeshBasicMaterial({ color }));
+                        dot.position.set(...pos); 
+                        dot.type = cell;
+                        scene.add(dot); dots.push(dot); 
+                        if(cell === 0) remainingDots++; // Only count regular dots
+                    }
+                });
+            });
+            document.getElementById('remaining').innerText = remainingDots;
+        }
+
+        scene.add(new THREE.AmbientLight(0x404040));
+        const light = new THREE.PointLight(0xffffff, 50, 40); scene.add(light);
+
+        // --- GHOSTS (8 Types) ---
+        const ghostTypes = [
+            { c: 0xff0000, t: 'chase', s: 1.05 },   // Blinky
+            { c: 0xffb8ff, t: 'ambush', s: 0.95 },  // Pinky
+            { c: 0x00ffff, t: 'flank', s: 0.9 },    // Inky
+            { c: 0xffb852, t: 'wander', s: 0.85 },  // Clyde
+            { c: 0x800080, t: 'chase', s: 1.1 },    // Purple (Aggressive)
+            { c: 0x00ff00, t: 'ambush', s: 1.0 },   // Green
+            { c: 0xffff00, t: 'wander', s: 0.8 },   // Yellow
+            { c: 0xffffff, t: 'flank', s: 0.95 }    // White
+        ];
+
+        let ghosts = [];
+        function initGhosts() {
+            ghosts.forEach(g => scene.remove(g));
+            ghosts = ghostTypes.map((config, index) => {
+                const group = new THREE.Group();
+                
+                // Body Group
+                const bodyGroup = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.5, 4, 8), new THREE.MeshPhongMaterial({color: config.c}));
+                body.position.y = 0.5;
+                bodyGroup.add(body);
+                group.add(bodyGroup);
+
+                // Eyes Group
+                const eyesGroup = new THREE.Group();
+                const eGeo = new THREE.SphereGeometry(0.12, 8, 8), pGeo = new THREE.SphereGeometry(0.05, 8, 8);
+                const eMat = new THREE.MeshBasicMaterial({color: 0xffffff}), pMat = new THREE.MeshBasicMaterial({color: 0x000000});
+                const lE = new THREE.Mesh(eGeo, eMat); lE.position.set(0.2, 0.8, 0.4);
+                const lP = new THREE.Mesh(pGeo, pMat); lP.position.set(0.2, 0.8, 0.5);
+                const rE = new THREE.Mesh(eGeo, eMat); rE.position.set(-0.2, 0.8, 0.4);
+                const rP = new THREE.Mesh(pGeo, pMat); rP.position.set(-0.2, 0.8, 0.5);
+                eyesGroup.add(lE, lP, rE, rP);
+                group.add(eyesGroup);
+
+                group.bodyGroup = bodyGroup;
+                group.eyesGroup = eyesGroup;
+                group.baseColor = config.c; 
+                group.aiType = config.t;
+                group.baseSpeed = config.s;
+                group.isDead = false;
+                group.dir = new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize();
+                
+                scene.add(group);
+                return group;
+            });
+        }
+
+        // --- FRUITS ---
+        const fruitData = [
+            { name: "CHERRY", color: 0xff0000, score: 100 },
+            { name: "STRAWBERRY", color: 0xff007f, score: 300 },
+            { name: "PEACH", color: 0xffa500, score: 500 },
+            { name: "APPLE", color: 0xff0000, score: 700 },
+            { name: "GRAPES", color: 0x800080, score: 1000 },
+            { name: "GALAXIAN", color: 0x00ffff, score: 2000 },
+            { name: "BELL", color: 0xffff00, score: 3000 },
+            { name: "KEY", color: 0xffffff, score: 5000 }
+        ];
+        let fruitMesh = null;
+        let fruitTimer = 0;
+        let fruitActiveTime = 0;
+        let currentFruitIndex = 0;
+
+        function spawnFruit() {
+            if(fruitMesh) scene.remove(fruitMesh);
+            const data = fruitData[currentFruitIndex % fruitData.length];
+            fruitMesh = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(0.8), 
+                new THREE.MeshPhongMaterial({ color: data.color, shininess: 100 })
+            );
+            fruitMesh.position.set(0, 0.8, 8); // Outside of Ghost Box
+            fruitMesh.fruitScore = data.score;
+            fruitMesh.fruitName = data.name;
+            scene.add(fruitMesh);
+            
+            document.getElementById('fruitIndicator').style.display = 'block';
+            document.getElementById('fruitIndicator').innerText = `${data.name} APPEARED!`;
+            playSfx(800, 0.3, 'square');
+            
+            fruitActiveTime = 10000; // 10 seconds lifespan
+            currentFruitIndex++;
+        }
+
+        // --- RESET POSITIONS ---
+        function resetPositions() {
+            pacman.position.set(-26, 0.8, -12);
+            pacman.rotation.set(0, Math.PI/2, 0);
+            topHalf.rotation.x = 0;
+            bottomHalf.rotation.x = 0;
+            pacman.scale.setScalar(1);
+            
+            ghosts.forEach((g, i) => {
+                g.position.set((Math.random()-0.5)*4, 0.3, (Math.random()-0.5)*4);
+                g.isDead = false;
+                g.bodyGroup.visible = true;
+                g.bodyGroup.children[0].material.color.set(g.baseColor);
+            });
+            
+            powerUp = laserMode = speedMode = freezeMode = false;
+            document.querySelectorAll('.bar-container').forEach(el => el.style.display = 'none');
+            
+            camAngleY = Math.PI/2;
+            camAngleX = 0.4;
+        }
+
+        // --- LASER LOGIC ---
+        function fireLaser() {
+            playSfx(1000, 0.1, 'sawtooth');
+            const laserDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
+            const raycaster = new THREE.Raycaster(pacman.position, laserDir);
+            
+            ghosts.forEach(g => {
+                if(!g.isDead && raycaster.ray.distanceToPoint(g.position) < 2.0) killGhost(g, true);
+            });
+            
+            const material = new THREE.LineBasicMaterial({ color: 0xff6400, linewidth: 5 });
+            const points = [pacman.position.clone(), pacman.position.clone().add(laserDir.multiplyScalar(30))];
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, material);
+            scene.add(line);
+            setTimeout(() => scene.remove(line), 100);
+        }
+
+        function killGhost(g, fromLaser = false) {
+            g.isDead = true; 
+            g.bodyGroup.visible = false; // Hide body, leave eyes
+            
+            let pts = 200;
+            if(!fromLaser) {
+                pts = 200 * Math.pow(2, Math.min(ghostCombo, 4));
+                ghostCombo++;
+            }
+            addScore(pts, g.position);
+            playSfx(500 + ghostCombo*100, 0.2, 'square');
+        }
+
+        // --- SCORE & LIFE SYSTEM ---
+        function addScore(amount, pos3D = null) {
+            score += amount;
+            document.getElementById('score').innerText = score;
+            if (pos3D) {
+                showFloatingText(`+${amount}`, pos3D);
+            }
+            
+            // Extra life for every 10,000 points
+            if (score >= nextLifeThreshold) {
+                lives++;
+                nextLifeThreshold += 10000;
+                document.getElementById('lives').innerText = lives;
+                playSfx(1500, 0.6, 'sine', 0.1); // Retro extra life chime
+                if (pos3D) {
+                    showFloatingText("1 UP!", pos3D.clone().add(new THREE.Vector3(0, 1.5, 0)));
+                }
+            }
+        }
+
+        // --- INPUTS ---
+        let moveF = 0, moveS = 0;
+        let camAngleY = Math.PI/2, camAngleX = 0.4, camRadius = 10;
+        let touchStartX = 0, touchStartY = 0, isDraggingCamera = false;
+
+        document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); if(!isJumping && gameState === 'playing') { velocityY = 0.25; isJumping = true; playSfx(300, 0.2, 'square'); }});
+        
+        window.addEventListener('touchstart', (e) => {
+            for(let i=0; i<e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.clientX > window.innerWidth / 2 && !e.target.closest('.btn')) {
+                    isDraggingCamera = true; touchStartX = t.clientX; touchStartY = t.clientY;
+                }
+            }
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if(gameState !== 'playing') return;
+            e.preventDefault();
+            for(let i=0; i<e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.clientX < window.innerWidth / 2) {
+                    const r = document.getElementById('joystick-container').getBoundingClientRect();
+                    let dx = t.clientX - (r.left + 50), dy = t.clientY - (r.top + 50);
+                    const d = Math.sqrt(dx*dx+dy*dy) || 1;
+                    moveS = (dx/d); moveF = (dy/d);
+                    document.getElementById('joystick-knob').style.transform = `translate(${(dx/d)*Math.min(d,40)/2}px, ${(dy/d)*Math.min(d,40)/2}px)`;
+                } else if (isDraggingCamera) {
+                    let deltaX = t.clientX - touchStartX, deltaY = t.clientY - touchStartY;
+                    camAngleY -= deltaX * 0.01; camAngleX -= deltaY * 0.01;
+                    camAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, camAngleX));
+                    touchStartX = t.clientX; touchStartY = t.clientY;
+                }
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', (e) => { 
+            for(let i=0; i<e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if(t.clientX < window.innerWidth/2) {
+                    moveF = moveS = 0; document.getElementById('joystick-knob').style.transform = 'translate(0,0)'; 
+                } else { isDraggingCamera = false; }
+            }
+        });
+
+        // Combined Collision Check (Walls + Solid Ghost Box)
+        function checkCol(p, size=1.6) { 
+            // 1. Regular Walls
+            const hitsWall = walls.some(w => new THREE.Box3().setFromCenterAndSize(p, new THREE.Vector3(size,size,size)).intersectsBox(w.box)); 
+            if (hitsWall) return true;
+            
+            // 2. Ghost Box solid walls (accessible only by ghosts, collides with Pacman)
+            const hitsGhostBox = ghostBoxWalls.some(gW => new THREE.Box3().setFromCenterAndSize(p, new THREE.Vector3(size,size,size)).intersectsBox(gW.box));
+            return hitsGhostBox;
+        }
+
+        // --- GLITCH VISUAL GENERATOR (Level 256 screen) ---
+        function generateGlitchMatrix() {
+            const container = document.getElementById('glitch-matrix');
+            let content = '';
+            for (let i = 0; i < 40; i++) {
+                let row = '';
+                for (let j = 0; j < 60; j++) {
+                    const charType = Math.random();
+                    if (charType < 0.3) {
+                        row += String.fromCharCode(33 + Math.floor(Math.random() * 50));
+                    } else if (charType < 0.6) {
+                        row += Math.floor(Math.random() * 10);
+                    } else {
+                        row += '&nbsp;';
+                    }
+                }
+                content += '<div>' + row + '</div>';
+            }
+            container.innerHTML = content;
+        }
+
+        // --- MAIN LOOP ---
+        let lastTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const now = performance.now();
+            const deltaMs = now - lastTime;
+            lastTime = now;
+            
+            if (gameState === 'lobby') {
+                renderer.render(scene, camera);
+                return;
+            }
+            
+            if (gameState === 'level_transition') return;
+
+            if (gameState === 'victory256') {
+                // Keep rendering the glitch background chaos inside victory modal
+                if (Math.random() < 0.15) {
+                    generateGlitchMatrix();
+                }
+                return;
+            }
+
+            if (gameState === 'dying') {
+                // Die Fold Animation
+                deathTimer -= deltaMs / 1000;
+                topHalf.rotation.x -= 0.05;
+                bottomHalf.rotation.x += 0.05;
+                let s = Math.max(0.01, deathTimer);
+                pacman.scale.setScalar(s);
+                
+                if (deathTimer <= 0) {
+                    lives--; document.getElementById('lives').innerText = lives;
+                    if (lives <= 0) {
+                        gameState = 'gameover';
+                        document.getElementById('gameover').style.display = 'flex';
+                        document.getElementById('go-reason').innerText = "NO LIVES LEFT!";
+                    } else {
+                        resetPositions();
+                        gameState = 'playing';
+                    }
+                }
+                renderer.render(scene, camera);
+                return;
+            }
+
+            if(gameState !== 'playing') return;
+
+            // Physics & Movement
+            if(isJumping) {
+                pacman.position.y += velocityY; velocityY -= 0.015;
+                if(pacman.position.y <= 0.8) { pacman.position.y = 0.8; isJumping = false; }
+            }
+
+            let curSpeed = pacBaseSpeed * (speedMode ? 2.0 : 1.0);
+            const v = new THREE.Vector3(moveS, 0, moveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize().multiplyScalar(curSpeed);
+            isMoving = (moveS !== 0 || moveF !== 0);
+
+            if(isMoving) {
+                const npX = pacman.position.clone(); npX.x += v.x; if(!checkCol(npX)) pacman.position.x = npX.x;
+                const npZ = pacman.position.clone(); npZ.z += v.z; if(!checkCol(npZ)) pacman.position.z = npZ.z;
+                
+                pacman.rotation.y = Math.atan2(v.x, v.z);
+                
+                mouthTimer += 0.25 * (speedMode ? 1.5 : 1);
+                const mouthAngle = (Math.sin(mouthTimer) + 1) * 0.3;
+                topHalf.rotation.x = -mouthAngle; bottomHalf.rotation.x = mouthAngle;
+            } else {
+                topHalf.rotation.x = 0; bottomHalf.rotation.x = 0;
+            }
+
+            // Camera update
+            camera.position.x = pacman.position.x + camRadius * Math.sin(camAngleY) * Math.cos(camAngleX);
+            camera.position.y = pacman.position.y + camRadius * Math.sin(camAngleX);
+            camera.position.z = pacman.position.z + camRadius * Math.cos(camAngleY) * Math.cos(camAngleX);
+            camera.lookAt(pacman.position);
+            light.position.copy(pacman.position).add(new THREE.Vector3(0, 3, 0));
+
+            // Powerups Timer Updates
+            if(powerUp) {
+                powerTimeLeft -= deltaMs;
+                document.getElementById('powerBar').style.width = (powerTimeLeft / 8000 * 100) + '%';
+                if(powerTimeLeft <= 0) { powerUp = false; document.getElementById('powerBarContainer').style.display = 'none'; ghostCombo = 0; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(g.baseColor); }); }
+            }
+            if(laserMode) {
+                laserTimeLeft -= deltaMs;
+                laserCooldown -= deltaMs;
+                document.getElementById('laserBar').style.width = (laserTimeLeft / 10000 * 100) + '%';
+                if(laserCooldown <= 0) { fireLaser(); laserCooldown = 100; } // Auto fires 10 times a sec
+                if(laserTimeLeft <= 0) { laserMode = false; document.getElementById('laserBarContainer').style.display = 'none'; }
+            }
+            if(speedMode) {
+                speedTimeLeft -= deltaMs;
+                document.getElementById('speedBar').style.width = (speedTimeLeft / 6000 * 100) + '%';
+                if(speedTimeLeft <= 0) { speedMode = false; document.getElementById('speedBarContainer').style.display = 'none'; }
+            }
+            if(freezeMode) {
+                freezeTimeLeft -= deltaMs;
+                document.getElementById('freezeBar').style.width = (freezeTimeLeft / 5000 * 100) + '%';
+                if(freezeTimeLeft <= 0) { freezeMode = false; document.getElementById('freezeBarContainer').style.display = 'none'; }
+            }
+
+            // Fruits logic
+            fruitTimer += deltaMs;
+            if (fruitTimer > 15000 && !fruitMesh) {
+                spawnFruit();
+                fruitTimer = 0;
+            }
+            if (fruitMesh) {
+                fruitMesh.rotation.y += 0.05;
+                fruitActiveTime -= deltaMs;
+                if(fruitActiveTime <= 0) {
+                    scene.remove(fruitMesh); fruitMesh = null;
+                    document.getElementById('fruitIndicator').style.display = 'none';
+                } else if (pacman.position.distanceTo(fruitMesh.position) < 2.0) {
+                    addScore(fruitMesh.fruitScore, fruitMesh.position);
+                    playSfx(1200, 0.4, 'sine');
+                    scene.remove(fruitMesh); fruitMesh = null;
+                    document.getElementById('fruitIndicator').style.display = 'none';
+                }
+            }
+
+            // Ghost Movement & AI (Ghost Box center coordinates)
+            const centerBox = new THREE.Vector3(0, 0.3, 0);
+            
+            ghosts.forEach(g => {
+                if(g.isDead) {
+                    // Ojos returning to box
+                    let toCenter = centerBox.clone().sub(g.position);
+                    if(toCenter.length() < 0.5) {
+                        g.isDead = false;
+                        g.bodyGroup.visible = true;
+                        g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
+                    } else {
+                        // Flying ghosts ignore physical barriers
+                        g.position.add(toCenter.normalize().multiplyScalar(0.2)); 
+                    }
+                    return;
+                }
+
+                if(freezeMode) return; // Frozen
+
+                let gSpeed = g.baseSpeed * ghostSpeedMult * 0.08;
+                if(powerUp) gSpeed *= 0.5; // Frightened slowing factor
+
+                // AI Steering (Ghosts don't collide with the Ghost Box boundaries from outside/inside)
+                let target = new THREE.Vector3();
+                let pDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
+                
+                if (powerUp) {
+                    target.copy(g.position).add(g.position.clone().sub(pacman.position)); // Escape
+                } else {
+                    if (g.aiType === 'chase') target.copy(pacman.position);
+                    else if (g.aiType === 'ambush') target.copy(pacman.position).add(pDir.multiplyScalar(6));
+                    else if (g.aiType === 'flank') target.copy(pacman.position).add(new THREE.Vector3((Math.random()-0.5)*15, 0, (Math.random()-0.5)*15));
+                    else target.copy(new THREE.Vector3((Math.random()-0.5)*40, 0, (Math.random()-0.5)*30)); // Wander
+                }
+
+                let desiredDir = target.sub(g.position).normalize();
+                g.dir.lerp(desiredDir, 0.05).normalize(); // Smooth rotation
+
+                // Collision detection and response (Fantasmas ignore the special Ghost Box wall checks)
+                let npX = g.position.clone(); npX.x += g.dir.x * gSpeed;
+                let npZ = g.position.clone(); npZ.z += g.dir.z * gSpeed;
+
+                // Ghosts only collide with regular walls
+                const hitsWallX = walls.some(w => new THREE.Box3().setFromCenterAndSize(npX, new THREE.Vector3(1.2,1.2,1.2)).intersectsBox(w.box)); 
+                if (!hitsWallX) g.position.x = npX.x;
+                else g.dir.x *= -1;
+                
+                const hitsWallZ = walls.some(w => new THREE.Box3().setFromCenterAndSize(npZ, new THREE.Vector3(1.2,1.2,1.2)).intersectsBox(w.box)); 
+                if (!hitsWallZ) g.position.z = npZ.z;
+                else g.dir.z *= -1;
+
+                g.lookAt(g.position.x + g.dir.x, 0.3, g.position.z + g.dir.z);
+
+                // Pacman Collision
+                if(pacman.position.distanceTo(g.position) < 1.6) {
+                    if(powerUp) {
+                        killGhost(g);
+                    } else if(!isJumping) {
+                        // Start dying animation sequence
+                        gameState = 'dying';
+                        deathTimer = 1.0;
+                        playSfx(200, 1.0, 'sawtooth');
+                    }
+                }
+            });
+
+            // Dots Collision
+            dots.forEach(d => {
+                if(d.visible && pacman.position.distanceTo(d.position) < 1.8) {
+                    d.visible = false; 
+                    addScore(10);
+                    playSfx(600, 0.05);
+                    
+                    if(d.type === 0) {
+                        remainingDots--;
+                        document.getElementById('remaining').innerText = remainingDots;
+                    } else {
+                        addScore(40); // extra powerup dot bonus
+                        if(d.type === 2) { powerUp = true; powerTimeLeft = 8000; ghostCombo = 0; document.getElementById('powerBarContainer').style.display = 'block'; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); }); }
+                        if(d.type === 4) { laserMode = true; laserTimeLeft = 10000; laserCooldown=0; document.getElementById('laserBarContainer').style.display = 'block'; }
+                        if(d.type === 5) { speedMode = true; speedTimeLeft = 6000; document.getElementById('speedBarContainer').style.display = 'block'; }
+                        if(d.type === 6) { freezeMode = true; freezeTimeLeft = 5000; document.getElementById('freezeBarContainer').style.display = 'block'; }
+                        showFloatingText("+50", d.position);
+                    }
+
+                    if(remainingDots <= 0) { 
+                        // LEVEL 256 MYTHICAL VICTORY TRIGGER CHECK
+                        if (level >= 256) {
+                            gameState = 'victory256';
+                            document.getElementById('mythical-screen').style.display = 'flex';
+                            playSfx(100, 2.0, 'sawtooth', 0.2);
+                            generateGlitchMatrix();
+                            return;
+                        }
+
+                        gameState = 'level_transition'; 
+                        document.getElementById('victory').style.display = 'flex';
+                        playSfx(1000, 1.0, 'square');
+
+                        setTimeout(() => {
+                            level++;
+                            ghostSpeedMult += 0.15; // escalation multiplier
+                            document.getElementById('level').innerText = level;
+                            document.getElementById('victory').style.display = 'none';
+                            buildMap();
+                            resetPositions();
+                            gameState = 'playing';
+                        }, 3000);
+                    }
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // Initialize elements
+        buildMap();
+        initGhosts();
+        resetPositions();
+        animate();
+
+    </script>
+</body>
+</html>
+
