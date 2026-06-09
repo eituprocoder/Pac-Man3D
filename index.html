@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pac-Man 3D</title>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('Service Worker registrado correctamente'))
+      .catch(err => console.log('Error al registrar:', err));
+  }
+</script>
+
+<!-- No olvides vincular el manifest en el <head> -->
+<link rel="manifest" href="manifest.json">
     <style>
         body { margin: 0; overflow: hidden; background: #000411; font-family: 'Courier New', monospace; touch-action: none; user-select: none; -webkit-user-select: none; }
         
