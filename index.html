@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pac-Man 3D - Ultimate Multiplayer</title>
-    <!-- Include PeerJS Library for P2P Lobby/Multiplayer -->
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <title>Pac-Man 3D</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000411; font-family: 'Courier New', monospace; touch-action: none; user-select: none; -webkit-user-select: none; }
         
@@ -25,8 +23,6 @@
         
         .menu-btn { padding: 15px 40px; font-weight: bold; cursor: pointer; border: 3px solid #00f2ff; background: rgba(0,242,255,0.1); color: #00f2ff; font-size: 24px; border-radius: 12px; font-family: 'Courier New', monospace; box-shadow: 0 0 15px rgba(0,242,255,0.4); transition: all 0.3s ease; }
         .menu-btn:hover { background: #00f2ff; color: #000; box-shadow: 0 0 30px #00f2ff; }
-        
-        #lobby-status { display: none; margin-top: 25px; font-size: 18px; color: #ffffff; background: rgba(0,0,0,0.6); padding: 15px 25px; border-radius: 8px; border: 1px solid #00f2ff; max-width: 80%; }
         
         #victory, #gameover, #mythical-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
         #victory { background: rgba(0,0,0,0.9); color: #00ff00; }
@@ -53,22 +49,17 @@
     </style>
 </head>
 <body>
-    <!-- Main Menu & Waiting Lobby Room -->
+    <!-- Main Menu -->
     <div id="menu-screen">
         <h1>PAC-MAN 3D</h1>
-        <h2>3D MULTIPLAYER LABYRINTH</h2>
-        <button id="btnPlay" class="menu-btn" onclick="startMatching()">PLAY</button>
-        <div id="lobby-status">
-            <div id="lobby-message">Connecting to matching system...</div>
-            <div id="lobby-countdown" style="font-size: 28px; margin-top:10px; color: #ffff00; font-weight:bold;"></div>
-            <div id="lobby-players" style="margin-top:10px; font-size: 14px; color:#00f2ff;"></div>
-        </div>
+        <h2>3D LABYRINTH</h2>
+        <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY</button>
     </div>
 
     <div id="ui">
-        LEVEL: <span id="level">1</span> | SCORE: <span id="score">0</span> | LIVES: <span id="lives">3</span><br>
+        LEVEL: <span id="level">255</span> | SCORE: <span id="score">0</span> | LIVES: <span id="lives">3</span><br>
         DOTS LEFT: <span id="remaining">0</span>
-        <div id="powerBarContainer" class="bar-container"><div class="bar-label">Power Pellet</div><div id="powerBar"></div></div>
+        <div id="powerBarContainer" class="bar-container"><div class="bar-label">POWER PELLET</div><div id="powerBar"></div></div>
         <div id="laserBarContainer" class="bar-container"><div class="bar-label">LASER</div><div id="laserBar"></div></div>
         <div id="speedBarContainer" class="bar-container"><div class="bar-label">SPEED BOOST</div><div id="speedBar"></div></div>
         <div id="freezeBarContainer" class="bar-container"><div class="bar-label">GHOST FREEZE</div><div id="freezeBar"></div></div>
@@ -90,10 +81,7 @@
     <div id="mythical-screen">
         <div class="glitch-split">
             <div class="glitch-left">
-                <h1 style="font-size: 36px; margin: 0; color: #ffff00;">LEVEL 256</h1>
-                <h2 style="font-size: 24px; margin: 10px 0; color: #00ffff;">THE LEGENDARY END</h2>
-                <p style="color:#ffffff; font-size:14px; line-height: 1.6;">You have overflowed the level counters! Safe zone collapsed into beautiful digital chaos.</p>
-                <p style="color:#00ff00; font-size:16px; font-weight:bold; margin-top:20px;">MYTHICAL VICTORY COMPLETE!</p>
+                <p style="color:#00ff00; font-size:16px; font-weight:bold; margin-top:20px;">VICTORY!</p>
                 <button class="retry-btn" style="background:#ffff00; color:#000;" onclick="window.location.reload()">REPLAY ADVENTURE</button>
             </div>
             <div id="glitch-matrix" class="glitch-right"></div>
@@ -189,135 +177,8 @@
         let isMoving = false;
         let deathTimer = 1.0; 
 
-        // --- MULTIPLAYER ROOM & SYNC SETUPS ---
-        let peer = null;
-        let connections = [];
-        let peerId = '';
-        let lobbyTimer = 15;
-        let countdownInterval = null;
-        let otherPlayers = {}; // mapped by Peer ID
-        const activeRemotePlayers = new Map(); // visual mesh instances
-
-        // Standard multiplayer Pac-Man mesh generator
-        function createRemotePlayerMesh(color = 0x00ffcc) {
-            const group = new THREE.Group();
-            const mat = new THREE.MeshPhongMaterial({ color, side: THREE.DoubleSide });
-            const topH = new THREE.Mesh(topGeo, mat);
-            const botH = new THREE.Mesh(bottomGeo, mat);
-            
-            const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.35, 0.4, 0.6);
-            const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.35, 0.4, 0.6);
-            topH.add(rEye); topH.add(lEye);
-            group.add(topH); group.add(botH);
-            scene.add(group);
-            return group;
-        }
-
-        // --- MATCHING LOBBY REGISTRATION (P2P using public peer pattern) ---
-        window.startMatching = function() {
-            document.getElementById('btnPlay').style.display = 'none';
-            document.getElementById('lobby-status').style.display = 'block';
-            
-            // Build random local Peer ID representing you
-            peerId = 'pacman3d-' + Math.floor(Math.random() * 10000);
-            
-            // Initiate connection
-            peer = new Peer(peerId, {
-                debug: 1
-            });
-            
-            peer.on('open', (id) => {
-                document.getElementById('lobby-message').innerText = "In public matchmaking room...\nSearching for other players...";
-                startLobbyCountdown();
-                
-                // Let's connect to other instances in range using predictable IDs
-                // In classic P2P with no signalling server, we attempt to bind standard room slots (1-4)
-                for(let slot = 0; slot < 4; slot++) {
-                    let targetPeerId = 'pacman3d-slot-' + slot;
-                    if (targetPeerId !== peerId) {
-                        tryConnect(targetPeerId);
-                    }
-                }
-                
-                // Try registering as a slot if free
-                tryRegisterSlot();
-            });
-
-            peer.on('connection', (conn) => {
-                setupConnection(conn);
-            });
-        };
-
-        function tryRegisterSlot() {
-            // We also listen on standard slots so others can find us easily
-            for (let i = 0; i < 4; i++) {
-                let testSlotId = 'pacman3d-slot-' + i;
-                let testPeer = new Peer(testSlotId);
-                testPeer.on('open', () => {
-                    // Success, we became an discoverable slot!
-                    testPeer.on('connection', (conn) => setupConnection(conn));
-                });
-                testPeer.on('error', () => {
-                    // Slot taken, check next slot
-                });
-            }
-        }
-
-        function tryConnect(targetId) {
-            let conn = peer.connect(targetId);
-            conn.on('open', () => {
-                setupConnection(conn);
-            });
-        }
-
-        function setupConnection(conn) {
-            if (connections.find(c => c.peer === conn.peer)) return;
-            connections.push(conn);
-            
-            conn.on('data', (data) => {
-                if (data.type === 'chat') {
-                    // Chat messages or lobby state updates
-                } else if (data.type === 'state') {
-                    // Active game position update from peers
-                    handleRemoteState(conn.peer, data);
-                } else if (data.type === 'levelUp') {
-                    level = data.level;
-                    document.getElementById('level').innerText = level;
-                }
-            });
-
-            conn.on('close', () => {
-                removeRemotePlayer(conn.peer);
-                connections = connections.filter(c => c.peer !== conn.peer);
-                updatePlayersList();
-            });
-            updatePlayersList();
-        }
-
-        function updatePlayersList() {
-            let activePeers = connections.map(c => "Player " + c.peer.replace('pacman3d-', ''));
-            if (activePeers.length === 0) {
-                document.getElementById('lobby-players').innerText = "Waiting for other classic players (Up to 4 can join)...";
-            } else {
-                document.getElementById('lobby-players').innerText = "Joined Players: You, " + activePeers.join(", ");
-            }
-        }
-
-        function startLobbyCountdown() {
-            lobbyTimer = 15;
-            document.getElementById('lobby-countdown').innerText = lobbyTimer + "s";
-            
-            countdownInterval = setInterval(() => {
-                lobbyTimer--;
-                document.getElementById('lobby-countdown').innerText = lobbyTimer + "s";
-                if (lobbyTimer <= 0) {
-                    clearInterval(countdownInterval);
-                    launchActualGame();
-                }
-            }, 1000);
-        }
-
-        function launchActualGame() {
+        // --- START GAME ---
+        window.startGame = function() {
             document.getElementById('menu-screen').style.display = 'none';
             document.getElementById('ui').style.display = 'block';
             document.getElementById('joystick-container').style.display = 'flex';
@@ -325,54 +186,7 @@
             
             gameState = 'playing';
             playSfx(500, 0.5, 'triangle');
-        }
-
-        function handleRemoteState(peerId, state) {
-            if (!activeRemotePlayers.has(peerId)) {
-                // Assign a distinct color based on string hash
-                let charCodeSum = 0;
-                for (let i = 0; i < peerId.length; i++) charCodeSum += peerId.charCodeAt(i);
-                let colors = [0xff00ff, 0x00ffcc, 0xffaa00, 0x00ff00, 0xff0055];
-                let chosenColor = colors[charCodeSum % colors.length];
-                
-                let mesh = createRemotePlayerMesh(chosenColor);
-                activeRemotePlayers.set(peerId, mesh);
-            }
-            let remoteMesh = activeRemotePlayers.get(peerId);
-            remoteMesh.position.set(state.x, state.y, state.z);
-            remoteMesh.rotation.y = state.ry;
-            
-            // Sync remote bite animation
-            let topPart = remoteMesh.children[0];
-            let bottomPart = remoteMesh.children[1];
-            topPart.rotation.x = -state.ma;
-            bottomPart.rotation.x = state.ma;
-        }
-
-        function removeRemotePlayer(peerId) {
-            if (activeRemotePlayers.has(peerId)) {
-                scene.remove(activeRemotePlayers.get(peerId));
-                activeRemotePlayers.delete(peerId);
-            }
-        }
-
-        function broadcastLocalState() {
-            if (connections.length === 0) return;
-            const statePayload = {
-                type: 'state',
-                x: pacman.position.x,
-                y: pacman.position.y,
-                z: pacman.position.z,
-                ry: pacman.rotation.y,
-                ma: (isMoving ? (Math.sin(mouthTimer) + 1) * 0.3 : 0)
-            };
-            connections.forEach(conn => {
-                if (conn.open) {
-                    conn.send(statePayload);
-                }
-            });
-        }
-
+        };
 
         // --- MAP GENERATION ---
         // 1: Wall, 0: Dot, 2: Super(Blue), 3: Empty(GhostBox), 4: Laser(Orange), 5: Speed(Green), 6: Freeze(Cyan)
@@ -752,9 +566,6 @@
                 topHalf.rotation.x = 0; bottomHalf.rotation.x = 0;
             }
 
-            // Broadcast Multiplayer Movement State
-            broadcastLocalState();
-
             // Camera update
             camera.position.x = pacman.position.x + camRadius * Math.sin(camAngleY) * Math.cos(camAngleX);
             camera.position.y = pacman.position.y + camRadius * Math.sin(camAngleX);
@@ -905,15 +716,6 @@
                         gameState = 'level_transition'; 
                         document.getElementById('victory').style.display = 'flex';
                         playSfx(1000, 1.0, 'square');
-                        
-                        // Sync level up state to peer networks
-                        if (connections.length > 0) {
-                            connections.forEach(conn => {
-                                if (conn.open) {
-                                    conn.send({ type: 'levelUp', level: level + 1 });
-                                }
-                            });
-                        }
 
                         setTimeout(() => {
                             level++;
