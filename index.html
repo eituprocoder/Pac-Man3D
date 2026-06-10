@@ -116,8 +116,8 @@
         // --- GAME STATE ---
         let level = 1;
         let score = 0, lives = 3, remainingDots = 0;
-        let nextLifeThreshold = 10000; // Extra life system
-        let gameState = 'lobby'; // lobby, playing, dying, level_transition, victory256
+        let nextLifeThreshold = 10000;
+        let gameState = 'lobby'; // lobby, playing, dying, intermission, victory256
         let ghostCombo = 0;
         
         // Powerups
@@ -198,27 +198,49 @@
             playSfx(500, 0.5, 'triangle');
         };
 
-        // --- MAP GENERATION ---
-        // 1: Wall, 0: Dot, 2: Super(Blue), 3: Empty(GhostBox), 4: Laser(Orange), 5: Speed(Green), 6: Freeze(Cyan)
+        // --- MAP GENERATION (Accurate Classic Arcade Map) ---
+        // 1: Wall, 0: Dot, 2: Super(Blue), 3: PathEmpty, 4: Laser(Orange), 5: Speed(Green), 6: Freeze(Cyan), 8: GhostHouse Wall, 9: GhostHouse Space
         const mapTemplate = [
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,4,0,0,0,5,1,0,0,1,6,0,0,0,4,1],
-            [1,0,1,1,1,0,1,0,0,1,0,1,1,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,1,0,1,1,0,3,3,3,3,0,1,1,0,1,1],
-            [1,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1],
-            [1,0,1,1,0,1,0,0,0,0,1,0,1,1,0,1],
-            [1,2,0,0,0,0,5,0,0,6,0,0,0,0,2,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,2,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,2,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+            [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+            [1,4,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,4,0,1], // Lasers
+            [1,1,1,1,1,1,0,1,1,1,1,1,3,1,1,3,1,1,1,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,1,1,1,3,1,1,3,1,1,1,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,3,3,3,3,3,3,3,3,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,8,8,8,3,3,8,8,8,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,8,9,9,9,9,9,9,8,3,1,1,0,1,1,1,1,1,1],
+            [3,3,3,3,3,3,0,3,3,3,8,9,9,9,9,9,9,8,3,3,3,0,3,3,3,3,3,3],
+            [1,1,1,1,1,1,0,1,1,3,8,9,9,9,9,9,9,8,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,8,8,8,8,8,8,8,8,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,3,3,3,3,3,3,3,3,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
+            [1,5,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,5,0,1], // Speed boosts
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,2,0,0,1,1,0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,0,1,1,0,0,2,1],
+            [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
+            [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
+            [1,6,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,6,0,1], // Freezes
+            [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
 
         let walls = []; let dots = [];
         const floorMat = new THREE.MeshPhongMaterial({ color: 0x000a22 });
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), floorMat);
+        // Make the floor huge to accommodate the accurate map
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), floorMat);
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
 
-        // Solid Ghost Box Walls: ONLY Ghost Box area (accessible by ghosts, restricted for players)
         const ghostBoxWalls = [];
         const boxMat = new THREE.MeshPhongMaterial({ color: 0xff00ff, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
 
@@ -234,20 +256,18 @@
 
             mapTemplate.forEach((row, z) => {
                 row.forEach((cell, x) => {
-                    const pos = [x * 4 - 30, 0, z * 4 - 16];
+                    // Center the 28x31 map (Offset by 13.5x and 15z, scaled by 4)
+                    const pos = [(x - 13.5) * 4, 0, (z - 15) * 4];
                     
                     if (cell === 1) {
                         const wall = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), new THREE.MeshPhongMaterial({ color: 0x0033ff }));
                         wall.position.set(...pos); scene.add(wall);
                         walls.push({ box: new THREE.Box3().setFromObject(wall), mesh: wall });
-                    } else if (cell === 3) {
-                        // Construir paredes de Ghost Box (restricted area)
-                        if (x === 6 || x === 9 || (z === 4 && (x === 7 || x === 8))) {
-                           const gWall = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 4), boxMat);
-                           gWall.position.set(...pos); scene.add(gWall);
-                           ghostBoxWalls.push({ box: new THREE.Box3().setFromObject(gWall), mesh: gWall });
-                        }
-                    } else if (cell !== 3) {
+                    } else if (cell === 8) {
+                        const gWall = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 4), boxMat);
+                        gWall.position.set(...pos); scene.add(gWall);
+                        ghostBoxWalls.push({ box: new THREE.Box3().setFromObject(gWall), mesh: gWall });
+                    } else if (cell !== 3 && cell !== 9) {
                         let color, scale = 0.2;
                         if(cell === 0) color = 0xffffff;
                         else if(cell === 2) { color = 0x0055ff; scale = 0.6; } // Super
@@ -259,7 +279,7 @@
                         dot.position.set(...pos); 
                         dot.type = cell;
                         scene.add(dot); dots.push(dot); 
-                        if(cell === 0) remainingDots++; // Only count regular dots
+                        if(cell === 0) remainingDots++; // Only count regular dots for win condition
                     }
                 });
             });
@@ -267,7 +287,7 @@
         }
 
         scene.add(new THREE.AmbientLight(0x404040));
-        const light = new THREE.PointLight(0xffffff, 50, 40); scene.add(light);
+        const light = new THREE.PointLight(0xffffff, 50, 60); scene.add(light);
 
         // --- GHOSTS (8 Types) ---
         const ghostTypes = [
@@ -332,16 +352,21 @@
         let fruitMesh = null;
         let fruitTimer = 0;
         let fruitActiveTime = 0;
-        let currentFruitIndex = 0;
 
         function spawnFruit() {
             if(fruitMesh) scene.remove(fruitMesh);
-            const data = fruitData[currentFruitIndex % fruitData.length];
+            
+            // Progressive levels logic: Level 1 gets Cherry, Level 2 gets Strawberry, maxes out at Key
+            const fruitIndex = Math.min(level - 1, fruitData.length - 1);
+            const data = fruitData[fruitIndex];
+            
             fruitMesh = new THREE.Mesh(
                 new THREE.DodecahedronGeometry(0.8), 
                 new THREE.MeshPhongMaterial({ color: data.color, shininess: 100 })
             );
-            fruitMesh.position.set(0, 0.8, 8); // Outside of Ghost Box
+            
+            // Spawn just below the ghost house entrance
+            fruitMesh.position.set(0, 0.8, 8);
             fruitMesh.fruitScore = data.score;
             fruitMesh.fruitName = data.name;
             scene.add(fruitMesh);
@@ -350,20 +375,21 @@
             document.getElementById('fruitIndicator').innerText = `${data.name} APPEARED!`;
             playSfx(800, 0.3, 'square');
             
-            fruitActiveTime = 10000; // 10 seconds lifespan
-            currentFruitIndex++;
+            fruitActiveTime = 10000;
         }
 
         // --- RESET POSITIONS ---
         function resetPositions() {
-            pacman.position.set(-26, 0.8, -12);
-            pacman.rotation.set(0, Math.PI/2, 0);
+            // Pac-Man start pos (Row 23)
+            pacman.position.set(0, 0.8, 32);
+            pacman.rotation.set(0, Math.PI, 0);
             topHalf.rotation.x = 0;
             bottomHalf.rotation.x = 0;
             pacman.scale.setScalar(1);
             
             ghosts.forEach((g, i) => {
-                g.position.set((Math.random()-0.5)*4, 0.3, (Math.random()-0.5)*4);
+                // Ghost Box Spawn (Row 14)
+                g.position.set((Math.random()-0.5)*4, 0.3, -4 + (Math.random()-0.5)*2);
                 g.isDead = false;
                 g.bodyGroup.visible = true;
                 g.bodyGroup.children[0].material.color.set(g.baseColor);
@@ -396,7 +422,7 @@
 
         function killGhost(g, fromLaser = false) {
             g.isDead = true; 
-            g.bodyGroup.visible = false; // Hide body, leave eyes
+            g.bodyGroup.visible = false; 
             
             let pts = 200;
             if(!fromLaser) {
@@ -411,25 +437,20 @@
         function addScore(amount, pos3D = null) {
             score += amount;
             document.getElementById('score').innerText = score;
-            if (pos3D) {
-                showFloatingText(`+${amount}`, pos3D);
-            }
+            if (pos3D) showFloatingText(`+${amount}`, pos3D);
             
-            // Extra life for every 10,000 points
             if (score >= nextLifeThreshold) {
                 lives++;
                 nextLifeThreshold += 10000;
                 document.getElementById('lives').innerText = lives;
-                playSfx(1500, 0.6, 'sine', 0.1); // Retro extra life chime
-                if (pos3D) {
-                    showFloatingText("1 UP!", pos3D.clone().add(new THREE.Vector3(0, 1.5, 0)));
-                }
+                playSfx(1500, 0.6, 'sine', 0.1); 
+                if (pos3D) showFloatingText("1 UP!", pos3D.clone().add(new THREE.Vector3(0, 1.5, 0)));
             }
         }
 
         // --- INPUTS ---
         let moveF = 0, moveS = 0;
-        let camAngleY = Math.PI/2, camAngleX = 0.4, camRadius = 10;
+        let camAngleY = Math.PI/2, camAngleX = 0.4, camRadius = 15;
         let touchStartX = 0, touchStartY = 0, isDraggingCamera = false;
 
         document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); if(!isJumping && gameState === 'playing') { velocityY = 0.25; isJumping = true; playSfx(300, 0.2, 'square'); }});
@@ -472,18 +493,13 @@
             }
         });
 
-        // Combined Collision Check (Walls + Solid Ghost Box)
         function checkCol(p, size=1.6) { 
-            // 1. Regular Walls
             const hitsWall = walls.some(w => new THREE.Box3().setFromCenterAndSize(p, new THREE.Vector3(size,size,size)).intersectsBox(w.box)); 
             if (hitsWall) return true;
-            
-            // 2. Ghost Box solid walls (accessible only by ghosts, collides with Pacman)
             const hitsGhostBox = ghostBoxWalls.some(gW => new THREE.Box3().setFromCenterAndSize(p, new THREE.Vector3(size,size,size)).intersectsBox(gW.box));
             return hitsGhostBox;
         }
 
-        // --- GLITCH VISUAL GENERATOR (Level 256 screen) ---
         function generateGlitchMatrix() {
             const container = document.getElementById('glitch-matrix');
             let content = '';
@@ -504,6 +520,50 @@
             container.innerHTML = content;
         }
 
+        // --- INTERMISSION SCENE SETUP ---
+        const interScene = new THREE.Scene();
+        interScene.background = new THREE.Color(0x000000);
+        const interCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        interCamera.position.set(0, 5, 30);
+        interCamera.lookAt(0, 0, 0);
+
+        const interLight = new THREE.PointLight(0xffffff, 50, 100);
+        interLight.position.set(0, 10, 10);
+        interScene.add(interLight);
+        interScene.add(new THREE.AmbientLight(0x606060));
+
+        // Intermission Actors
+        const csPacman = new THREE.Group();
+        const csTopHalf = new THREE.Mesh(topGeo, pmMaterial);
+        const csBotHalf = new THREE.Mesh(bottomGeo, pmMaterial);
+        csPacman.add(csTopHalf); csPacman.add(csBotHalf);
+        interScene.add(csPacman);
+
+        const csBlinky = new THREE.Group();
+        const csBlinkyMat = new THREE.MeshPhongMaterial({color: 0xff0000});
+        const csBlinkyBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.8, 0.8, 2, 8), csBlinkyMat);
+        csBlinkyBody.position.y = 0.8;
+        
+        const csEyesGroup = new THREE.Group();
+        const csLE = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color:0xffffff}));
+        csLE.position.set(0.3, 1.2, 0.6);
+        const csLP = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({color:0x000000}));
+        csLP.position.set(0.3, 1.2, 0.75);
+        const csRE = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color:0xffffff}));
+        csRE.position.set(-0.3, 1.2, 0.6);
+        const csRP = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({color:0x000000}));
+        csRP.position.set(-0.3, 1.2, 0.75);
+        csEyesGroup.add(csLE, csLP, csRE, csRP);
+        
+        csBlinky.add(csBlinkyBody);
+        csBlinky.add(csEyesGroup);
+        interScene.add(csBlinky);
+
+        const csPellet = new THREE.Mesh(new THREE.SphereGeometry(1.5), new THREE.MeshPhongMaterial({color: 0x0055ff, shininess: 100}));
+        interScene.add(csPellet);
+
+        let interTimer = 0, interPhase = 0;
+
         // --- MAIN LOOP ---
         let lastTime = performance.now();
 
@@ -518,18 +578,59 @@
                 return;
             }
             
-            if (gameState === 'level_transition') return;
-
             if (gameState === 'victory256') {
-                // Keep rendering the glitch background chaos inside victory modal
-                if (Math.random() < 0.15) {
-                    generateGlitchMatrix();
+                if (Math.random() < 0.15) generateGlitchMatrix();
+                return;
+            }
+
+            if (gameState === 'intermission') {
+                interTimer += deltaMs;
+                
+                // Pacman jaw chop
+                const mouthAngle = (Math.sin(interTimer * 0.015) + 1) * 0.3;
+                csTopHalf.rotation.x = -mouthAngle; 
+                csBotHalf.rotation.x = mouthAngle;
+
+                if (interPhase === 0) {
+                    // Chase Left
+                    csPacman.position.x -= 0.015 * deltaMs;
+                    csBlinky.position.x -= 0.016 * deltaMs; // Blinky catches up slightly
+                    
+                    if (csPacman.position.x <= -15) {
+                        interPhase = 1;
+                        csPellet.visible = false;
+                        csPacman.scale.setScalar(1.8);
+                        csPacman.position.y = 1.4;
+                        csBlinkyMat.color.setHex(0x0055ff); // Frightened
+                        csPacman.rotation.y = Math.PI/2; // Turn Right
+                        csBlinky.rotation.y = Math.PI/2;
+                        playSfx(1000, 0.5, 'triangle');
+                    }
+                } else if (interPhase === 1) {
+                    // Chase Right
+                    csPacman.position.x += 0.018 * deltaMs;
+                    csBlinky.position.x += 0.012 * deltaMs;
+                    
+                    if (csPacman.position.x >= csBlinky.position.x - 2.0 && csBlinkyBody.visible) {
+                        csBlinkyBody.visible = false; // Ate ghost
+                        playSfx(500, 0.2, 'square');
+                    }
+                    
+                    if (csPacman.position.x > 30) {
+                        level++;
+                        ghostSpeedMult += 0.15;
+                        document.getElementById('level').innerText = level;
+                        document.getElementById('ui').style.display = 'block';
+                        buildMap();
+                        resetPositions();
+                        gameState = 'playing';
+                    }
                 }
+                renderer.render(interScene, interCamera);
                 return;
             }
 
             if (gameState === 'dying') {
-                // Die Fold Animation
                 deathTimer -= deltaMs / 1000;
                 topHalf.rotation.x -= 0.05;
                 bottomHalf.rotation.x += 0.05;
@@ -593,7 +694,7 @@
                 laserTimeLeft -= deltaMs;
                 laserCooldown -= deltaMs;
                 document.getElementById('laserBar').style.width = (laserTimeLeft / 10000 * 100) + '%';
-                if(laserCooldown <= 0) { fireLaser(); laserCooldown = 100; } // Auto fires 10 times a sec
+                if(laserCooldown <= 0) { fireLaser(); laserCooldown = 100; }
                 if(laserTimeLeft <= 0) { laserMode = false; document.getElementById('laserBarContainer').style.display = 'none'; }
             }
             if(speedMode) {
@@ -627,50 +728,45 @@
                 }
             }
 
-            // Ghost Movement & AI (Ghost Box center coordinates)
-            const centerBox = new THREE.Vector3(0, 0.3, 0);
+            // Ghost Movement & AI
+            const centerBox = new THREE.Vector3(0, 0.3, -4);
             
             ghosts.forEach(g => {
                 if(g.isDead) {
-                    // Ojos returning to box
                     let toCenter = centerBox.clone().sub(g.position);
                     if(toCenter.length() < 0.5) {
                         g.isDead = false;
                         g.bodyGroup.visible = true;
                         g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
                     } else {
-                        // Flying ghosts ignore physical barriers
                         g.position.add(toCenter.normalize().multiplyScalar(0.2)); 
                     }
                     return;
                 }
 
-                if(freezeMode) return; // Frozen
+                if(freezeMode) return;
 
                 let gSpeed = g.baseSpeed * ghostSpeedMult * 0.08;
-                if(powerUp) gSpeed *= 0.5; // Frightened slowing factor
+                if(powerUp) gSpeed *= 0.5;
 
-                // AI Steering (Ghosts don't collide with the Ghost Box boundaries from outside/inside)
                 let target = new THREE.Vector3();
                 let pDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
                 
                 if (powerUp) {
-                    target.copy(g.position).add(g.position.clone().sub(pacman.position)); // Escape
+                    target.copy(g.position).add(g.position.clone().sub(pacman.position));
                 } else {
                     if (g.aiType === 'chase') target.copy(pacman.position);
                     else if (g.aiType === 'ambush') target.copy(pacman.position).add(pDir.multiplyScalar(6));
                     else if (g.aiType === 'flank') target.copy(pacman.position).add(new THREE.Vector3((Math.random()-0.5)*15, 0, (Math.random()-0.5)*15));
-                    else target.copy(new THREE.Vector3((Math.random()-0.5)*40, 0, (Math.random()-0.5)*30)); // Wander
+                    else target.copy(new THREE.Vector3((Math.random()-0.5)*40, 0, (Math.random()-0.5)*30));
                 }
 
                 let desiredDir = target.sub(g.position).normalize();
-                g.dir.lerp(desiredDir, 0.05).normalize(); // Smooth rotation
+                g.dir.lerp(desiredDir, 0.05).normalize();
 
-                // Collision detection and response (Fantasmas ignore the special Ghost Box wall checks)
                 let npX = g.position.clone(); npX.x += g.dir.x * gSpeed;
                 let npZ = g.position.clone(); npZ.z += g.dir.z * gSpeed;
 
-                // Ghosts only collide with regular walls
                 const hitsWallX = walls.some(w => new THREE.Box3().setFromCenterAndSize(npX, new THREE.Vector3(1.2,1.2,1.2)).intersectsBox(w.box)); 
                 if (!hitsWallX) g.position.x = npX.x;
                 else g.dir.x *= -1;
@@ -681,12 +777,10 @@
 
                 g.lookAt(g.position.x + g.dir.x, 0.3, g.position.z + g.dir.z);
 
-                // Pacman Collision
                 if(pacman.position.distanceTo(g.position) < 1.6) {
                     if(powerUp) {
                         killGhost(g);
                     } else if(!isJumping) {
-                        // Start dying animation sequence
                         gameState = 'dying';
                         deathTimer = 1.0;
                         playSfx(200, 1.0, 'sawtooth');
@@ -705,7 +799,7 @@
                         remainingDots--;
                         document.getElementById('remaining').innerText = remainingDots;
                     } else {
-                        addScore(40); // extra powerup dot bonus
+                        addScore(40);
                         if(d.type === 2) { powerUp = true; powerTimeLeft = 8000; ghostCombo = 0; document.getElementById('powerBarContainer').style.display = 'block'; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); }); }
                         if(d.type === 4) { laserMode = true; laserTimeLeft = 10000; laserCooldown=0; document.getElementById('laserBarContainer').style.display = 'block'; }
                         if(d.type === 5) { speedMode = true; speedTimeLeft = 6000; document.getElementById('speedBarContainer').style.display = 'block'; }
@@ -714,7 +808,6 @@
                     }
 
                     if(remainingDots <= 0) { 
-                        // LEVEL 256 MYTHICAL VICTORY TRIGGER CHECK
                         if (level >= 256) {
                             gameState = 'victory256';
                             document.getElementById('mythical-screen').style.display = 'flex';
@@ -723,19 +816,25 @@
                             return;
                         }
 
-                        gameState = 'level_transition'; 
-                        document.getElementById('victory').style.display = 'flex';
+                        // Start Intermission Sequence
+                        gameState = 'intermission';
+                        document.getElementById('ui').style.display = 'none';
                         playSfx(1000, 1.0, 'square');
 
-                        setTimeout(() => {
-                            level++;
-                            ghostSpeedMult += 0.15; // escalation multiplier
-                            document.getElementById('level').innerText = level;
-                            document.getElementById('victory').style.display = 'none';
-                            buildMap();
-                            resetPositions();
-                            gameState = 'playing';
-                        }, 3000);
+                        interTimer = 0; interPhase = 0;
+                        
+                        // Setup Intermission Scene Layout
+                        csPacman.position.set(20, 0.8, 0);
+                        csPacman.scale.setScalar(1);
+                        csPacman.rotation.y = -Math.PI/2;
+                        
+                        csBlinky.position.set(30, 0, 0);
+                        csBlinky.rotation.y = -Math.PI/2;
+                        csBlinkyMat.color.setHex(0xff0000); 
+                        csBlinkyBody.visible = true; 
+                        
+                        csPellet.position.set(-15, 0.8, 0);
+                        csPellet.visible = true;
                     }
                 }
             });
@@ -752,4 +851,3 @@
     </script>
 </body>
 </html>
-
