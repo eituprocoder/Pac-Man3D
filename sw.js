@@ -1,5 +1,5 @@
 // 1. Cambia el número de versión cada vez que modifiques tu HTML u otros archivos
-const cacheName = 'pacman-v4'; 
+const cacheName = 'pacman-v6'; 
 
 const assets = [
   './',
