@@ -5,13 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pac-Man 3D</title>
 <script>
-  if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('Service Worker registrado correctamente'))
-      .catch(err => console.log('Error al registrar:', err));
-  }
+      .then(reg => {
+        // Esto le dice al navegador que busque actualizaciones en GitHub de inmediato
+        reg.update(); 
+        console.log('Service Worker registrado con éxito');
+      })
+      .catch(err => console.log('Error al registrar el SW', err));
+  });
+}
 </script>
-
 <!-- No olvides vincular el manifest en el <head> -->
 <link rel="manifest" href="manifest.json">
     <style>
