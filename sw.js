@@ -1,4 +1,4 @@
-const cacheName = 'pacman-v1';
+const cacheName = 'pacman-v2';
 const assets = [
   './',
   './index.html'
