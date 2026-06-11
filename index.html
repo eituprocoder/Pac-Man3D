@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pac-Man 3D</title>
 <script>
-  if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
       .then(() => console.log('Service Worker registrado correctamente'))
       .catch(err => console.log('Error al registrar:', err));
@@ -49,7 +49,7 @@
         
         .bar-container { display: none; width: 250px; height: 12px; border: 2px solid white; border-radius: 6px; margin: 5px auto; overflow: hidden; background: #000; }
         .bar-label { font-size: 10px; position: absolute; width: 250px; text-align: center; margin-top: -1px; color: #fff; text-shadow: 1px 1px 0 #000; }
-        #powerBar { width: 100%; height: 100%; background: #ffff00; } /* Changed to yellow */
+        #powerBar { width: 100%; height: 100%; background: #ffff00; }
         #laserBar { width: 100%; height: 100%; background: #ff6400; }
         #speedBar { width: 100%; height: 100%; background: #00ff00; }
         #freezeBar { width: 100%; height: 100%; background: #00ffff; }
@@ -59,21 +59,22 @@
         
         .floating-text { position: absolute; color: yellow; font-weight: bold; font-size: 20px; pointer-events: none; animation: floatUp 1s ease-out forwards; text-shadow: 2px 2px 0 #000; z-index: 50; }
         @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0; } }
+        
+        /* Stylized Inline Container for Arcaded Retro Lives Display */
+        #lives-container { display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; }
     </style>
 </head>
 <body>
-    <!-- Main Menu -->
     <div id="menu-screen">
         <h1>PAC-MAN 3D</h1>
         <h2>3D LABYRINTH</h2>
         <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY</button>
     </div>
 
-    <!-- UI Overlay including Minimap -->
     <canvas id="minimap" width="150" height="150"></canvas>
     
     <div id="ui">
-        LEVEL: <span id="level">1</span> | SCORE: <span id="score">0</span> | LIVES: <span id="lives">3</span><br>
+        LEVEL: <span id="level">1</span> | SCORE: <span id="score">0</span> | LIVES: <span id="lives-container"></span><br>
         DOTS LEFT: <span id="remaining">0</span>
         <div id="powerBarContainer" class="bar-container"><div class="bar-label">POWER PELLET</div><div id="powerBar"></div></div>
         <div id="laserBarContainer" class="bar-container"><div class="bar-label">LASER</div><div id="laserBar"></div></div>
@@ -93,7 +94,6 @@
         <button class="retry-btn" style="background:white; color:red;" onclick="window.location.reload()">PLAY AGAIN</button>
     </div>
 
-    <!-- Mythical Split Screen Level 256 Victory -->
     <div id="mythical-screen">
         <div class="glitch-split">
             <div class="glitch-left">
@@ -131,10 +131,11 @@
         let powerTimeLeft = 0, laserTimeLeft = 0, speedTimeLeft = 0, freezeTimeLeft = 0;
         let laserCooldown = 0;
         
-        // Physics / Movement
+        // Physics / Movement Speed Buffed
         let velocityY = 0, isJumping = false;
-        let pacBaseSpeed = 0.15;
+        let pacBaseSpeed = 0.22;       // Scaled up from 0.15
         let ghostSpeedMult = 1.0;
+        let ghostSpeedFactor = 0.11;   // Scaled up from 0.08
         
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -171,6 +172,21 @@
             setTimeout(() => div.remove(), 1000);
         }
 
+        // --- RETRO PACMAN LIVES UI FUNCTION ---
+        function updateLivesDisplay() {
+            const container = document.getElementById('lives-container');
+            if (!container) return;
+            container.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                // Classic arcade styled vector Pac-Man icon facing left
+                container.innerHTML += `
+                    <svg width="18" height="18" viewBox="0 0 20 20" style="display:inline-block;">
+                        <path d="M 10 10 L 2 6 A 8 8 0 1 1 2 14 Z" fill="#ffff00"/>
+                    </svg>
+                `;
+            }
+        }
+
         // --- PAC-MAN CREATION ---
         const pacman = new THREE.Group();
         const pmMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00, side: THREE.DoubleSide });
@@ -185,7 +201,7 @@
         const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.35, 0.4, 0.6);
         const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(-0.35, 0.4, 0.6);
         
-        // Aura additions for the power up effect
+        // Dynamic Matrix Aura Mesh & Light additions across all actions
         const auraGeo = new THREE.SphereGeometry(1.2, 16, 16);
         const auraMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, wireframe: true });
         const auraMesh = new THREE.Mesh(auraGeo, auraMat);
@@ -211,11 +227,11 @@
             document.getElementById('minimap').style.display = 'block';
             
             gameState = 'playing';
+            updateLivesDisplay();
             playSfx(500, 0.5, 'triangle');
         };
 
         // --- MAP GENERATION (Accurate Classic Arcade Map) ---
-        // 1: Wall, 0: Dot, 2: Super(Yellow), 3: PathEmpty, 4: Laser(Orange), 5: Speed(Green), 6: Freeze(Cyan), 8: GhostHouse Wall, 9: GhostHouse Space
         const mapTemplate = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -225,25 +241,25 @@
             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
             [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
-            [1,4,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,4,0,1], // Lasers
+            [1,4,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,4,0,1],
             [1,1,1,1,1,1,0,1,1,1,1,1,3,1,1,3,1,1,1,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,1,1,1,3,1,1,3,1,1,1,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,3,3,3,3,3,3,3,3,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,1,1,1,8,8,1,1,1,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1],
-            [3,3,3,3,3,3,0,3,3,3,1,9,9,9,9,9,9,1,3,3,3,0,3,3,3,3,3,3], // Portals mapping row
+            [3,3,3,3,3,3,0,3,3,3,1,9,9,9,9,9,9,1,3,3,3,0,3,3,3,3,3,3],
             [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,3,3,3,3,3,3,3,3,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
-            [1,5,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,5,0,1], // Speed boosts
+            [1,5,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,5,0,1],
             [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
             [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
             [1,2,0,0,1,1,0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,0,1,1,0,0,2,1],
             [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
             [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
-            [1,6,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,6,0,1], // Freezes
+            [1,6,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,6,0,1],
             [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
             [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -252,7 +268,6 @@
 
         let walls = []; let dots = [];
         const floorMat = new THREE.MeshPhongMaterial({ color: 0x000a22 });
-        // Make the floor huge to accommodate the accurate map
         const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), floorMat);
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
@@ -272,7 +287,6 @@
 
             mapTemplate.forEach((row, z) => {
                 row.forEach((cell, x) => {
-                    // Center the 28x31 map (Offset by 13.5x and 15z, scaled by 4)
                     const pos = [(x - 13.5) * 4, 0, (z - 15) * 4];
                     
                     if (cell === 1) {
@@ -286,16 +300,16 @@
                     } else if (cell !== 3 && cell !== 9) {
                         let color, scale = 0.2;
                         if(cell === 0) color = 0xffffff;
-                        else if(cell === 2) { color = 0xffff00; scale = 0.6; } // Super - Updated to Yellow
-                        else if(cell === 4) { color = 0xff6400; scale = 0.6; } // Laser
-                        else if(cell === 5) { color = 0x00ff00; scale = 0.6; } // Speed
-                        else if(cell === 6) { color = 0x00ffff; scale = 0.6; } // Freeze
+                        else if(cell === 2) { color = 0xffff00; scale = 0.6; } 
+                        else if(cell === 4) { color = 0xff6400; scale = 0.6; } 
+                        else if(cell === 5) { color = 0x00ff00; scale = 0.6; } 
+                        else if(cell === 6) { color = 0x00ffff; scale = 0.6; } 
 
                         const dot = new THREE.Mesh(new THREE.SphereGeometry(scale), new THREE.MeshBasicMaterial({ color }));
                         dot.position.set(...pos); 
                         dot.type = cell;
                         scene.add(dot); dots.push(dot); 
-                        if(cell === 0) remainingDots++; // Only count regular dots for win condition
+                        if(cell === 0) remainingDots++; 
                     }
                 });
             });
@@ -307,14 +321,14 @@
 
         // --- GHOSTS (8 Types) ---
         const ghostTypes = [
-            { c: 0xff0000, t: 'chase', s: 1.05 },   // Blinky
-            { c: 0xffb8ff, t: 'ambush', s: 0.95 },  // Pinky
-            { c: 0x00ffff, t: 'flank', s: 0.9 },    // Inky
-            { c: 0xffb852, t: 'wander', s: 0.85 },  // Clyde
-            { c: 0x800080, t: 'chase', s: 1.1 },    // Purple (Aggressive)
-            { c: 0x00ff00, t: 'ambush', s: 1.0 },   // Green
-            { c: 0xffff00, t: 'wander', s: 0.8 },   // Yellow
-            { c: 0xffffff, t: 'flank', s: 0.95 }    // White
+            { c: 0xff0000, t: 'chase', s: 1.05 },   
+            { c: 0xffb8ff, t: 'ambush', s: 0.95 },  
+            { c: 0x00ffff, t: 'flank', s: 0.9 },    
+            { c: 0xffb852, t: 'wander', s: 0.85 },  
+            { c: 0x800080, t: 'chase', s: 1.1 },    
+            { c: 0x00ff00, t: 'ambush', s: 1.0 },   
+            { c: 0xffff00, t: 'wander', s: 0.8 },   
+            { c: 0xffffff, t: 'flank', s: 0.95 }    
         ];
 
         let ghosts = [];
@@ -323,14 +337,12 @@
             ghosts = ghostTypes.map((config, index) => {
                 const group = new THREE.Group();
                 
-                // Body Group
                 const bodyGroup = new THREE.Group();
                 const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.5, 4, 8), new THREE.MeshPhongMaterial({color: config.c}));
                 body.position.y = 0.5;
                 bodyGroup.add(body);
                 group.add(bodyGroup);
 
-                // Eyes Group
                 const eyesGroup = new THREE.Group();
                 const eGeo = new THREE.SphereGeometry(0.12, 8, 8), pGeo = new THREE.SphereGeometry(0.05, 8, 8);
                 const eMat = new THREE.MeshBasicMaterial({color: 0xffffff}), pMat = new THREE.MeshBasicMaterial({color: 0x000000});
@@ -372,7 +384,6 @@
         function spawnFruit() {
             if(fruitMesh) scene.remove(fruitMesh);
             
-            // Progressive levels logic: Level 1 gets Cherry, Level 2 gets Strawberry, maxes out at Key
             const fruitIndex = Math.min(level - 1, fruitData.length - 1);
             const data = fruitData[fruitIndex];
             
@@ -381,7 +392,6 @@
                 new THREE.MeshPhongMaterial({ color: data.color, shininess: 100 })
             );
             
-            // Spawn just below the ghost house entrance
             fruitMesh.position.set(0, 0.8, 8);
             fruitMesh.fruitScore = data.score;
             fruitMesh.fruitName = data.name;
@@ -396,7 +406,6 @@
 
         // --- RESET POSITIONS ---
         function resetPositions() {
-            // Pac-Man start pos (Row 23)
             pacman.position.set(0, 0.8, 32);
             pacman.rotation.set(0, Math.PI, 0);
             topHalf.rotation.x = 0;
@@ -404,7 +413,6 @@
             pacman.scale.setScalar(1);
             
             ghosts.forEach((g, i) => {
-                // Ghost Box Spawn (Row 14)
                 g.position.set((Math.random()-0.5)*4, 0.3, -4 + (Math.random()-0.5)*2);
                 g.isDead = false;
                 g.bodyGroup.visible = true;
@@ -418,6 +426,7 @@
             
             camAngleY = Math.PI/2;
             camAngleX = 0.4;
+            updateLivesDisplay();
         }
 
         // --- LASER LOGIC ---
@@ -457,59 +466,52 @@
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Mapping map bounds roughly (Width ~112, Height ~124) to Canvas Size
             const mapX = (x) => ((x + 56) / 112) * canvas.width;
             const mapY = (z) => ((z + 62) / 124) * canvas.height;
 
-            // Walls
             ctx.fillStyle = '#0033ff';
             walls.forEach(w => {
                 ctx.fillRect(mapX(w.mesh.position.x) - 1.5, mapY(w.mesh.position.z) - 1.5, 3, 3);
             });
 
-            // Ghost Box Walls
             ctx.fillStyle = 'rgba(255, 0, 255, 0.5)';
             ghostBoxWalls.forEach(w => {
                 ctx.fillRect(mapX(w.mesh.position.x) - 1.5, mapY(w.mesh.position.z) - 1.5, 3, 3);
             });
 
-            // Dots & Powerups
             dots.forEach(d => {
                 if(!d.visible) return;
                 let color = '#ffffff';
-                if(d.type === 2) color = '#ffff00'; // Super
-                else if(d.type === 4) color = '#ff6400'; // Laser
-                else if(d.type === 5) color = '#00ff00'; // Speed
-                else if(d.type === 6) color = '#00ffff'; // Freeze
+                if(d.type === 2) color = '#ffff00'; 
+                else if(d.type === 4) color = '#ff6400'; 
+                else if(d.type === 5) color = '#00ff00'; 
+                else if(d.type === 6) color = '#00ffff'; 
                 
                 ctx.fillStyle = color;
                 const size = (d.type !== 0) ? 2.5 : 1;
                 ctx.fillRect(mapX(d.position.x) - size/2, mapY(d.position.z) - size/2, size, size);
             });
 
-            // Fruit
             if (fruitMesh) {
                 ctx.fillStyle = '#' + fruitMesh.material.color.getHexString();
                 ctx.beginPath(); ctx.arc(mapX(fruitMesh.position.x), mapY(fruitMesh.position.z), 2.5, 0, Math.PI*2); ctx.fill();
             }
 
-            // Ghosts
             ghosts.forEach(g => {
                 if (g.isDead) return;
                 ctx.fillStyle = powerUp ? '#0055ff' : '#' + g.baseColor.toString(16).padStart(6, '0');
                 ctx.beginPath(); ctx.arc(mapX(g.position.x), mapY(g.position.z), 2, 0, Math.PI*2); ctx.fill();
             });
 
-            // Pac-Man
             const px = mapX(pacman.position.x);
             const py = mapY(pacman.position.z);
             ctx.fillStyle = '#ffff00';
             ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI*2); ctx.fill();
             
-            // Aura Indicator on minimap
-            if (powerUp) {
+            // Render active power aura indicator ring onto minimap bounds
+            if (powerUp || laserMode || speedMode || freezeMode) {
                 ctx.strokeStyle = auraMesh.material.color.getStyle();
-                ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI*2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.stroke();
             }
         }
 
@@ -522,7 +524,7 @@
             if (score >= nextLifeThreshold) {
                 lives++;
                 nextLifeThreshold += 10000;
-                document.getElementById('lives').innerText = lives;
+                updateLivesDisplay();
                 playSfx(1500, 0.6, 'sine', 0.1); 
                 if (pos3D) showFloatingText("1 UP!", pos3D.clone().add(new THREE.Vector3(0, 1.5, 0)));
             }
@@ -612,7 +614,6 @@
         interScene.add(interLight);
         interScene.add(new THREE.AmbientLight(0x606060));
 
-        // Intermission Actors
         const csPacman = new THREE.Group();
         const csTopHalf = new THREE.Mesh(topGeo, pmMaterial);
         const csBotHalf = new THREE.Mesh(bottomGeo, pmMaterial);
@@ -639,7 +640,7 @@
         csBlinky.add(csEyesGroup);
         interScene.add(csBlinky);
 
-        const csPellet = new THREE.Mesh(new THREE.SphereGeometry(1.5), new THREE.MeshPhongMaterial({color: 0xffff00, shininess: 100})); // Changed to Yellow
+        const csPellet = new THREE.Mesh(new THREE.SphereGeometry(1.5), new THREE.MeshPhongMaterial({color: 0xffff00, shininess: 100})); 
         interScene.add(csPellet);
 
         let interTimer = 0, interPhase = 0;
@@ -666,33 +667,30 @@
             if (gameState === 'intermission') {
                 interTimer += deltaMs;
                 
-                // Pacman jaw chop
                 const mouthAngle = (Math.sin(interTimer * 0.015) + 1) * 0.3;
                 csTopHalf.rotation.x = -mouthAngle; 
                 csBotHalf.rotation.x = mouthAngle;
 
                 if (interPhase === 0) {
-                    // Chase Left
                     csPacman.position.x -= 0.015 * deltaMs;
-                    csBlinky.position.x -= 0.016 * deltaMs; // Blinky catches up slightly
+                    csBlinky.position.x -= 0.016 * deltaMs; 
                     
                     if (csPacman.position.x <= -15) {
                         interPhase = 1;
                         csPellet.visible = false;
                         csPacman.scale.setScalar(1.8);
                         csPacman.position.y = 1.4;
-                        csBlinkyMat.color.setHex(0x0055ff); // Frightened
-                        csPacman.rotation.y = Math.PI/2; // Turn Right
+                        csBlinkyMat.color.setHex(0x0055ff); 
+                        csPacman.rotation.y = Math.PI/2; 
                         csBlinky.rotation.y = Math.PI/2;
                         playSfx(1000, 0.5, 'triangle');
                     }
                 } else if (interPhase === 1) {
-                    // Chase Right
                     csPacman.position.x += 0.018 * deltaMs;
                     csBlinky.position.x += 0.012 * deltaMs;
                     
                     if (csPacman.position.x >= csBlinky.position.x - 2.0 && csBlinkyBody.visible) {
-                        csBlinkyBody.visible = false; // Ate ghost
+                        csBlinkyBody.visible = false; 
                         playSfx(500, 0.2, 'square');
                     }
                     
@@ -719,7 +717,7 @@
                 pacman.scale.setScalar(s);
                 
                 if (deathTimer <= 0) {
-                    lives--; document.getElementById('lives').innerText = lives;
+                    lives--; updateLivesDisplay();
                     if (lives <= 0) {
                         gameState = 'gameover';
                         document.getElementById('gameover').style.display = 'flex';
@@ -736,10 +734,8 @@
 
             if(gameState !== 'playing') return;
             
-            // Draw active minimap
             drawMinimap();
 
-            // Physics & Movement
             if(isJumping) {
                 pacman.position.y += velocityY; velocityY -= 0.015;
                 if(pacman.position.y <= 0.8) { pacman.position.y = 0.8; isJumping = false; }
@@ -759,56 +755,69 @@
                 const mouthAngle = (Math.sin(mouthTimer) + 1) * 0.3;
                 topHalf.rotation.x = -mouthAngle; bottomHalf.rotation.x = mouthAngle;
                 
-                // PORTAL: Wrap across sides smoothly
                 if (pacman.position.x > 56) pacman.position.x = -56;
                 else if (pacman.position.x < -56) pacman.position.x = 56;
             } else {
                 topHalf.rotation.x = 0; bottomHalf.rotation.x = 0;
             }
 
-            // Camera update
             camera.position.x = pacman.position.x + camRadius * Math.sin(camAngleY) * Math.cos(camAngleX);
             camera.position.y = pacman.position.y + camRadius * Math.sin(camAngleX);
             camera.position.z = pacman.position.z + camRadius * Math.cos(camAngleY) * Math.cos(camAngleX);
             camera.lookAt(pacman.position);
             light.position.copy(pacman.position).add(new THREE.Vector3(0, 3, 0));
 
-            // Powerups Timer Updates & Aura Color Effects
-            if(powerUp) {
-                auraMesh.visible = true;
-                auraLight.intensity = 50;
-                // Animate Rainbow HSL Aura
-                const hue = (now % 2000) / 2000;
-                const cycleColor = new THREE.Color().setHSL(hue, 1.0, 0.5);
-                auraMat.color.copy(cycleColor);
-                auraLight.color.copy(cycleColor);
+            // --- DECREMENT POWER TIMERS ---
+            if(powerUp) powerTimeLeft -= deltaMs;
+            if(laserMode) { laserTimeLeft -= deltaMs; laserCooldown -= deltaMs; }
+            if(speedMode) speedTimeLeft -= deltaMs;
+            if(freezeMode) freezeTimeLeft -= deltaMs;
 
-                powerTimeLeft -= deltaMs;
-                document.getElementById('powerBar').style.width = (powerTimeLeft / 8000 * 100) + '%';
+            // --- ALL-POWERUP AURA CONTROLLER ---
+            if (powerUp || laserMode || speedMode || freezeMode) {
+                auraMesh.visible = true;
+                auraLight.intensity = 65; 
                 
+                let currentAuraColor = new THREE.Color();
+                if (powerUp) {
+                    // Classic Rainbow Cycle
+                    const hue = (now % 2000) / 2000;
+                    currentAuraColor.setHSL(hue, 1.0, 0.5);
+                } else if (freezeMode) {
+                    currentAuraColor.setHex(0x00ffff); // Glacial Blue
+                } else if (speedMode) {
+                    currentAuraColor.setHex(0x00ff00); // Chrono Green
+                } else if (laserMode) {
+                    currentAuraColor.setHex(0xff6400); // Plasma Orange
+                }
+                
+                auraMat.color.copy(currentAuraColor);
+                auraLight.color.copy(currentAuraColor);
+            } else {
+                auraMesh.visible = false;
+                auraLight.intensity = 0;
+            }
+
+            // --- INDIVIDUAL POWERUP BAR & CLEANUP TRACKING ---
+            if(powerUp) {
+                document.getElementById('powerBar').style.width = (powerTimeLeft / 8000 * 100) + '%';
                 if(powerTimeLeft <= 0) { 
                     powerUp = false; 
-                    auraMesh.visible = false;
-                    auraLight.intensity = 0;
                     document.getElementById('powerBarContainer').style.display = 'none'; 
                     ghostCombo = 0; 
                     ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(g.baseColor); }); 
                 }
             }
             if(laserMode) {
-                laserTimeLeft -= deltaMs;
-                laserCooldown -= deltaMs;
                 document.getElementById('laserBar').style.width = (laserTimeLeft / 10000 * 100) + '%';
                 if(laserCooldown <= 0) { fireLaser(); laserCooldown = 100; }
                 if(laserTimeLeft <= 0) { laserMode = false; document.getElementById('laserBarContainer').style.display = 'none'; }
             }
             if(speedMode) {
-                speedTimeLeft -= deltaMs;
                 document.getElementById('speedBar').style.width = (speedTimeLeft / 6000 * 100) + '%';
                 if(speedTimeLeft <= 0) { speedMode = false; document.getElementById('speedBarContainer').style.display = 'none'; }
             }
             if(freezeMode) {
-                freezeTimeLeft -= deltaMs;
                 document.getElementById('freezeBar').style.width = (freezeTimeLeft / 5000 * 100) + '%';
                 if(freezeTimeLeft <= 0) { freezeMode = false; document.getElementById('freezeBarContainer').style.display = 'none'; }
             }
@@ -833,7 +842,7 @@
                 }
             }
 
-            // Ghost Movement & AI
+            // Ghost Movement & AI (Speed Buffed)
             const centerBox = new THREE.Vector3(0, 0.3, -4);
             
             ghosts.forEach(g => {
@@ -851,7 +860,7 @@
 
                 if(freezeMode) return;
 
-                let gSpeed = g.baseSpeed * ghostSpeedMult * 0.08;
+                let gSpeed = g.baseSpeed * ghostSpeedMult * ghostSpeedFactor;
                 if(powerUp) gSpeed *= 0.5;
 
                 let target = new THREE.Vector3();
@@ -880,7 +889,6 @@
                 if (!hitsWallZ) g.position.z = npZ.z;
                 else g.dir.z *= -1;
 
-                // GHOST PORTAL: Wrap across sides smoothly
                 if (g.position.x > 56) g.position.x = -56;
                 else if (g.position.x < -56) g.position.x = 56;
 
@@ -926,9 +934,7 @@
                             return;
                         }
 
-                        // Check if it's a 3rd level for intermission
                         if (level % 3 === 0) {
-                            // Start Intermission Sequence
                             gameState = 'intermission';
                             document.getElementById('ui').style.display = 'none';
                             document.getElementById('minimap').style.display = 'none';
@@ -936,7 +942,6 @@
 
                             interTimer = 0; interPhase = 0;
                             
-                            // Setup Intermission Scene Layout
                             csPacman.position.set(20, 0.8, 0);
                             csPacman.scale.setScalar(1);
                             csPacman.rotation.y = -Math.PI/2;
@@ -949,7 +954,6 @@
                             csPellet.position.set(-15, 0.8, 0);
                             csPellet.visible = true;
                         } else {
-                            // Skip intermission, advance directly
                             level++;
                             ghostSpeedMult += 0.15;
                             document.getElementById('level').innerText = level;
@@ -973,3 +977,4 @@
     </script>
 </body>
 </html>
+
