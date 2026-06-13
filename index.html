@@ -4,16 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pac-Man 3D</title>
-<script>
-    if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('Service Worker registrado correctamente'))
-      .catch(err => console.log('Error al registrar:', err));
-  }
-</script>
-
-<!-- No olvides vincular el manifest en el <head> -->
-<link rel="manifest" href="manifest.json">
     <style>
         body { margin: 0; overflow: hidden; background: #000411; font-family: 'Courier New', monospace; touch-action: none; user-select: none; -webkit-user-select: none; }
         
@@ -70,6 +60,9 @@
         
         /* Stylized Inline Container for Arcaded Retro Lives Display */
         #lives-container { display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; }
+
+        /* Ready Go Presentation */
+        #ready-go-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center; z-index: 200; pointer-events: none; font-size: 60px; font-weight: bold; color: #ffff00; text-shadow: 4px 4px 0 #ff0000; letter-spacing: 5px; }
     </style>
 </head>
 <body>
@@ -147,6 +140,8 @@
             <div id="glitch-matrix" class="glitch-right"></div>
         </div>
     </div>
+
+    <div id="ready-go-screen"><span id="ready-go-text">READY?</span></div>
     
     <div id="joystick-container"><div id="joystick-knob"></div></div>
     
@@ -167,7 +162,7 @@
         let level = 1;
         let score = 0, lives = 3, remainingDots = 0;
         let nextLifeThreshold = 10000;
-        let gameState = 'lobby'; // lobby, playing, dying, intermission, victory256
+        let gameState = 'lobby'; // lobby, ready, playing, dying, intermission, victory256
         let ghostCombo = 0;
         
         // Powerups
@@ -192,6 +187,7 @@
         document.body.appendChild(renderer.domElement);
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
         function playSfx(f, d=0.1, t='sine', vol=0.05) {
             try {
                 if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -202,6 +198,73 @@
                 o.connect(g); g.connect(audioCtx.destination);
                 o.start(); o.stop(audioCtx.currentTime + d);
             } catch(e){}
+        }
+
+        // --- SYNTHESIZED CLASSIC THEME ADDITION ---
+        function playPacmanTheme(onComplete) {
+            try {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                const ctx = audioCtx;
+
+                const notes = {
+                    'B4': 493.88, 'B5': 987.77,
+                    'F#5': 739.99, 'D#5': 622.25,
+                    'C5': 523.25, 'C6': 1046.50,
+                    'G5': 783.99, 'E5': 659.25,
+                    'G#5': 830.61, 'F5': 698.46,
+                    'A5': 880.00
+                };
+
+                const melody = [
+                    'B4', 'B5', 'F#5', 'D#5', 'B5', 'F#5', 'D#5', 
+                    'C5', 'C6', 'G5', 'E5', 'C6', 'G5', 'E5',
+                    'B4', 'B5', 'F#5', 'D#5', 'B5', 'F#5', 'D#5',
+                    'D#5', 'E5', 'F5', 'F#5', 'G5', 'G#5', 'A5', 'B5'
+                ];
+
+                const steps = [
+                    1, 1, 1, 1, 2, 1, 1,
+                    1, 1, 1, 1, 2, 1, 1,
+                    1, 1, 1, 1, 2, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 2
+                ];
+
+                const masterGain = ctx.createGain();
+                masterGain.gain.setValueAtTime(0.15, ctx.currentTime);
+                masterGain.connect(ctx.destination);
+
+                let startTime = ctx.currentTime + 0.1;
+                const tempo = 120;
+                const stepDuration = 60 / tempo / 4; 
+
+                melody.forEach((note, index) => {
+                    const duration = steps[index] * stepDuration;
+                    
+                    const osc = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(notes[note], startTime);
+
+                    gainNode.gain.setValueAtTime(1, startTime);
+                    gainNode.gain.setValueAtTime(1, startTime + duration - 0.01);
+                    gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+
+                    osc.connect(gainNode);
+                    gainNode.connect(masterGain);
+
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+
+                    startTime += duration;
+                });
+
+                setTimeout(() => {
+                    if(onComplete) onComplete();
+                }, (startTime - ctx.currentTime) * 1000);
+            } catch(e) {
+                if(onComplete) onComplete(); // Fallback on immediate execute if AudioContext fails
+            }
         }
 
         function showFloatingText(text, pos3D) {
@@ -274,9 +337,25 @@
             document.getElementById('controls-right').style.display = 'flex';
             document.getElementById('minimap').style.display = 'block';
             
-            gameState = 'playing';
+            gameState = 'ready'; // Setup ready phase to prevent movement
             updateLivesDisplay();
-            playSfx(500, 0.5, 'triangle');
+            
+            // Present Ready/Go Theme System Modals
+            const readyGoScreen = document.getElementById('ready-go-screen');
+            const readyGoText = document.getElementById('ready-go-text');
+            readyGoScreen.style.display = 'flex';
+            readyGoText.innerText = "READY?";
+            readyGoText.style.color = "#ffff00";
+
+            playPacmanTheme(() => {
+                readyGoText.innerText = "GO!";
+                readyGoText.style.color = "#00ff00";
+                
+                setTimeout(() => {
+                    readyGoScreen.style.display = 'none';
+                    gameState = 'playing';
+                }, 1000);
+            });
         };
 
         // --- MAP GENERATION (Accurate Classic Arcade Map) ---
@@ -662,11 +741,15 @@
             return new THREE.Vector3((gx - 13.5) * 4, 0.3, (gz - 15) * 4);
         }
 
-        // --- PAC-MAN SPECIFIC COLLISION: BLOCKS GHOST HOUSE DOORS (cell === 8) ---
+        // --- PAC-MAN SPECIFIC COLLISION: BLOCKS GHOST HOUSE DOORS (cell === 8) AND PREVENTS JUMP EXPLOIT ---
         function checkCol(p, size=1.6) { 
-            const hitsWall = walls.some(w => new THREE.Box3().setFromCenterAndSize(p, new THREE.Vector3(size,size,size)).intersectsBox(w.box)); 
+            const checkP = p.clone();
+            checkP.y = 0.8; // Override Y to perfectly mimic ground trajectory, effectively blocking jumping over full vertical 4x4 scale walls
+            
+            const hitsWall = walls.some(w => new THREE.Box3().setFromCenterAndSize(checkP, new THREE.Vector3(size,size,size)).intersectsBox(w.box)); 
             if (hitsWall) return true;
-            const hitsGhostBox = ghostBoxWalls.some(gW => new THREE.Box3().setFromCenterAndSize(p, new THREE.Vector3(size,size,size)).intersectsBox(gW.box));
+            
+            const hitsGhostBox = ghostBoxWalls.some(gW => new THREE.Box3().setFromCenterAndSize(checkP, new THREE.Vector3(size,size,size)).intersectsBox(gW.box));
             return hitsGhostBox;
         }
 
@@ -834,6 +917,11 @@
             lastTime = now;
             
             if (gameState === 'lobby') {
+                renderer.render(scene, camera);
+                return;
+            }
+
+            if (gameState === 'ready') {
                 renderer.render(scene, camera);
                 return;
             }
@@ -1293,7 +1381,7 @@
                     }
 
                     if(remainingDots <= 0) { 
-                        if (level >= 255) {
+                        if (level >= 256) {
                             gameState = 'victory256';
                             document.getElementById('mythical-screen').style.display = 'flex';
                             document.getElementById('minimap').style.display = 'none';
