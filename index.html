@@ -49,11 +49,11 @@
         #victory { background: rgba(0,0,0,0.9); color: #00ff00; }
         #gameover { background: rgba(200,0,0,0.95); color: white; }
         
-        /* Mythical 256 Screen styling */
-        #mythical-screen { background: #000; color: #00ff00; overflow: hidden; font-family: monospace; }
+        /* Mythical 256 Screen styling - Updated to allow 3D background */
+        #mythical-screen { background: rgba(0, 0, 0, 0.75); color: #00ff00; overflow: hidden; font-family: monospace; }
         .glitch-split { width: 100%; height: 100%; display: flex; }
         .glitch-left { width: 50%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-right: 2px dashed #00ff00; }
-        .glitch-right { width: 50%; height: 100%; padding: 10px; background: #050505; color: #ff00ff; word-break: break-all; font-size: 10px; overflow: hidden; opacity: 0.8; text-align: left; }
+        .glitch-right { width: 50%; height: 100%; padding: 10px; background: rgba(5, 5, 5, 0.7); color: #ff00ff; word-break: break-all; font-size: 10px; overflow: hidden; opacity: 0.8; text-align: left; }
         
         .bar-container { display: none; width: 250px; height: 12px; border: 2px solid white; border-radius: 6px; margin: 5px auto; overflow: hidden; background: #000; }
         .bar-label { font-size: 10px; position: absolute; width: 250px; text-align: center; margin-top: -1px; color: #fff; text-shadow: 1px 1px 0 #000; }
@@ -840,6 +840,25 @@
             
             if (gameState === 'victory256') {
                 if (Math.random() < 0.15) generateGlitchMatrix();
+                
+                // --- 3D Victory Animation Added Integration ---
+                pacman.rotation.y += 0.05;
+                pacman.position.y = 0.8 + Math.sin(now * 0.005) * 2;
+                
+                ghosts.forEach((g, index) => {
+                    g.rotation.y += 0.02 + (index * 0.01);
+                    g.position.y = 0.8 + Math.cos(now * 0.005 + index) * 2;
+                    if(g.bodyGroup && g.bodyGroup.children[0]) {
+                        g.bodyGroup.children[0].material.color.setHSL((now * 0.001 + index * 0.1) % 1, 1, 0.5);
+                    }
+                });
+                
+                camera.position.x = pacman.position.x + Math.sin(now * 0.001) * 20;
+                camera.position.z = pacman.position.z + Math.cos(now * 0.001) * 20;
+                camera.position.y = 10 + Math.sin(now * 0.002) * 5;
+                camera.lookAt(pacman.position);
+                
+                renderer.render(scene, camera);
                 return;
             }
 
@@ -1056,7 +1075,45 @@
                         g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
                         g.aStarPath = [];
                     } else {
-                        g.position.add(toCenter.normalize().multiplyScalar(0.2)); 
+                        // --- UPDATED: A* Pathfinding integrated for defeated ghost eyes --- 
+                        let gGrid = worldToGrid(g.position);
+                        let targetGrid = { x: 14, z: 15 }; // Ghost house center target
+                        
+                        g.pathUpdateTimer -= deltaMs;
+                        if (g.pathUpdateTimer <= 0 || !g.aStarPath || g.aStarPath.length === 0) {
+                            g.pathUpdateTimer = 150; 
+                            g.aStarPath = computeAStarPath(gGrid, targetGrid);
+                        }
+                        
+                        let eyeSpeed = 0.4; // Boost eyes speed multiplier
+                        
+                        if (g.aStarPath && g.aStarPath.length > 1) {
+                            let nextNode = g.aStarPath[1];
+                            let worldNext = gridToWorld(nextNode.x, nextNode.z);
+                            worldNext.y = g.position.y;
+                            
+                            let moveVec = worldNext.clone().sub(g.position);
+                            let stepDist = moveVec.length();
+                            
+                            if (stepDist < eyeSpeed) {
+                                g.position.copy(worldNext);
+                                g.aStarPath.shift();
+                            } else {
+                                moveVec.normalize();
+                                g.position.add(moveVec.multiplyScalar(eyeSpeed));
+                                g.dir.copy(moveVec);
+                            }
+                        } else {
+                            // Close proximity fallback in case grid locking occurs at the gate
+                            let fallbackVec = toCenter.clone();
+                            fallbackVec.y = 0;
+                            if(fallbackVec.length() > 0.1) {
+                                fallbackVec.normalize();
+                                g.position.add(fallbackVec.multiplyScalar(eyeSpeed));
+                                g.dir.copy(fallbackVec);
+                            }
+                        }
+                        g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
                     }
                     return;
                 }
@@ -1236,7 +1293,7 @@
                     }
 
                     if(remainingDots <= 0) { 
-                        if (level >= 256) {
+                        if (level >= 255) {
                             gameState = 'victory256';
                             document.getElementById('mythical-screen').style.display = 'flex';
                             document.getElementById('minimap').style.display = 'none';
