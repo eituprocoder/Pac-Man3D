@@ -4,16 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pac-Man 3D</title>
-<script>
-    if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('Service Worker registrado correctamente'))
-      .catch(err => console.log('Error al registrar:', err));
-  }
-</script>
-
-<!-- No olvides vincular el manifest en el <head> -->
-<link rel="manifest" href="manifest.json">
     <style>
         body { margin: 0; overflow: hidden; background: #000411; font-family: 'Courier New', monospace; touch-action: none; user-select: none; -webkit-user-select: none; }
         
@@ -30,12 +20,14 @@
         #minimap { display: none; position: absolute; top: 10px; right: 10px; border: 2px solid rgba(0, 242, 255, 0.5); background: rgba(0,0,0,0.7); z-index: 20; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
 
         /* State Modals */
-        #menu-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #000411 0%, #001133 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; text-align: center; color: #ffff00; overflow-y: auto; padding: 20px; box-sizing: border-box;}
+        #menu-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #000411 0%, #001133 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; text-align: center; color: #ffff00; }
         #menu-screen h1 { font-size: 48px; text-shadow: 0 0 20px #ffff00; margin-bottom: 5px; letter-spacing: 4px; }
         #menu-screen h2 { font-size: 20px; color: #00f2ff; margin-bottom: 20px; text-shadow: 0 0 10px #00f2ff; }
         
-        #ghost-roster { margin-bottom: 30px; font-size: 14px; text-align: left; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; border: 1px solid #00f2ff; }
-        .ghost-entry { margin: 5px 0; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+        /* Ghost Roster Showcase */
+        #ghost-roster { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 30px; max-width: 600px; padding: 15px; background: rgba(0,0,0,0.5); border-radius: 12px; border: 1px solid #00f2ff; }
+        .roster-card { text-align: center; font-size: 14px; text-shadow: 1px 1px 0 #000; font-weight: bold; width: 100px; }
+        .roster-card span { font-size: 10px; opacity: 0.8; display: block; margin-top: 5px; }
 
         .menu-btn { padding: 15px 40px; font-weight: bold; cursor: pointer; border: 3px solid #00f2ff; background: rgba(0,242,255,0.1); color: #00f2ff; font-size: 24px; border-radius: 12px; font-family: 'Courier New', monospace; box-shadow: 0 0 15px rgba(0,242,255,0.4); transition: all 0.3s ease; }
         .menu-btn:hover { background: #00f2ff; color: #000; box-shadow: 0 0 30px #00f2ff; }
@@ -73,14 +65,14 @@
         <h2>3D LABYRINTH</h2>
         
         <div id="ghost-roster">
-            <div class="ghost-entry" style="color:#ff0000;">🔴 BLINKY - The Relentless Chaser</div>
-            <div class="ghost-entry" style="color:#ffb8ff;">🌸 PINKY - The Strategic Ambusher</div>
-            <div class="ghost-entry" style="color:#00ffff;">❄️ INKY - The Unpredictable Tactician</div>
-            <div class="ghost-entry" style="color:#ffb852;">🔥 CLYDE - The Wandering Fool</div>
-            <div class="ghost-entry" style="color:#800080;">🔮 SUE - The Vengeful Tracker</div>
-            <div class="ghost-entry" style="color:#00ff00;">🌿 FUNKY - The Flanking Trapper</div>
-            <div class="ghost-entry" style="color:#ffff00;">⚡ SPUNKY - The Chaotic Distractor</div>
-            <div class="ghost-entry" style="color:#ffffff;">👻 GLITCHY - The Ghostly Anomaly</div>
+            <div class="roster-card" style="color: #ff0000;">BLINKY<span>The Chaser</span></div>
+            <div class="roster-card" style="color: #ffb8ff;">PINKY<span>The Ambusher</span></div>
+            <div class="roster-card" style="color: #00ffff;">INKY<span>The Flanker</span></div>
+            <div class="roster-card" style="color: #ffb852;">CLYDE<span>The Wanderer</span></div>
+            <div class="roster-card" style="color: #800080;">SUE<span>The Helper</span></div>
+            <div class="roster-card" style="color: #00ff00;">FUNKY<span>The Ambusher</span></div>
+            <div class="roster-card" style="color: #ffff00;">SPUNKY<span>The Walker</span></div>
+            <div class="roster-card" style="color: #ffffff;">GLITCH<span>The Flanker</span></div>
         </div>
 
         <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY</button>
@@ -140,8 +132,10 @@
         let nextLifeThreshold = 10000;
         let gameState = 'lobby'; // lobby, playing, dying, intermission, victory256
         let ghostCombo = 0;
-        let lastSeenPacmanPos = null; // AI Memory
         
+        // Shared Ghost Knowledge
+        window.lastKnownPacmanPos = null;
+
         // Powerups
         let powerUp = false, laserMode = false, speedMode = false, freezeMode = false;
         let powerTimeLeft = 0, laserTimeLeft = 0, speedTimeLeft = 0, freezeTimeLeft = 0;
@@ -194,12 +188,54 @@
             if (!container) return;
             container.innerHTML = '';
             for (let i = 0; i < lives; i++) {
+                // Classic arcade styled vector Pac-Man icon facing left
                 container.innerHTML += `
                     <svg width="18" height="18" viewBox="0 0 20 20" style="display:inline-block;">
                         <path d="M 10 10 L 2 6 A 8 8 0 1 1 2 14 Z" fill="#ffff00"/>
                     </svg>
                 `;
             }
+        }
+
+        // --- A* PATHFINDING FUNCTION ---
+        function getPathAStar(startX, startZ, endX, endZ) {
+            if(startX < 0 || startX > 27 || startZ < 0 || startZ > 30) return [];
+            if(endX < 0 || endX > 27 || endZ < 0 || endZ > 30) return [];
+            
+            let openList = [{x: startX, z: startZ, g: 0, f: 0, parent: null}];
+            let closedSet = new Set();
+            let loopLimit = 300; 
+
+            while(openList.length > 0 && loopLimit-- > 0) {
+                openList.sort((a,b) => a.f - b.f);
+                let current = openList.shift();
+                let key = current.x + "," + current.z;
+                
+                if(closedSet.has(key)) continue;
+                closedSet.add(key);
+
+                if(current.x === endX && current.z === endZ) {
+                    let path = [];
+                    while(current.parent) {
+                        path.push({x: current.x, z: current.z});
+                        current = current.parent;
+                    }
+                    return path.reverse();
+                }
+
+                let dirs = [[0,1], [1,0], [0,-1], [-1,0]];
+                for(let d of dirs) {
+                    let nx = current.x + d[0];
+                    let nz = current.z + d[1];
+                    
+                    if(nx >= 0 && nx <= 27 && nz >= 0 && nz <= 30 && mapTemplate[nz] && mapTemplate[nz][nx] !== 1) {
+                        let g = current.g + 1;
+                        let h = Math.abs(nx - endX) + Math.abs(nz - endZ);
+                        openList.push({x: nx, z: nz, g: g, f: g + h, parent: current});
+                    }
+                }
+            }
+            return [];
         }
 
         // --- PAC-MAN CREATION ---
@@ -281,7 +317,7 @@
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
 
-        let walls = []; let dots = []; let powerPelletPositions = [];
+        let walls = []; let dots = [];
         const floorMat = new THREE.MeshPhongMaterial({ color: 0x000a22 });
         const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), floorMat);
         floor.rotation.x = -Math.PI / 2;
@@ -298,7 +334,6 @@
             walls = []; 
             ghostBoxWalls.length = 0;
             dots = []; 
-            powerPelletPositions = [];
             remainingDots = 0;
 
             mapTemplate.forEach((row, z) => {
@@ -316,8 +351,8 @@
                     } else if (cell !== 3 && cell !== 9) {
                         let color, scale = 0.2;
                         if(cell === 0) color = 0xffffff;
-                        else if(cell === 2) { color = 0xffff00; scale = 0.6; powerPelletPositions.push(new THREE.Vector3(...pos)); } 
-                        else if(cell === 4) { color = 0xff6400; scale = 0.6; powerPelletPositions.push(new THREE.Vector3(...pos)); } 
+                        else if(cell === 2) { color = 0xffff00; scale = 0.6; } 
+                        else if(cell === 4) { color = 0xff6400; scale = 0.6; } 
                         else if(cell === 5) { color = 0x00ff00; scale = 0.6; } 
                         else if(cell === 6) { color = 0x00ffff; scale = 0.6; } 
 
@@ -335,89 +370,16 @@
         scene.add(new THREE.AmbientLight(0x404040));
         const light = new THREE.PointLight(0xffffff, 50, 60); scene.add(light);
 
-        // --- A* PATHFINDING HELPERS ---
-        function posToGrid(v3) {
-            let gx = Math.round((v3.x / 4) + 13.5);
-            let gz = Math.round((v3.z / 4) + 15);
-            return { x: Math.max(0, Math.min(27, gx)), z: Math.max(0, Math.min(30, gz)) };
-        }
-        function gridToPos(gx, gz) {
-            return new THREE.Vector3((gx - 13.5) * 4, 0.3, (gz - 15) * 4);
-        }
-        function isWalkableForGhost(gx, gz) {
-            if (gz < 0 || gz >= mapTemplate.length || gx < 0 || gx >= mapTemplate[0].length) return false;
-            let cell = mapTemplate[gz][gx];
-            return cell !== 1; // Ghosts can walk on 8 (purple box), dots, and empty space
-        }
-        function heuristic(a, b) {
-            return Math.abs(a.x - b.x) + Math.abs(a.z - b.z);
-        }
-        function findAStarPath(start, goal) {
-            let openSet = [start];
-            let cameFrom = {};
-            let gScore = {};
-            let fScore = {};
-            let startKey = `${start.x},${start.z}`;
-            gScore[startKey] = 0;
-            fScore[startKey] = heuristic(start, goal);
-
-            while (openSet.length > 0) {
-                openSet.sort((a, b) => fScore[`${a.x},${a.z}`] - fScore[`${b.x},${b.z}`]);
-                let current = openSet.shift();
-                let currentKey = `${current.x},${current.z}`;
-
-                if (current.x === goal.x && current.z === goal.z) {
-                    let path = [];
-                    let curr = currentKey;
-                    while (cameFrom[curr]) {
-                        let parts = curr.split(',');
-                        path.unshift({x: parseInt(parts[0]), z: parseInt(parts[1])});
-                        curr = cameFrom[curr];
-                    }
-                    return path;
-                }
-
-                let neighbors = [
-                    {x: current.x+1, z: current.z}, {x: current.x-1, z: current.z},
-                    {x: current.x, z: current.z+1}, {x: current.x, z: current.z-1}
-                ];
-
-                for (let neighbor of neighbors) {
-                    if (!isWalkableForGhost(neighbor.x, neighbor.z)) continue;
-                    let neighborKey = `${neighbor.x},${neighbor.z}`;
-                    let tentative_gScore = gScore[currentKey] + 1;
-
-                    if (tentative_gScore < (gScore[neighborKey] === undefined ? Infinity : gScore[neighborKey])) {
-                        cameFrom[neighborKey] = currentKey;
-                        gScore[neighborKey] = tentative_gScore;
-                        fScore[neighborKey] = tentative_gScore + heuristic(neighbor, goal);
-                        if (!openSet.find(n => n.x === neighbor.x && n.z === neighbor.z)) {
-                            openSet.push(neighbor);
-                        }
-                    }
-                }
-            }
-            return []; // No path found
-        }
-        function hasLineOfSight(pos1, pos2) {
-            let dir = pos2.clone().sub(pos1);
-            let dist = dir.length();
-            dir.normalize();
-            let ray = new THREE.Raycaster(pos1, dir, 0, dist);
-            let hits = ray.intersectObjects(walls.map(w => w.mesh));
-            return hits.length === 0;
-        }
-
-        // --- GHOSTS (8 Unique Types) ---
+        // --- GHOSTS (8 Types with Unique Names & Roles) ---
         const ghostTypes = [
-            { n: 'Blinky', c: 0xff0000, t: 'chase', s: 1.05 },   
-            { n: 'Pinky', c: 0xffb8ff, t: 'ambush', s: 0.95 },  
-            { n: 'Inky', c: 0x00ffff, t: 'flank', s: 0.9 },    
-            { n: 'Clyde', c: 0xffb852, t: 'wander', s: 0.85 },  
-            { n: 'Sue', c: 0x800080, t: 'chase', s: 1.1 },    
-            { n: 'Funky', c: 0x00ff00, t: 'ambush', s: 1.0 },   
-            { n: 'Spunky', c: 0xffff00, t: 'wander', s: 0.8 },   
-            { n: 'Glitchy', c: 0xffffff, t: 'flank', s: 0.95 }    
+            { name: "BLINKY", c: 0xff0000, t: 'chase', s: 1.05 },   
+            { name: "PINKY",  c: 0xffb8ff, t: 'ambush', s: 0.95 },  
+            { name: "INKY",   c: 0x00ffff, t: 'flank', s: 0.9 },    
+            { name: "CLYDE",  c: 0xffb852, t: 'wander', s: 0.85 },  
+            { name: "SUE",    c: 0x800080, t: 'help', s: 1.1 },    
+            { name: "FUNKY",  c: 0x00ff00, t: 'ambush', s: 1.0 },   
+            { name: "SPUNKY", c: 0xffff00, t: 'walk', s: 0.8 },   
+            { name: "GLITCH", c: 0xffffff, t: 'flank', s: 0.95 }    
         ];
 
         let ghosts = [];
@@ -445,14 +407,17 @@
                 group.bodyGroup = bodyGroup;
                 group.eyesGroup = eyesGroup;
                 group.baseColor = config.c; 
-                group.aiType = config.t; // base behavior style
+                group.name = config.name;
+                group.aiType = config.t;
                 group.baseSpeed = config.s;
                 group.isDead = false;
                 group.dir = new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize();
-                group.path = [];
-                group.lastCalcTime = 0;
-                group.state = 'walk'; // walk, chase, scape, scared, help
                 
+                // Advanced AI States & Pathing
+                group.path = [];
+                group.nextPathTime = 0;
+                group.state = 'walk'; // 5 states: chase, scape, scared, help, walk
+
                 scene.add(group);
                 return group;
             });
@@ -504,6 +469,8 @@
             bottomHalf.rotation.x = 0;
             pacman.scale.setScalar(1);
             
+            window.lastKnownPacmanPos = null;
+
             ghosts.forEach((g, i) => {
                 g.position.set((Math.random()-0.5)*4, 0.3, -4 + (Math.random()-0.5)*2);
                 g.isDead = false;
@@ -521,7 +488,6 @@
             camAngleY = Math.PI/2;
             camAngleX = 0.4;
             updateLivesDisplay();
-            lastSeenPacmanPos = null;
         }
 
         // --- LASER LOGIC ---
@@ -530,25 +496,24 @@
             const laserDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
             const raycaster = new THREE.Raycaster(pacman.position, laserDir);
             
-            // Fix: Laser can't pass walls
-            const wallMeshes = walls.map(w => w.mesh);
-            const intersects = raycaster.intersectObjects(wallMeshes);
-            let maxDist = intersects.length > 0 ? intersects[0].distance : 30;
-
+            // Checking wall intersections so Laser can't pass walls
+            let wallMeshes = walls.map(w => w.mesh);
+            let wallHits = raycaster.intersectObjects(wallMeshes);
+            let maxDist = wallHits.length > 0 ? wallHits[0].distance : 30;
+            
             ghosts.forEach(g => {
                 if(!g.isDead) {
-                    let toGhost = g.position.clone().sub(pacman.position);
-                    let distToGhost = raycaster.ray.distanceToPoint(g.position);
-                    let projection = toGhost.dot(laserDir); // Distance along the ray
-                    
-                    if (distToGhost < 2.0 && projection > 0 && projection < maxDist) {
+                    const toGhost = g.position.clone().sub(pacman.position);
+                    const dotProj = toGhost.dot(laserDir);
+                    // Ensure ghost is in front of Pac-Man, and distance to projection is small, and before the wall
+                    if(dotProj > 0 && dotProj <= maxDist && raycaster.ray.distanceToPoint(g.position) < 2.0) {
                         killGhost(g, true);
                     }
                 }
             });
             
             const material = new THREE.LineBasicMaterial({ color: 0xff6400, linewidth: 5 });
-            const points = [pacman.position.clone(), pacman.position.clone().add(laserDir.multiplyScalar(maxDist))];
+            const points = [pacman.position.clone(), pacman.position.clone().add(laserDir.multiplyScalar(Math.min(30, maxDist)))];
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
             const line = new THREE.Line(geometry, material);
             scene.add(line);
@@ -558,7 +523,7 @@
         function killGhost(g, fromLaser = false) {
             g.isDead = true; 
             g.bodyGroup.visible = false; 
-            g.path = [];
+            g.path = []; // stop movement tracking while dead
             
             let pts = 200;
             if(!fromLaser) {
@@ -617,7 +582,6 @@
             ctx.fillStyle = '#ffff00';
             ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI*2); ctx.fill();
             
-            // Render active power aura indicator ring onto minimap bounds
             if (powerUp || laserMode || speedMode || freezeMode) {
                 ctx.strokeStyle = auraMesh.material.color.getStyle();
                 ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.stroke();
@@ -775,43 +739,29 @@
 
             if (gameState === 'intermission') {
                 interTimer += deltaMs;
-                
                 const mouthAngle = (Math.sin(interTimer * 0.015) + 1) * 0.3;
-                csTopHalf.rotation.x = -mouthAngle; 
-                csBotHalf.rotation.x = mouthAngle;
+                csTopHalf.rotation.x = -mouthAngle; csBotHalf.rotation.x = mouthAngle;
 
                 if (interPhase === 0) {
-                    csPacman.position.x -= 0.015 * deltaMs;
-                    csBlinky.position.x -= 0.016 * deltaMs; 
-                    
+                    csPacman.position.x -= 0.015 * deltaMs; csBlinky.position.x -= 0.016 * deltaMs; 
                     if (csPacman.position.x <= -15) {
-                        interPhase = 1;
-                        csPellet.visible = false;
-                        csPacman.scale.setScalar(1.8);
-                        csPacman.position.y = 1.4;
+                        interPhase = 1; csPellet.visible = false;
+                        csPacman.scale.setScalar(1.8); csPacman.position.y = 1.4;
                         csBlinkyMat.color.setHex(0x0055ff); 
-                        csPacman.rotation.y = Math.PI/2; 
-                        csBlinky.rotation.y = Math.PI/2;
+                        csPacman.rotation.y = Math.PI/2; csBlinky.rotation.y = Math.PI/2;
                         playSfx(1000, 0.5, 'triangle');
                     }
                 } else if (interPhase === 1) {
-                    csPacman.position.x += 0.018 * deltaMs;
-                    csBlinky.position.x += 0.012 * deltaMs;
-                    
+                    csPacman.position.x += 0.018 * deltaMs; csBlinky.position.x += 0.012 * deltaMs;
                     if (csPacman.position.x >= csBlinky.position.x - 2.0 && csBlinkyBody.visible) {
-                        csBlinkyBody.visible = false; 
-                        playSfx(500, 0.2, 'square');
+                        csBlinkyBody.visible = false; playSfx(500, 0.2, 'square');
                     }
-                    
                     if (csPacman.position.x > 30) {
-                        level++;
-                        ghostSpeedMult += 0.15;
+                        level++; ghostSpeedMult += 0.15;
                         document.getElementById('level').innerText = level;
                         document.getElementById('ui').style.display = 'block';
                         document.getElementById('minimap').style.display = 'block';
-                        buildMap();
-                        resetPositions();
-                        gameState = 'playing';
+                        buildMap(); resetPositions(); gameState = 'playing';
                     }
                 }
                 renderer.render(interScene, interCamera);
@@ -820,8 +770,7 @@
 
             if (gameState === 'dying') {
                 deathTimer -= deltaMs / 1000;
-                topHalf.rotation.x -= 0.05;
-                bottomHalf.rotation.x += 0.05;
+                topHalf.rotation.x -= 0.05; bottomHalf.rotation.x += 0.05;
                 let s = Math.max(0.01, deathTimer);
                 pacman.scale.setScalar(s);
                 
@@ -833,8 +782,7 @@
                         document.getElementById('minimap').style.display = 'none';
                         document.getElementById('go-reason').innerText = "NO LIVES LEFT!";
                     } else {
-                        resetPositions();
-                        gameState = 'playing';
+                        resetPositions(); gameState = 'playing';
                     }
                 }
                 renderer.render(scene, camera);
@@ -842,7 +790,6 @@
             }
 
             if(gameState !== 'playing') return;
-            
             drawMinimap();
 
             if(isJumping) {
@@ -876,51 +823,24 @@
             camera.lookAt(pacman.position);
             light.position.copy(pacman.position).add(new THREE.Vector3(0, 3, 0));
 
-            // Track Pac-Man Line of Sight for AI Memory
-            let anyGhostSeesPacman = false;
-
-            // --- DECREMENT POWER TIMERS ---
             if(powerUp) powerTimeLeft -= deltaMs;
             if(laserMode) { laserTimeLeft -= deltaMs; laserCooldown -= deltaMs; }
             if(speedMode) speedTimeLeft -= deltaMs;
             if(freezeMode) freezeTimeLeft -= deltaMs;
 
-            // --- ALL-POWERUP AURA CONTROLLER ---
             if (powerUp || laserMode || speedMode || freezeMode) {
-                auraMesh.visible = true;
-                auraLight.intensity = 65; 
-                
+                auraMesh.visible = true; auraLight.intensity = 65; 
                 let currentAuraColor = new THREE.Color();
-                if (powerUp) {
-                    const hue = (now % 2000) / 2000;
-                    currentAuraColor.setHSL(hue, 1.0, 0.5);
-                } else if (freezeMode) {
-                    currentAuraColor.setHex(0x00ffff); // Glacial Blue
-                } else if (speedMode) {
-                    currentAuraColor.setHex(0x00ff00); // Chrono Green
-                } else if (laserMode) {
-                    currentAuraColor.setHex(0xff6400); // Plasma Orange
-                }
-                
-                auraMat.color.copy(currentAuraColor);
-                auraLight.color.copy(currentAuraColor);
-            } else {
-                auraMesh.visible = false;
-                auraLight.intensity = 0;
-            }
+                if (powerUp) currentAuraColor.setHSL((now % 2000) / 2000, 1.0, 0.5);
+                else if (freezeMode) currentAuraColor.setHex(0x00ffff);
+                else if (speedMode) currentAuraColor.setHex(0x00ff00);
+                else if (laserMode) currentAuraColor.setHex(0xff6400);
+                auraMat.color.copy(currentAuraColor); auraLight.color.copy(currentAuraColor);
+            } else { auraMesh.visible = false; auraLight.intensity = 0; }
 
-            // --- INDIVIDUAL POWERUP BAR & CLEANUP TRACKING ---
             if(powerUp) {
                 document.getElementById('powerBar').style.width = (powerTimeLeft / 8000 * 100) + '%';
-                if(powerTimeLeft <= 0) { 
-                    powerUp = false; 
-                    document.getElementById('powerBarContainer').style.display = 'none'; 
-                    ghostCombo = 0; 
-                    ghosts.forEach(g => { 
-                        if(!g.isDead) g.bodyGroup.children[0].material.color.set(g.baseColor); 
-                        g.path = []; // Force repath
-                    }); 
-                }
+                if(powerTimeLeft <= 0) { powerUp = false; document.getElementById('powerBarContainer').style.display = 'none'; ghostCombo = 0; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(g.baseColor); }); }
             }
             if(laserMode) {
                 document.getElementById('laserBar').style.width = (laserTimeLeft / 10000 * 100) + '%';
@@ -936,179 +856,132 @@
                 if(freezeTimeLeft <= 0) { freezeMode = false; document.getElementById('freezeBarContainer').style.display = 'none'; }
             }
 
-            // Fruits logic
             fruitTimer += deltaMs;
-            if (fruitTimer > 15000 && !fruitMesh) {
-                spawnFruit();
-                fruitTimer = 0;
-            }
+            if (fruitTimer > 15000 && !fruitMesh) { spawnFruit(); fruitTimer = 0; }
             if (fruitMesh) {
-                fruitMesh.rotation.y += 0.05;
-                fruitActiveTime -= deltaMs;
-                if(fruitActiveTime <= 0) {
-                    scene.remove(fruitMesh); fruitMesh = null;
-                    document.getElementById('fruitIndicator').style.display = 'none';
-                } else if (pacman.position.distanceTo(fruitMesh.position) < 2.0) {
-                    addScore(fruitMesh.fruitScore, fruitMesh.position);
-                    playSfx(1200, 0.4, 'sine');
-                    scene.remove(fruitMesh); fruitMesh = null;
-                    document.getElementById('fruitIndicator').style.display = 'none';
-                }
+                fruitMesh.rotation.y += 0.05; fruitActiveTime -= deltaMs;
+                if(fruitActiveTime <= 0) { scene.remove(fruitMesh); fruitMesh = null; document.getElementById('fruitIndicator').style.display = 'none'; }
+                else if (pacman.position.distanceTo(fruitMesh.position) < 2.0) { addScore(fruitMesh.fruitScore, fruitMesh.position); playSfx(1200, 0.4, 'sine'); scene.remove(fruitMesh); fruitMesh = null; document.getElementById('fruitIndicator').style.display = 'none'; }
             }
 
-            // --- A* GHOST AI MOVEMENT & STATE MACHINE ---
+            // GHOST A* AI AND STATE MACHINE LOGIC
             const centerBox = new THREE.Vector3(0, 0.3, -4);
-            let pacGrid = posToGrid(pacman.position);
             
-            ghosts.forEach((g, index) => {
+            ghosts.forEach(g => {
                 if(g.isDead) {
                     let toCenter = centerBox.clone().sub(g.position);
                     if(toCenter.length() < 0.5) {
-                        g.isDead = false;
-                        g.bodyGroup.visible = true;
-                        g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
-                        g.path = []; // clear path so it recalculates
-                    } else {
-                        g.position.add(toCenter.normalize().multiplyScalar(0.2)); 
-                    }
+                        g.isDead = false; g.bodyGroup.visible = true; g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
+                    } else { g.position.add(toCenter.normalize().multiplyScalar(0.2)); }
                     return;
                 }
 
                 if(freezeMode) return;
 
-                // 1. Line of Sight & Memory
-                let seesPacman = hasLineOfSight(g.position, pacman.position);
-                if (seesPacman) {
-                    lastSeenPacmanPos = pacGrid;
-                    anyGhostSeesPacman = true;
-                }
-
-                // 2. Evaluate State
-                let prevState = g.state;
-                if (powerUp) {
-                    g.state = 'scared';
-                } else {
-                    // Check 'scape' state (avoiding active power pellets)
-                    let nearPower = false;
-                    for (let pos of powerPelletPositions) {
-                        let dotAtPos = dots.find(d => d.visible && d.position.distanceTo(pos) < 0.5 && (d.type===2 || d.type===4));
-                        if (dotAtPos && g.position.distanceTo(pos) < 12.0) {
-                            nearPower = true;
-                            break;
-                        }
-                    }
-
-                    if (nearPower) {
-                        g.state = 'scape';
-                    } else {
-                        // Walk probability decreases with higher levels
-                        let walkChance = Math.max(0.05, 0.5 - (level * 0.05));
-                        
-                        if (Math.random() < walkChance && g.state !== 'chase' && g.state !== 'help') {
-                            g.state = 'walk';
-                        } else {
-                            // Can it help another ghost?
-                            let friendChasing = ghosts.find(f => f !== g && f.state === 'chase' && hasLineOfSight(f.position, pacman.position));
-                            if (friendChasing && g.aiType !== 'wander') {
-                                g.state = 'help';
-                            } else {
-                                g.state = 'chase';
-                            }
-                        }
-                    }
-                }
-
-                // Force repath if state changed
-                if (prevState !== g.state) g.path = [];
-
-                // 3. Pathfinding Recalculation (throttled for performance)
-                let gGrid = posToGrid(g.position);
-                
-                if (now - g.lastCalcTime > 600 || g.path.length === 0) {
-                    let targetGrid = pacGrid;
-
-                    if (g.state === 'scared') {
-                        // Flee to furthest corner
-                        let corners = [{x:1,z:1}, {x:26,z:1}, {x:1,z:29}, {x:26,z:29}];
-                        targetGrid = corners.reduce((furthest, c) => heuristic(pacGrid, c) > heuristic(pacGrid, furthest) ? c : furthest, corners[0]);
-                    } else if (g.state === 'scape') {
-                        // Just run to a random valid spot away from current
-                        targetGrid = {x: Math.floor(Math.random()*26)+1, z: Math.floor(Math.random()*29)+1};
-                    } else if (g.state === 'walk') {
-                        targetGrid = {x: Math.floor(Math.random()*26)+1, z: Math.floor(Math.random()*29)+1};
-                    } else if (g.state === 'help') {
-                        // Ambush: Project Pacman's movement ahead
-                        let pDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
-                        let aheadPos = pacman.position.clone().add(pDir.multiplyScalar(16)); // 4 grid units ahead
-                        targetGrid = posToGrid(aheadPos);
-                    } else if (g.state === 'chase') {
-                        // Different chase behaviors
-                        if (g.aiType === 'ambush') {
-                            let pDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
-                            targetGrid = posToGrid(pacman.position.clone().add(pDir.multiplyScalar(8)));
-                        } else if (g.aiType === 'flank') {
-                            targetGrid = posToGrid(pacman.position.clone().add(new THREE.Vector3((Math.random()-0.5)*15, 0, (Math.random()-0.5)*15)));
-                        } else if (g.aiType === 'wander') {
-                             // Occasional random deviation even in chase
-                             if(Math.random() < 0.2) targetGrid = {x: Math.floor(Math.random()*26)+1, z: Math.floor(Math.random()*29)+1};
-                        }
-
-                        // If line of sight lost, go to last seen
-                        if (!seesPacman && lastSeenPacmanPos) {
-                            targetGrid = lastSeenPacmanPos;
-                        }
-                    }
-
-                    // Fallback to center if targeting invalid wall block
-                    if (!isWalkableForGhost(targetGrid.x, targetGrid.z)) targetGrid = {x:13, z:11}; 
-
-                    g.path = findAStarPath(gGrid, targetGrid);
-                    g.lastCalcTime = now + (Math.random() * 200); // stagger calculations
-                }
-
-                // 4. Movement Execution
                 let gSpeed = g.baseSpeed * ghostSpeedMult * ghostSpeedFactor;
                 if(powerUp) gSpeed *= 0.5;
 
-                if (g.path && g.path.length > 0) {
-                    let nextNode = g.path[0];
-                    let targetPos = gridToPos(nextNode.x, nextNode.z);
-                    
-                    let dist = g.position.distanceTo(targetPos);
-                    if (dist < 0.5) {
-                        g.path.shift(); // reached node, get next
-                    } else {
-                        let desiredDir = targetPos.clone().sub(g.position).normalize();
-                        g.dir.lerp(desiredDir, 0.2).normalize();
+                // Position Mappings to Grid Coordinates
+                let gx = Math.floor((g.position.x / 4) + 13.5);
+                let gz = Math.floor((g.position.z / 4) + 15);
+                let px = Math.floor((pacman.position.x / 4) + 13.5);
+                let pz = Math.floor((pacman.position.z / 4) + 15);
+
+                // Line of Sight Raycast check
+                let sightRay = new THREE.Raycaster(g.position, pacman.position.clone().sub(g.position).normalize());
+                let sightDist = g.position.distanceTo(pacman.position);
+                let sightHits = sightRay.intersectObjects(walls.map(w => w.mesh));
+                let canSee = sightHits.length === 0 || sightHits[0].distance > sightDist;
+
+                // Share Information
+                if(canSee) window.lastKnownPacmanPos = {x: px, z: pz};
+
+                // State Assessment
+                let pacNearPellet = dots.some(d => d.visible && (d.type === 2 || d.type === 4) && d.position.distanceTo(pacman.position) < 12);
+                let walkChance = Math.max(0.05, 0.3 - (level * 0.05)); // High levels = less wandering
+
+                if (powerUp) g.state = 'scared';
+                else if (pacNearPellet) g.state = 'scape';
+                else if (g.aiType === 'help') g.state = 'help'; 
+                else if (!canSee && window.lastKnownPacmanPos) g.state = 'walk'; // walk to last seen point
+                else if (Math.random() < 0.01) g.state = (Math.random() < walkChance) ? 'walk' : 'chase'; 
+                else if (g.state === 'walk' && canSee) g.state = 'chase';
+                else if (g.state !== 'walk' && g.state !== 'scape' && g.state !== 'scared' && g.state !== 'help') g.state = 'chase';
+
+                // Throttle Path Recalculation to prevent Lag
+                if(now > g.nextPathTime || g.path.length === 0) {
+                    let targetX = px, targetZ = pz;
+
+                    if(g.state === 'scared' || g.state === 'scape') {
+                        // Scatter to safe corner depending on pacman pos
+                        targetX = (px > 14) ? 2 : 25; targetZ = (pz > 15) ? 2 : 28;
+                    } else if (g.state === 'walk') {
+                        if(!canSee && window.lastKnownPacmanPos) {
+                            targetX = window.lastKnownPacmanPos.x; targetZ = window.lastKnownPacmanPos.z;
+                        } else {
+                            targetX = Math.floor(Math.random() * 26) + 1; targetZ = Math.floor(Math.random() * 29) + 1;
+                        }
+                    } else if (g.state === 'help') {
+                        // Help Ambush (Look ahead based on Pacman rotation)
+                        let pDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
+                        targetX = Math.floor(px + pDir.x * 4); targetZ = Math.floor(pz + pDir.z * 4);
+                    } else if (g.state === 'chase') {
+                        if(g.aiType === 'ambush') {
+                            let pDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
+                            targetX = Math.floor(px + pDir.x * 3); targetZ = Math.floor(pz + pDir.z * 3);
+                        } else if (g.aiType === 'flank') {
+                            targetX = Math.floor(px + (Math.random() - 0.5) * 10); targetZ = Math.floor(pz + (Math.random() - 0.5) * 10);
+                        } else if (g.aiType === 'wander') {
+                            targetX = Math.floor(px + (Math.random() - 0.5) * 15); targetZ = Math.floor(pz + (Math.random() - 0.5) * 15);
+                        }
                     }
-                } else {
-                    // Fallback random bounce if no path
-                    g.dir.applyAxisAngle(new THREE.Vector3(0,1,0), (Math.random()-0.5)*0.5);
+
+                    // Strict boundary limits to prevent pathfinding outside grid array
+                    targetX = Math.max(1, Math.min(26, targetX)); targetZ = Math.max(1, Math.min(29, targetZ));
+
+                    g.path = getPathAStar(gx, gz, targetX, targetZ);
+                    g.nextPathTime = now + 400 + Math.random() * 600; // Recalculate ~ 0.5s - 1.0s
                 }
 
-                let npX = g.position.clone(); npX.x += g.dir.x * gSpeed;
-                let npZ = g.position.clone(); npZ.z += g.dir.z * gSpeed;
+                // Grid to Continuous 3D Movement
+                if(g.path && g.path.length > 0) {
+                    let nextNode = g.path[0];
+                    let worldTargetX = (nextNode.x - 13.5) * 4;
+                    let worldTargetZ = (nextNode.z - 15) * 4;
+                    let targetPos = new THREE.Vector3(worldTargetX, g.position.y, worldTargetZ);
 
-                // Extra safety: ghost vs original walls (but ghosts CAN pass through 8 now)
-                const hitsWallX = walls.some(w => new THREE.Box3().setFromCenterAndSize(npX, new THREE.Vector3(1.2,1.2,1.2)).intersectsBox(w.box)); 
-                if (!hitsWallX) g.position.x = npX.x;
-                
-                const hitsWallZ = walls.some(w => new THREE.Box3().setFromCenterAndSize(npZ, new THREE.Vector3(1.2,1.2,1.2)).intersectsBox(w.box)); 
-                if (!hitsWallZ) g.position.z = npZ.z;
+                    if(g.position.distanceTo(targetPos) < 0.8) g.path.shift(); // Node reached
+
+                    let desiredDir = targetPos.clone().sub(g.position).normalize();
+                    g.dir.lerp(desiredDir, 0.2).normalize();
+                    
+                    let npX = g.position.x + g.dir.x * gSpeed;
+                    let npZ = g.position.z + g.dir.z * gSpeed;
+
+                    // Standard collision fail-safes preserved!
+                    const hitsWallX = walls.some(w => new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(npX, g.position.y, g.position.z), new THREE.Vector3(1.2,1.2,1.2)).intersectsBox(w.box)); 
+                    if (!hitsWallX) g.position.x = npX;
+                    const hitsWallZ = walls.some(w => new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(g.position.x, g.position.y, npZ), new THREE.Vector3(1.2,1.2,1.2)).intersectsBox(w.box)); 
+                    if (!hitsWallZ) g.position.z = npZ;
+
+                } else {
+                    // Safety wander lock prevention if no path available
+                    g.position.x += g.dir.x * gSpeed; g.position.z += g.dir.z * gSpeed;
+                    if(walls.some(w => new THREE.Box3().setFromCenterAndSize(g.position, new THREE.Vector3(1.2,1.2,1.2)).intersectsBox(w.box))) {
+                        g.dir.x *= -1; g.dir.z *= -1;
+                    }
+                }
 
                 if (g.position.x > 56) g.position.x = -56;
                 else if (g.position.x < -56) g.position.x = 56;
 
                 g.lookAt(g.position.x + g.dir.x, 0.3, g.position.z + g.dir.z);
 
-                // Pacman collision
                 if(pacman.position.distanceTo(g.position) < 1.6) {
                     if(powerUp) {
                         killGhost(g);
                     } else if(!isJumping) {
-                        gameState = 'dying';
-                        deathTimer = 1.0;
-                        playSfx(200, 1.0, 'sawtooth');
+                        gameState = 'dying'; deathTimer = 1.0; playSfx(200, 1.0, 'sawtooth');
                     }
                 }
             });
@@ -1116,16 +989,12 @@
             // Dots Collision
             dots.forEach(d => {
                 if(d.visible && pacman.position.distanceTo(d.position) < 1.8) {
-                    d.visible = false; 
-                    addScore(10);
-                    playSfx(600, 0.05);
-                    
+                    d.visible = false; addScore(10); playSfx(600, 0.05);
                     if(d.type === 0) {
-                        remainingDots--;
-                        document.getElementById('remaining').innerText = remainingDots;
+                        remainingDots--; document.getElementById('remaining').innerText = remainingDots;
                     } else {
                         addScore(40);
-                        if(d.type === 2) { powerUp = true; powerTimeLeft = 8000; ghostCombo = 0; document.getElementById('powerBarContainer').style.display = 'block'; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); g.path=[]; }); }
+                        if(d.type === 2) { powerUp = true; powerTimeLeft = 8000; ghostCombo = 0; document.getElementById('powerBarContainer').style.display = 'block'; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); }); }
                         if(d.type === 4) { laserMode = true; laserTimeLeft = 10000; laserCooldown=0; document.getElementById('laserBarContainer').style.display = 'block'; }
                         if(d.type === 5) { speedMode = true; speedTimeLeft = 6000; document.getElementById('speedBarContainer').style.display = 'block'; }
                         if(d.type === 6) { freezeMode = true; freezeTimeLeft = 5000; document.getElementById('freezeBarContainer').style.display = 'block'; }
@@ -1134,45 +1003,19 @@
 
                     if(remainingDots <= 0) { 
                         if (level >= 256) {
-                            gameState = 'victory256';
-                            document.getElementById('mythical-screen').style.display = 'flex';
-                            document.getElementById('minimap').style.display = 'none';
-                            playSfx(100, 2.0, 'sawtooth', 0.2);
-                            generateGlitchMatrix();
-                            return;
+                            gameState = 'victory256'; document.getElementById('mythical-screen').style.display = 'flex';
+                            document.getElementById('minimap').style.display = 'none'; playSfx(100, 2.0, 'sawtooth', 0.2); generateGlitchMatrix(); return;
                         }
 
                         if (level % 3 === 0) {
-                            gameState = 'intermission';
-                            document.getElementById('ui').style.display = 'none';
-                            document.getElementById('minimap').style.display = 'none';
-                            playSfx(1000, 1.0, 'square');
-
-                            interTimer = 0; interPhase = 0;
-                            
-                            csPacman.position.set(20, 0.8, 0);
-                            csPacman.scale.setScalar(1);
-                            csPacman.rotation.y = -Math.PI/2;
-                            
-                            csBlinky.position.set(30, 0, 0);
-                            csBlinky.rotation.y = -Math.PI/2;
-                            csBlinkyMat.color.setHex(0xff0000); 
-                            csBlinkyBody.visible = true; 
-                            
-                            csPellet.position.set(-15, 0.8, 0);
-                            csPellet.visible = true;
+                            gameState = 'intermission'; document.getElementById('ui').style.display = 'none'; document.getElementById('minimap').style.display = 'none'; playSfx(1000, 1.0, 'square');
+                            interTimer = 0; interPhase = 0; csPacman.position.set(20, 0.8, 0); csPacman.scale.setScalar(1); csPacman.rotation.y = -Math.PI/2; csBlinky.position.set(30, 0, 0); csBlinky.rotation.y = -Math.PI/2; csBlinkyMat.color.setHex(0xff0000); csBlinkyBody.visible = true; csPellet.position.set(-15, 0.8, 0); csPellet.visible = true;
                         } else {
-                            level++;
-                            ghostSpeedMult += 0.15;
-                            document.getElementById('level').innerText = level;
-                            buildMap();
-                            resetPositions();
-                            playSfx(1000, 1.0, 'square');
+                            level++; ghostSpeedMult += 0.15; document.getElementById('level').innerText = level; buildMap(); resetPositions(); playSfx(1000, 1.0, 'square');
                         }
                     }
                 }
             });
-
             renderer.render(scene, camera);
         }
 
@@ -1185,3 +1028,4 @@
     </script>
 </body>
 </html>
+
