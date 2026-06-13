@@ -4,16 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pac-Man 3D</title>
-<script>
-    if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('Service Worker registrado correctamente'))
-      .catch(err => console.log('Error al registrar:', err));
-  }
-</script>
-
-<!-- No olvides vincular el manifest en el <head> -->
-<link rel="manifest" href="manifest.json">
     <style>
         body { margin: 0; overflow: hidden; background: #000411; font-family: 'Courier New', monospace; touch-action: none; user-select: none; -webkit-user-select: none; }
         
@@ -30,16 +20,19 @@
         #minimap { display: none; position: absolute; top: 10px; right: 10px; border: 2px solid rgba(0, 242, 255, 0.5); background: rgba(0,0,0,0.7); z-index: 20; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
 
         /* State Modals */
-        #menu-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #000411 0%, #001133 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; text-align: center; color: #ffff00; }
-        #menu-screen h1 { font-size: 48px; text-shadow: 0 0 20px #ffff00; margin-bottom: 5px; letter-spacing: 4px; }
-        #menu-screen h2 { font-size: 20px; color: #00f2ff; margin-bottom: 20px; text-shadow: 0 0 10px #00f2ff; }
+        #menu-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #000411 0%, #001133 100%); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 1000; text-align: center; color: #ffff00; overflow-y: auto; padding: 20px 10px; box-sizing: border-box; }
+        #menu-screen h1 { font-size: 42px; text-shadow: 0 0 20px #ffff00; margin: 10px 0 5px 0; letter-spacing: 4px; }
+        #menu-screen h2 { font-size: 18px; color: #00f2ff; margin-bottom: 15px; text-shadow: 0 0 10px #00f2ff; }
         
-        /* Ghost Roster Showcase */
-        #ghost-roster { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 30px; max-width: 600px; padding: 15px; background: rgba(0,0,0,0.5); border-radius: 12px; border: 1px solid #00f2ff; }
-        .roster-card { text-align: center; font-size: 14px; text-shadow: 1px 1px 0 #000; font-weight: bold; width: 100px; }
-        .roster-card span { font-size: 10px; opacity: 0.8; display: block; margin-top: 5px; }
-
-        .menu-btn { padding: 15px 40px; font-weight: bold; cursor: pointer; border: 3px solid #00f2ff; background: rgba(0,242,255,0.1); color: #00f2ff; font-size: 24px; border-radius: 12px; font-family: 'Courier New', monospace; box-shadow: 0 0 15px rgba(0,242,255,0.4); transition: all 0.3s ease; }
+        /* Ghost Character Cast Grid */
+        #ghost-cast-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-width: 600px; width: 95%; margin-bottom: 20px; background: rgba(0, 0, 0, 0.5); padding: 10px; border: 2px solid #0033ff; border-radius: 10px; text-align: left; box-sizing: border-box; }
+        @media(max-width: 480px) { #ghost-cast-container { grid-template-columns: 1fr; font-size: 11px; } }
+        .ghost-card { display: flex; align-items: center; gap: 8px; border-bottom: 1px dashed rgba(0, 242, 255, 0.2); padding-bottom: 5px; }
+        .ghost-avatar { width: 14px; height: 14px; display: inline-block; border-radius: 50% 50% 0 0; }
+        .ghost-info { font-size: 11px; color: #fff; line-height: 1.2; }
+        .ghost-info strong { font-size: 12px; }
+        
+        .menu-btn { padding: 12px 35px; font-weight: bold; cursor: pointer; border: 3px solid #00f2ff; background: rgba(0,242,255,0.1); color: #00f2ff; font-size: 22px; border-radius: 12px; font-family: 'Courier New', monospace; box-shadow: 0 0 15px rgba(0,242,255,0.4); transition: all 0.3s ease; flex-shrink: 0; margin-bottom: 10px; }
         .menu-btn:hover { background: #00f2ff; color: #000; box-shadow: 0 0 30px #00f2ff; }
         
         #victory, #gameover, #mythical-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
@@ -74,18 +67,42 @@
         <h1>PAC-MAN 3D</h1>
         <h2>3D LABYRINTH</h2>
         
-        <div id="ghost-roster">
-            <div class="roster-card" style="color: #ff0000;">BLINKY<span>The Chaser</span></div>
-            <div class="roster-card" style="color: #ffb8ff;">PINKY<span>The Ambusher</span></div>
-            <div class="roster-card" style="color: #00ffff;">INKY<span>The Flanker</span></div>
-            <div class="roster-card" style="color: #ffb852;">CLYDE<span>The Wanderer</span></div>
-            <div class="roster-card" style="color: #800080;">SUE<span>The Helper</span></div>
-            <div class="roster-card" style="color: #00ff00;">FUNKY<span>The Ambusher</span></div>
-            <div class="roster-card" style="color: #ffff00;">SPUNKY<span>The Walker</span></div>
-            <div class="roster-card" style="color: #ffffff;">GLITCH<span>The Flanker</span></div>
-        </div>
-
         <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY</button>
+
+        <div id="ghost-cast-container">
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#ff0000;"></span>
+                <div class="ghost-info"><strong style="color:#ff0000;">BLINKY</strong><br>Shadow - Relentless Direct Tracker</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#ffb8ff;"></span>
+                <div class="ghost-info"><strong style="color:#ffb8ff;">PINKY</strong><br>Speedy - Tactical Ambush Forecaster</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#00ffff;"></span>
+                <div class="ghost-info"><strong style="color:#00ffff;">INKY</strong><br>Bashful - Complex Flank Guard</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#ffb852;"></span>
+                <div class="ghost-info"><strong style="color:#ffb852;">CLYDE</strong><br>Pokey - Proximity Shift Wanderer</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#800080;"></span>
+                <div class="ghost-info"><strong style="color:#800080;">TIM</strong><br>Stalker - Pure Intercept Seeker</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#00ff00;"></span>
+                <div class="ghost-info"><strong style="color:#00ff00;">SPIKE</strong><br>Cruiser - Lane Cut-Off Grid Guard</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#ffff00;"></span>
+                <div class="ghost-info"><strong style="color:#ffff00;">GOLDY</strong><br>Glance - Perimeter Flank Sweeper</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#ffffff;"></span>
+                <div class="ghost-info"><strong style="color:#ffffff;">WHITY</strong><br>Ghost - Adaptive Dynamic Supporter</div>
+            </div>
+        </div>
     </div>
 
     <canvas id="minimap" width="150" height="150"></canvas>
@@ -143,9 +160,6 @@
         let gameState = 'lobby'; // lobby, playing, dying, intermission, victory256
         let ghostCombo = 0;
         
-        // Shared Ghost Knowledge
-        window.lastKnownPacmanPos = null;
-
         // Powerups
         let powerUp = false, laserMode = false, speedMode = false, freezeMode = false;
         let powerTimeLeft = 0, laserTimeLeft = 0, speedTimeLeft = 0, freezeTimeLeft = 0;
@@ -157,6 +171,10 @@
         let ghostSpeedMult = 1.0;
         let ghostSpeedFactor = 0.11;   // Scaled up from 0.08
         
+        // --- COOPERATIVE INTEL & COMPASS SHARED SYSTEM ---
+        let lastPacmanSeenPos = new THREE.Vector3(0, 0.8, 32);
+        let wasPacmanSeenThisFrame = false;
+
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -205,47 +223,6 @@
                     </svg>
                 `;
             }
-        }
-
-        // --- A* PATHFINDING FUNCTION ---
-        function getPathAStar(startX, startZ, endX, endZ) {
-            if(startX < 0 || startX > 27 || startZ < 0 || startZ > 30) return [];
-            if(endX < 0 || endX > 27 || endZ < 0 || endZ > 30) return [];
-            
-            let openList = [{x: startX, z: startZ, g: 0, f: 0, parent: null}];
-            let closedSet = new Set();
-            let loopLimit = 300; 
-
-            while(openList.length > 0 && loopLimit-- > 0) {
-                openList.sort((a,b) => a.f - b.f);
-                let current = openList.shift();
-                let key = current.x + "," + current.z;
-                
-                if(closedSet.has(key)) continue;
-                closedSet.add(key);
-
-                if(current.x === endX && current.z === endZ) {
-                    let path = [];
-                    while(current.parent) {
-                        path.push({x: current.x, z: current.z});
-                        current = current.parent;
-                    }
-                    return path.reverse();
-                }
-
-                let dirs = [[0,1], [1,0], [0,-1], [-1,0]];
-                for(let d of dirs) {
-                    let nx = current.x + d[0];
-                    let nz = current.z + d[1];
-                    
-                    if(nx >= 0 && nx <= 27 && nz >= 0 && nz <= 30 && mapTemplate[nz] && mapTemplate[nz][nx] !== 1) {
-                        let g = current.g + 1;
-                        let h = Math.abs(nx - endX) + Math.abs(nz - endZ);
-                        openList.push({x: nx, z: nz, g: g, f: g + h, parent: current});
-                    }
-                }
-            }
-            return [];
         }
 
         // --- PAC-MAN CREATION ---
@@ -309,7 +286,7 @@
             [1,1,1,1,1,1,0,1,1,3,1,1,1,8,8,1,1,1,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1],
             [3,3,3,3,3,3,0,3,3,3,1,9,9,9,9,9,9,1,3,3,3,0,3,3,3,3,3,3],
-            [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,3,3,0,3,3,3,3,3,3], // Synchronized map bound spacing
             [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,3,3,3,3,3,3,3,3,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
@@ -380,16 +357,16 @@
         scene.add(new THREE.AmbientLight(0x404040));
         const light = new THREE.PointLight(0xffffff, 50, 60); scene.add(light);
 
-        // --- GHOSTS (8 Types with Unique Names & Roles) ---
+        // --- GHOSTS (8 Unique Named Personalities) ---
         const ghostTypes = [
-            { name: "BLINKY", c: 0xff0000, t: 'chase', s: 1.05 },   
-            { name: "PINKY",  c: 0xffb8ff, t: 'ambush', s: 0.95 },  
-            { name: "INKY",   c: 0x00ffff, t: 'flank', s: 0.9 },    
-            { name: "CLYDE",  c: 0xffb852, t: 'wander', s: 0.85 },  
-            { name: "SUE",    c: 0x800080, t: 'help', s: 1.1 },    
-            { name: "FUNKY",  c: 0x00ff00, t: 'ambush', s: 1.0 },   
-            { name: "SPUNKY", c: 0xffff00, t: 'walk', s: 0.8 },   
-            { name: "GLITCH", c: 0xffffff, t: 'flank', s: 0.95 }    
+            { name: 'BLINKY', c: 0xff0000, t: 'chase', s: 1.05 },   
+            { name: 'PINKY',  c: 0xffb8ff, t: 'ambush', s: 0.95 },  
+            { name: 'INKY',   c: 0x00ffff, t: 'flank', s: 0.9 },    
+            { name: 'CLYDE',  c: 0xffb852, t: 'wander', s: 0.85 },  
+            { name: 'TIM',    c: 0x800080, t: 'chase', s: 1.10 },    
+            { name: 'SPIKE',  c: 0x00ff00, t: 'ambush', s: 1.00 },   
+            { name: 'GOLDY',  c: 0xffff00, t: 'wander', s: 0.80 },   
+            { name: 'WHITY',  c: 0xffffff, t: 'flank', s: 0.95 }    
         ];
 
         let ghosts = [];
@@ -416,18 +393,19 @@
 
                 group.bodyGroup = bodyGroup;
                 group.eyesGroup = eyesGroup;
+                group.ghostName = config.name;
                 group.baseColor = config.c; 
-                group.name = config.name;
                 group.aiType = config.t;
                 group.baseSpeed = config.s;
                 group.isDead = false;
                 group.dir = new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize();
                 
-                // Advanced AI States & Pathing
-                group.path = [];
-                group.nextPathTime = 0;
-                group.state = 'walk'; // 5 states: chase, scape, scared, help, walk
-
+                // --- ADVANCED PATHFINDING & STATE STATE VARIABLES ---
+                group.currentAIState = 'walk'; // 5 States: chase, scape, scared, help, walk
+                group.aStarPath = [];
+                group.pathUpdateTimer = Math.random() * 200; 
+                group.currentTargetCell = {x: 14, z: 15};
+                
                 scene.add(group);
                 return group;
             });
@@ -479,15 +457,13 @@
             bottomHalf.rotation.x = 0;
             pacman.scale.setScalar(1);
             
-            window.lastKnownPacmanPos = null;
-
             ghosts.forEach((g, i) => {
                 g.position.set((Math.random()-0.5)*4, 0.3, -4 + (Math.random()-0.5)*2);
                 g.isDead = false;
-                g.path = [];
-                g.state = 'walk';
                 g.bodyGroup.visible = true;
                 g.bodyGroup.children[0].material.color.set(g.baseColor);
+                g.aStarPath = [];
+                g.currentAIState = 'walk';
             });
             
             powerUp = laserMode = speedMode = freezeMode = false;
@@ -498,32 +474,36 @@
             camAngleY = Math.PI/2;
             camAngleX = 0.4;
             updateLivesDisplay();
+            
+            lastPacmanSeenPos.set(0, 0.8, 32);
         }
 
-        // --- LASER LOGIC ---
+        // --- LASER LOGIC WITH COMPREHENSIVE WALL IMPACT DISTANCE CLIPPING ---
         function fireLaser() {
             playSfx(1000, 0.1, 'sawtooth');
             const laserDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
             const raycaster = new THREE.Raycaster(pacman.position, laserDir);
             
-            // Checking wall intersections so Laser can't pass walls
-            let wallMeshes = walls.map(w => w.mesh);
-            let wallHits = raycaster.intersectObjects(wallMeshes);
-            let maxDist = wallHits.length > 0 ? wallHits[0].distance : 30;
+            // Limit laser distance based on walls obstacle collisions
+            let maxLaserRange = 30.0;
+            const targetWallMeshes = walls.map(w => w.mesh);
+            const wallHits = raycaster.intersectObjects(targetWallMeshes);
+            if (wallHits.length > 0 && wallHits[0].distance < maxLaserRange) {
+                maxLaserRange = wallHits[0].distance;
+            }
             
             ghosts.forEach(g => {
                 if(!g.isDead) {
-                    const toGhost = g.position.clone().sub(pacman.position);
-                    const dotProj = toGhost.dot(laserDir);
-                    // Ensure ghost is in front of Pac-Man, and distance to projection is small, and before the wall
-                    if(dotProj > 0 && dotProj <= maxDist && raycaster.ray.distanceToPoint(g.position) < 2.0) {
+                    const distToPoint = raycaster.ray.distanceToPoint(g.position);
+                    const projectedDist = raycaster.ray.origin.distanceTo(g.position);
+                    if (distToPoint < 2.0 && projectedDist <= maxLaserRange) {
                         killGhost(g, true);
                     }
                 }
             });
             
             const material = new THREE.LineBasicMaterial({ color: 0xff6400, linewidth: 5 });
-            const points = [pacman.position.clone(), pacman.position.clone().add(laserDir.multiplyScalar(Math.min(30, maxDist)))];
+            const points = [pacman.position.clone(), pacman.position.clone().add(laserDir.multiplyScalar(maxLaserRange))];
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
             const line = new THREE.Line(geometry, material);
             scene.add(line);
@@ -533,7 +513,7 @@
         function killGhost(g, fromLaser = false) {
             g.isDead = true; 
             g.bodyGroup.visible = false; 
-            g.path = []; // stop movement tracking while dead
+            g.aStarPath = [];
             
             let pts = 200;
             if(!fromLaser) {
@@ -592,6 +572,7 @@
             ctx.fillStyle = '#ffff00';
             ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI*2); ctx.fill();
             
+            // Render active power aura indicator ring onto minimap bounds
             if (powerUp || laserMode || speedMode || freezeMode) {
                 ctx.strokeStyle = auraMesh.material.color.getStyle();
                 ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.stroke();
@@ -658,11 +639,116 @@
             }
         });
 
+        // --- GRID POSITION MATH TRANSLATIONS FOR PATHFINDING ---
+        // Formula mapping: Real world X position = (gridX - 13.5) * 4 -> gridX = Math.round(X / 4 + 13.5)
+        // Formula mapping: Real world Z position = (gridZ - 15) * 4 -> gridZ = Math.round(Z / 4 + 15)
+        function worldToGrid(pos) {
+            let cx = Math.round(pos.x / 4 + 13.5);
+            let cz = Math.round(pos.z / 4 + 15);
+            return { x: Math.max(0, Math.min(27, cx)), z: Math.max(0, Math.min(30, cz)) };
+        }
+        
+        function gridToWorld(gx, gz) {
+            return new THREE.Vector3((gx - 13.5) * 4, 0.3, (gz - 15) * 4);
+        }
+
+        // --- PAC-MAN SPECIFIC COLLISION: BLOCKS GHOST HOUSE DOORS (cell === 8) ---
         function checkCol(p, size=1.6) { 
             const hitsWall = walls.some(w => new THREE.Box3().setFromCenterAndSize(p, new THREE.Vector3(size,size,size)).intersectsBox(w.box)); 
             if (hitsWall) return true;
             const hitsGhostBox = ghostBoxWalls.some(gW => new THREE.Box3().setFromCenterAndSize(p, new THREE.Vector3(size,size,size)).intersectsBox(gW.box));
             return hitsGhostBox;
+        }
+
+        // --- GHOST SPECIFIC COLLISION: ALLOWS GHOSTS TO PASS THROUGH PURPLE BLOCKS (cell === 8) ---
+        function checkGhostColGrid(gx, gz) {
+            if (gx < 0 || gx >= 28 || gz < 0 || gz >= 31) return true;
+            const cellVal = mapTemplate[gz][gx];
+            if (cellVal === 1) return true; // solid wall
+            return false; // Free open path (allows 0, 2, 4, 5, 6, 3, 9 and crucially 8)
+        }
+
+        // --- A* PATHFINDING ALGORITHM IMPLEMENTATION FOR LABYRINTH NAVIGATION ---
+        function computeAStarPath(startGrid, targetGrid) {
+            if (checkGhostColGrid(targetGrid.x, targetGrid.z)) {
+                // Find nearest reachable grid coordinate fallback neighborhood if target is closed
+                let bestNode = { x: 14, z: 15 };
+                let minDist = Infinity;
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dz = -1; dz <= 1; dz++) {
+                        let nx = targetGrid.x + dx, nz = targetGrid.z + dz;
+                        if (!checkGhostColGrid(nx, nz)) {
+                            let d = Math.abs(nx - startGrid.x) + Math.abs(nz - startGrid.z);
+                            if (d < minDist) { minDist = d; bestNode = { x: nx, z: nz }; }
+                        }
+                    }
+                }
+                targetGrid = bestNode;
+            }
+
+            let openList = [];
+            let closedSet = new Set();
+            
+            function nodeKey(g) { return g.x + "_" + g.z; }
+            
+            let startNode = {
+                x: startGrid.x, z: startGrid.z,
+                g: 0, h: Math.abs(startGrid.x - targetGrid.x) + Math.abs(startGrid.z - targetGrid.z),
+                parent: null
+            };
+            startNode.f = startNode.g + startNode.h;
+            openList.push(startNode);
+            
+            let maxIterations = 400; 
+            while (openList.length > 0 && maxIterations-- > 0) {
+                openList.sort((a, b) => a.f - b.f);
+                let current = openList.shift();
+                
+                if (current.x === targetGrid.x && current.z === targetGrid.z) {
+                    let path = [];
+                    let curr = current;
+                    while (curr !== null) {
+                        path.push({ x: curr.x, z: curr.z });
+                        curr = curr.parent;
+                    }
+                    path.reverse();
+                    return path; // Retain standard path coordinates
+                }
+                
+                closedSet.add(nodeKey(current));
+                
+                let dirs = [{x:0, z:1}, {x:0, z:-1}, {x:1, z:0}, {x:-1, z:0}];
+                for (let i = 0; i < dirs.length; i++) {
+                    let nx = current.x + dirs[i].x;
+                    let nz = current.z + dirs[i].z;
+                    
+                    // Labyrinth wraparound tunnel integration check
+                    if (nz === 14) {
+                        if (nx < 0) nx = 27;
+                        if (nx > 27) nx = 0;
+                    }
+                    
+                    if (nx < 0 || nx >= 28 || nz < 0 || nz >= 31) continue;
+                    if (checkGhostColGrid(nx, nz)) continue;
+                    
+                    let neighborNode = { x: nx, z: nz };
+                    if (closedSet.has(nodeKey(neighborNode))) continue;
+                    
+                    let tentativeG = current.g + 1;
+                    let existingOpen = openList.find(o => o.x === nx && o.z === nz);
+                    
+                    if (!existingOpen) {
+                        let h = Math.abs(nx - targetGrid.x) + Math.abs(nz - targetGrid.z);
+                        let nNode = { x: nx, z: nz, g: tentativeG, h: h, f: tentativeG + h, parent: current };
+                        openList.push(nNode);
+                    } else if (tentativeG < existingOpen.g) {
+                        existingOpen.g = tentativeG;
+                        existingOpen.f = tentativeG + existingOpen.h;
+                        existingOpen.parent = current;
+                    }
+                }
+            }
+            return []; // Fail safe return fallback empty layout trace array
         }
 
         function generateGlitchMatrix() {
@@ -749,29 +835,43 @@
 
             if (gameState === 'intermission') {
                 interTimer += deltaMs;
+                
                 const mouthAngle = (Math.sin(interTimer * 0.015) + 1) * 0.3;
-                csTopHalf.rotation.x = -mouthAngle; csBotHalf.rotation.x = mouthAngle;
+                csTopHalf.rotation.x = -mouthAngle; 
+                csBotHalf.rotation.x = mouthAngle;
 
                 if (interPhase === 0) {
-                    csPacman.position.x -= 0.015 * deltaMs; csBlinky.position.x -= 0.016 * deltaMs; 
+                    csPacman.position.x -= 0.015 * deltaMs;
+                    csBlinky.position.x -= 0.016 * deltaMs; 
+                    
                     if (csPacman.position.x <= -15) {
-                        interPhase = 1; csPellet.visible = false;
-                        csPacman.scale.setScalar(1.8); csPacman.position.y = 1.4;
+                        interPhase = 1;
+                        csPellet.visible = false;
+                        csPacman.scale.setScalar(1.8);
+                        csPacman.position.y = 1.4;
                         csBlinkyMat.color.setHex(0x0055ff); 
-                        csPacman.rotation.y = Math.PI/2; csBlinky.rotation.y = Math.PI/2;
+                        csPacman.rotation.y = Math.PI/2; 
+                        csBlinky.rotation.y = Math.PI/2;
                         playSfx(1000, 0.5, 'triangle');
                     }
                 } else if (interPhase === 1) {
-                    csPacman.position.x += 0.018 * deltaMs; csBlinky.position.x += 0.012 * deltaMs;
+                    csPacman.position.x += 0.018 * deltaMs;
+                    csBlinky.position.x += 0.012 * deltaMs;
+                    
                     if (csPacman.position.x >= csBlinky.position.x - 2.0 && csBlinkyBody.visible) {
-                        csBlinkyBody.visible = false; playSfx(500, 0.2, 'square');
+                        csBlinkyBody.visible = false; 
+                        playSfx(500, 0.2, 'square');
                     }
+                    
                     if (csPacman.position.x > 30) {
-                        level++; ghostSpeedMult += 0.15;
+                        level++;
+                        ghostSpeedMult += 0.15;
                         document.getElementById('level').innerText = level;
                         document.getElementById('ui').style.display = 'block';
                         document.getElementById('minimap').style.display = 'block';
-                        buildMap(); resetPositions(); gameState = 'playing';
+                        buildMap();
+                        resetPositions();
+                        gameState = 'playing';
                     }
                 }
                 renderer.render(interScene, interCamera);
@@ -780,7 +880,8 @@
 
             if (gameState === 'dying') {
                 deathTimer -= deltaMs / 1000;
-                topHalf.rotation.x -= 0.05; bottomHalf.rotation.x += 0.05;
+                topHalf.rotation.x -= 0.05;
+                bottomHalf.rotation.x += 0.05;
                 let s = Math.max(0.01, deathTimer);
                 pacman.scale.setScalar(s);
                 
@@ -792,7 +893,8 @@
                         document.getElementById('minimap').style.display = 'none';
                         document.getElementById('go-reason').innerText = "NO LIVES LEFT!";
                     } else {
-                        resetPositions(); gameState = 'playing';
+                        resetPositions();
+                        gameState = 'playing';
                     }
                 }
                 renderer.render(scene, camera);
@@ -800,6 +902,7 @@
             }
 
             if(gameState !== 'playing') return;
+            
             drawMinimap();
 
             if(isJumping) {
@@ -833,24 +936,68 @@
             camera.lookAt(pacman.position);
             light.position.copy(pacman.position).add(new THREE.Vector3(0, 3, 0));
 
+            // --- LINE OF SIGHT & RETINAL SCAN INTELLIGENCE COMPASS ---
+            const pacmanGridPos = worldToGrid(pacman.position);
+            wasPacmanSeenThisFrame = false;
+            
+            ghosts.forEach(g => {
+                if(g.isDead) return;
+                const gRayDir = pacman.position.clone().sub(g.position);
+                const losDistance = gRayDir.length();
+                gRayDir.normalize();
+                
+                const losRay = new THREE.Raycaster(g.position, gRayDir);
+                const wallObjects = walls.map(w => w.mesh);
+                const hits = losRay.intersectObjects(wallObjects);
+                
+                if (hits.length === 0 || hits[0].distance > losDistance) {
+                    wasPacmanSeenThisFrame = true;
+                }
+            });
+            if (wasPacmanSeenThisFrame) {
+                lastPacmanSeenPos.copy(pacman.position);
+            }
+
+            // --- DECREMENT POWER TIMERS ---
             if(powerUp) powerTimeLeft -= deltaMs;
             if(laserMode) { laserTimeLeft -= deltaMs; laserCooldown -= deltaMs; }
             if(speedMode) speedTimeLeft -= deltaMs;
             if(freezeMode) freezeTimeLeft -= deltaMs;
 
+            // --- ALL-POWERUP AURA CONTROLLER ---
             if (powerUp || laserMode || speedMode || freezeMode) {
-                auraMesh.visible = true; auraLight.intensity = 65; 
+                auraMesh.visible = true;
+                auraLight.intensity = 65; 
+                
                 let currentAuraColor = new THREE.Color();
-                if (powerUp) currentAuraColor.setHSL((now % 2000) / 2000, 1.0, 0.5);
-                else if (freezeMode) currentAuraColor.setHex(0x00ffff);
-                else if (speedMode) currentAuraColor.setHex(0x00ff00);
-                else if (laserMode) currentAuraColor.setHex(0xff6400);
-                auraMat.color.copy(currentAuraColor); auraLight.color.copy(currentAuraColor);
-            } else { auraMesh.visible = false; auraLight.intensity = 0; }
+                if (powerUp) {
+                    // Classic Rainbow Cycle
+                    const hue = (now % 2000) / 2000;
+                    currentAuraColor.setHSL(hue, 1.0, 0.5);
+                } else if (freezeMode) {
+                    currentAuraColor.setHex(0x00ffff); // Glacial Blue
+                } else if (speedMode) {
+                    currentAuraColor.setHex(0x00ff00); // Chrono Green
+                } else if (laserMode) {
+                    currentAuraColor.setHex(0xff6400); // Plasma Orange
+                }
+                
+                auraMat.color.copy(currentAuraColor);
+                auraLight.color.copy(currentAuraColor);
+            } else {
+                auraMesh.visible = false;
+                auraLight.intensity = 0;
+            }
 
+            // --- INDIVIDUAL POWERUP BAR & CLEANUP TRACKING ---
             if(powerUp) {
                 document.getElementById('powerBar').style.width = (powerTimeLeft / 8000 * 100) + '%';
-                if(powerTimeLeft <= 0) { powerUp = false; document.getElementById('powerBarContainer').style.display = 'none'; ghostCombo = 0; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(g.baseColor); }); }
+                if(powerTimeLeft <= 0) { 
+                    powerUp = false; 
+                    document.getElementById('powerBarContainer').style.display = 'none'; 
+                    ghostCombo = 0; 
+                    ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(g.baseColor); }); 
+                }
             }
             if(laserMode) {
                 document.getElementById('laserBar').style.width = (laserTimeLeft / 10000 * 100) + '%';
@@ -866,23 +1013,41 @@
                 if(freezeTimeLeft <= 0) { freezeMode = false; document.getElementById('freezeBarContainer').style.display = 'none'; }
             }
 
+            // Fruits logic
             fruitTimer += deltaMs;
-            if (fruitTimer > 15000 && !fruitMesh) { spawnFruit(); fruitTimer = 0; }
+            if (fruitTimer > 15000 && !fruitMesh) {
+                spawnFruit();
+                fruitTimer = 0;
+            }
             if (fruitMesh) {
-                fruitMesh.rotation.y += 0.05; fruitActiveTime -= deltaMs;
-                if(fruitActiveTime <= 0) { scene.remove(fruitMesh); fruitMesh = null; document.getElementById('fruitIndicator').style.display = 'none'; }
-                else if (pacman.position.distanceTo(fruitMesh.position) < 2.0) { addScore(fruitMesh.fruitScore, fruitMesh.position); playSfx(1200, 0.4, 'sine'); scene.remove(fruitMesh); fruitMesh = null; document.getElementById('fruitIndicator').style.display = 'none'; }
+                fruitMesh.rotation.y += 0.05;
+                fruitActiveTime -= deltaMs;
+                if(fruitActiveTime <= 0) {
+                    scene.remove(fruitMesh); fruitMesh = null;
+                    document.getElementById('fruitIndicator').style.display = 'none';
+                } else if (pacman.position.distanceTo(fruitMesh.position) < 2.0) {
+                    addScore(fruitMesh.fruitScore, fruitMesh.position);
+                    playSfx(1200, 0.4, 'sine');
+                    scene.remove(fruitMesh); fruitMesh = null;
+                    document.getElementById('fruitIndicator').style.display = 'none';
+                }
             }
 
-            // GHOST A* AI AND STATE MACHINE LOGIC
+            // --- GHOST ADVANCED A* STATE DRIVEN CONTROL SYSTEM ---
             const centerBox = new THREE.Vector3(0, 0.3, -4);
+            const gridCenterBox = worldToGrid(centerBox);
             
             ghosts.forEach(g => {
                 if(g.isDead) {
                     let toCenter = centerBox.clone().sub(g.position);
                     if(toCenter.length() < 0.5) {
-                        g.isDead = false; g.bodyGroup.visible = true; g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
-                    } else { g.position.add(toCenter.normalize().multiplyScalar(0.2)); }
+                        g.isDead = false;
+                        g.bodyGroup.visible = true;
+                        g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
+                        g.aStarPath = [];
+                    } else {
+                        g.position.add(toCenter.normalize().multiplyScalar(0.2)); 
+                    }
                     return;
                 }
 
@@ -891,107 +1056,152 @@
                 let gSpeed = g.baseSpeed * ghostSpeedMult * ghostSpeedFactor;
                 if(powerUp) gSpeed *= 0.5;
 
-                // Position Mappings to Grid Coordinates
-                let gx = Math.floor((g.position.x / 4) + 13.5);
-                let gz = Math.floor((g.position.z / 4) + 15);
-                let px = Math.floor((pacman.position.x / 4) + 13.5);
-                let pz = Math.floor((pacman.position.z / 4) + 15);
-
-                // Line of Sight Raycast check
-                let sightRay = new THREE.Raycaster(g.position, pacman.position.clone().sub(g.position).normalize());
-                let sightDist = g.position.distanceTo(pacman.position);
-                let sightHits = sightRay.intersectObjects(walls.map(w => w.mesh));
-                let canSee = sightHits.length === 0 || sightHits[0].distance > sightDist;
-
-                // Share Information
-                if(canSee) window.lastKnownPacmanPos = {x: px, z: pz};
-
-                // State Assessment
-                let pacNearPellet = dots.some(d => d.visible && (d.type === 2 || d.type === 4) && d.position.distanceTo(pacman.position) < 12);
-                let walkChance = Math.max(0.05, 0.3 - (level * 0.05)); // High levels = less wandering
-
-                if (powerUp) g.state = 'scared';
-                else if (pacNearPellet) g.state = 'scape';
-                else if (g.aiType === 'help') g.state = 'help'; 
-                else if (!canSee && window.lastKnownPacmanPos) g.state = 'walk'; // walk to last seen point
-                else if (Math.random() < 0.01) g.state = (Math.random() < walkChance) ? 'walk' : 'chase'; 
-                else if (g.state === 'walk' && canSee) g.state = 'chase';
-                else if (g.state !== 'walk' && g.state !== 'scape' && g.state !== 'scared' && g.state !== 'help') g.state = 'chase';
-
-                // Throttle Path Recalculation to prevent Lag
-                if(now > g.nextPathTime || g.path.length === 0) {
-                    let targetX = px, targetZ = pz;
-
-                    if(g.state === 'scared' || g.state === 'scape') {
-                        // Scatter to safe corner depending on pacman pos
-                        targetX = (px > 14) ? 2 : 25; targetZ = (pz > 15) ? 2 : 28;
-                    } else if (g.state === 'walk') {
-                        if(!canSee && window.lastKnownPacmanPos) {
-                            targetX = window.lastKnownPacmanPos.x; targetZ = window.lastKnownPacmanPos.z;
-                        } else {
-                            targetX = Math.floor(Math.random() * 26) + 1; targetZ = Math.floor(Math.random() * 29) + 1;
-                        }
-                    } else if (g.state === 'help') {
-                        // Help Ambush (Look ahead based on Pacman rotation)
-                        let pDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
-                        targetX = Math.floor(px + pDir.x * 4); targetZ = Math.floor(pz + pDir.z * 4);
-                    } else if (g.state === 'chase') {
-                        if(g.aiType === 'ambush') {
-                            let pDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
-                            targetX = Math.floor(px + pDir.x * 3); targetZ = Math.floor(pz + pDir.z * 3);
-                        } else if (g.aiType === 'flank') {
-                            targetX = Math.floor(px + (Math.random() - 0.5) * 10); targetZ = Math.floor(pz + (Math.random() - 0.5) * 10);
-                        } else if (g.aiType === 'wander') {
-                            targetX = Math.floor(px + (Math.random() - 0.5) * 15); targetZ = Math.floor(pz + (Math.random() - 0.5) * 15);
-                        }
-                    }
-
-                    // Strict boundary limits to prevent pathfinding outside grid array
-                    targetX = Math.max(1, Math.min(26, targetX)); targetZ = Math.max(1, Math.min(29, targetZ));
-
-                    g.path = getPathAStar(gx, gz, targetX, targetZ);
-                    g.nextPathTime = now + 400 + Math.random() * 600; // Recalculate ~ 0.5s - 1.0s
-                }
-
-                // Grid to Continuous 3D Movement
-                if(g.path && g.path.length > 0) {
-                    let nextNode = g.path[0];
-                    let worldTargetX = (nextNode.x - 13.5) * 4;
-                    let worldTargetZ = (nextNode.z - 15) * 4;
-                    let targetPos = new THREE.Vector3(worldTargetX, g.position.y, worldTargetZ);
-
-                    if(g.position.distanceTo(targetPos) < 0.8) g.path.shift(); // Node reached
-
-                    let desiredDir = targetPos.clone().sub(g.position).normalize();
-                    g.dir.lerp(desiredDir, 0.2).normalize();
-                    
-                    let npX = g.position.x + g.dir.x * gSpeed;
-                    let npZ = g.position.z + g.dir.z * gSpeed;
-
-                    // Standard collision fail-safes preserved!
-                    const hitsWallX = walls.some(w => new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(npX, g.position.y, g.position.z), new THREE.Vector3(1.2,1.2,1.2)).intersectsBox(w.box)); 
-                    if (!hitsWallX) g.position.x = npX;
-                    const hitsWallZ = walls.some(w => new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(g.position.x, g.position.y, npZ), new THREE.Vector3(1.2,1.2,1.2)).intersectsBox(w.box)); 
-                    if (!hitsWallZ) g.position.z = npZ;
-
+                // 1. UPDATE ADVANCED INTEL STATE MACHINE BASED ON LEVEL & ENVIRONMENTAL PARAMETERS
+                let gGrid = worldToGrid(g.position);
+                
+                // Determine core profile baseline state
+                if (powerUp) {
+                    g.currentAIState = 'scared';
                 } else {
-                    // Safety wander lock prevention if no path available
-                    g.position.x += g.dir.x * gSpeed; g.position.z += g.dir.z * gSpeed;
-                    if(walls.some(w => new THREE.Box3().setFromCenterAndSize(g.position, new THREE.Vector3(1.2,1.2,1.2)).intersectsBox(w.box))) {
-                        g.dir.x *= -1; g.dir.z *= -1;
+                    // Walk / Chase level balance ratio distribution
+                    let walkProbability = Math.max(0.05, 0.5 - (level * 0.08)); 
+                    
+                    // Check if Pac-man is dangerously close to an active power/weapon pellet mesh
+                    let pelletThreat = false;
+                    dots.forEach(d => {
+                        if (d.visible && (d.type === 2 || d.type === 4) && pacman.position.distanceTo(d.position) < 10.0) {
+                            pelletThreat = true;
+                        }
+                    });
+                    
+                    if (pelletThreat) {
+                        g.currentAIState = 'scape';
+                    } else if (Math.random() < walkProbability && g.aStarPath.length === 0) {
+                        g.currentAIState = 'walk';
+                    } else {
+                        // Dynamic personality-driven routing splitting (Chase vs Assist coordination team mechanics)
+                        if (g.ghostName === 'INKY' || g.ghostName === 'WHITY') {
+                            g.currentAIState = 'help';
+                        } else {
+                            g.currentAIState = 'chase';
+                        }
                     }
                 }
 
+                // 2. RETARGET PATHING DESTINATION COORDINATES BASED ON CURRENT ACTIVE PROFILE
+                g.pathUpdateTimer -= deltaMs;
+                if (g.pathUpdateTimer <= 0 || g.aStarPath.length === 0) {
+                    g.pathUpdateTimer = 250 + Math.random() * 200; // Throttle to prevent frame degradation
+                    
+                    let targetGrid = { x: 14, z: 15 };
+                    let pacCurrentTarget = wasPacmanSeenThisFrame ? pacmanGridPos : worldToGrid(lastPacmanSeenPos);
+
+                    switch (g.currentAIState) {
+                        case 'chase':
+                            if (g.ghostName === 'BLINKY' || g.ghostName === 'TIM') {
+                                targetGrid = pacCurrentTarget;
+                            } else if (g.ghostName === 'PINKY' || g.ghostName === 'SPIKE') {
+                                // Ambush mode: Intercept 4 tiles ahead of Pacman vector direction
+                                let pDir = new THREE.Vector3(0, 0, 1).applyQuaternion(pacman.quaternion);
+                                let leadPos = pacman.position.clone().add(pDir.multiplyScalar(16));
+                                targetGrid = worldToGrid(leadPos);
+                            } else {
+                                targetGrid = pacCurrentTarget;
+                            }
+                            break;
+                            
+                        case 'scape':
+                            // Run into alternative safe map sector quadrant far away from Pacman current space
+                            targetGrid = {
+                                x: pacCurrentTarget.x > 14 ? 2 : 25,
+                                z: pacCurrentTarget.z > 15 ? 2 : 28
+                            };
+                            break;
+                            
+                        case 'scared':
+                            // Retreat strictly into home spawn corners
+                            if (g.ghostName === 'BLINKY') targetGrid = { x: 2, z: 2 };
+                            else if (g.ghostName === 'PINKY') targetGrid = { x: 25, z: 2 };
+                            else if (g.ghostName === 'INKY') targetGrid = { x: 2, z: 28 };
+                            else targetGrid = { x: 25, z: 28 };
+                            break;
+                            
+                        case 'help':
+                            // Help state: Flank Pacman relative to Blinky's current deployment zone coordinates
+                            let blinkyMesh = ghosts.find(gh => gh.ghostName === 'BLINKY');
+                            if (blinkyMesh) {
+                                let blinkGrid = worldToGrid(blinkyMesh.position);
+                                targetGrid = {
+                                    x: Math.max(1, Math.min(26, pacCurrentTarget.x * 2 - blinkGrid.x)),
+                                    z: Math.max(1, Math.min(29, pacCurrentTarget.z * 2 - blinkGrid.z))
+                                };
+                            } else {
+                                targetGrid = pacCurrentTarget;
+                            }
+                            break;
+                            
+                        case 'walk':
+                        default:
+                            // Select randomized accessible node coordinates
+                            let rx = Math.floor(Math.random() * 26) + 1;
+                            let rz = Math.floor(Math.random() * 29) + 1;
+                            while (checkGhostColGrid(rx, rz)) {
+                                rx = Math.floor(Math.random() * 26) + 1;
+                                rz = Math.floor(Math.random() * 29) + 1;
+                            }
+                            targetGrid = { x: rx, z: rz };
+                            break;
+                    }
+                    
+                    g.currentTargetCell = targetGrid;
+                    g.aStarPath = computeAStarPath(gGrid, targetGrid);
+                }
+
+                // 3. TRAVEL SMOOTHLY ALONG PRECOMPUTED UNBROKEN HIGH VELOCITY A* PATH PATHWAYS
+                if (g.aStarPath.length > 1) {
+                    let nextNode = g.aStarPath[1];
+                    let worldNext = gridToWorld(nextNode.x, nextNode.z);
+                    
+                    // Maintain standard elevation offset alignment
+                    worldNext.y = g.position.y; 
+                    
+                    let moveVec = worldNext.clone().sub(g.position);
+                    let stepDist = moveVec.length();
+                    
+                    if (stepDist < gSpeed) {
+                        g.position.copy(worldNext);
+                        g.aStarPath.shift(); // Move on forward towards next subsequent intersection index point
+                    } else {
+                        moveVec.normalize();
+                        g.position.add(moveVec.multiplyScalar(gSpeed));
+                        g.dir.copy(moveVec);
+                    }
+                } else {
+                    // Fallback to localized default tracking vector in case of full grid locks
+                    let targetWorld = gridToWorld(g.currentTargetCell.x, g.currentTargetCell.z);
+                    let fallbackVec = targetWorld.sub(g.position);
+                    fallbackVec.y = 0;
+                    if(fallbackVec.length() > 0.1) {
+                        fallbackVec.normalize();
+                        g.position.add(fallbackVec.multiplyScalar(gSpeed));
+                        g.dir.copy(fallbackVec);
+                    }
+                }
+
+                // Warp map boundaries integration check
                 if (g.position.x > 56) g.position.x = -56;
                 else if (g.position.x < -56) g.position.x = 56;
 
-                g.lookAt(g.position.x + g.dir.x, 0.3, g.position.z + g.dir.z);
+                g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
 
+                // Check fatal collision intersections with Pacman
                 if(pacman.position.distanceTo(g.position) < 1.6) {
                     if(powerUp) {
                         killGhost(g);
                     } else if(!isJumping) {
-                        gameState = 'dying'; deathTimer = 1.0; playSfx(200, 1.0, 'sawtooth');
+                        gameState = 'dying';
+                        deathTimer = 1.0;
+                        playSfx(200, 1.0, 'sawtooth');
                     }
                 }
             });
@@ -999,9 +1209,13 @@
             // Dots Collision
             dots.forEach(d => {
                 if(d.visible && pacman.position.distanceTo(d.position) < 1.8) {
-                    d.visible = false; addScore(10); playSfx(600, 0.05);
+                    d.visible = false; 
+                    addScore(10);
+                    playSfx(600, 0.05);
+                    
                     if(d.type === 0) {
-                        remainingDots--; document.getElementById('remaining').innerText = remainingDots;
+                        remainingDots--;
+                        document.getElementById('remaining').innerText = remainingDots;
                     } else {
                         addScore(40);
                         if(d.type === 2) { powerUp = true; powerTimeLeft = 8000; ghostCombo = 0; document.getElementById('powerBarContainer').style.display = 'block'; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); }); }
@@ -1013,19 +1227,45 @@
 
                     if(remainingDots <= 0) { 
                         if (level >= 256) {
-                            gameState = 'victory256'; document.getElementById('mythical-screen').style.display = 'flex';
-                            document.getElementById('minimap').style.display = 'none'; playSfx(100, 2.0, 'sawtooth', 0.2); generateGlitchMatrix(); return;
+                            gameState = 'victory256';
+                            document.getElementById('mythical-screen').style.display = 'flex';
+                            document.getElementById('minimap').style.display = 'none';
+                            playSfx(100, 2.0, 'sawtooth', 0.2);
+                            generateGlitchMatrix();
+                            return;
                         }
 
                         if (level % 3 === 0) {
-                            gameState = 'intermission'; document.getElementById('ui').style.display = 'none'; document.getElementById('minimap').style.display = 'none'; playSfx(1000, 1.0, 'square');
-                            interTimer = 0; interPhase = 0; csPacman.position.set(20, 0.8, 0); csPacman.scale.setScalar(1); csPacman.rotation.y = -Math.PI/2; csBlinky.position.set(30, 0, 0); csBlinky.rotation.y = -Math.PI/2; csBlinkyMat.color.setHex(0xff0000); csBlinkyBody.visible = true; csPellet.position.set(-15, 0.8, 0); csPellet.visible = true;
+                            gameState = 'intermission';
+                            document.getElementById('ui').style.display = 'none';
+                            document.getElementById('minimap').style.display = 'none';
+                            playSfx(1000, 1.0, 'square');
+
+                            interTimer = 0; interPhase = 0;
+                            
+                            csPacman.position.set(20, 0.8, 0);
+                            csPacman.scale.setScalar(1);
+                            csPacman.rotation.y = -Math.PI/2;
+                            
+                            csBlinky.position.set(30, 0, 0);
+                            csBlinky.rotation.y = -Math.PI/2;
+                            csBlinkyMat.color.setHex(0xff0000); 
+                            csBlinkyBody.visible = true; 
+                            
+                            csPellet.position.set(-15, 0.8, 0);
+                            csPellet.visible = true;
                         } else {
-                            level++; ghostSpeedMult += 0.15; document.getElementById('level').innerText = level; buildMap(); resetPositions(); playSfx(1000, 1.0, 'square');
+                            level++;
+                            ghostSpeedMult += 0.15;
+                            document.getElementById('level').innerText = level;
+                            buildMap();
+                            resetPositions();
+                            playSfx(1000, 1.0, 'square');
                         }
                     }
                 }
             });
+
             renderer.render(scene, camera);
         }
 
@@ -1038,4 +1278,3 @@
     </script>
 </body>
 </html>
-
