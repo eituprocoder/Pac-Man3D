@@ -34,10 +34,15 @@
         #menu-screen h1 { font-size: 42px; text-shadow: 0 0 20px #ffff00; margin: 10px 0 5px 0; letter-spacing: 4px; }
         #menu-screen h2 { font-size: 18px; color: #00f2ff; margin-bottom: 15px; text-shadow: 0 0 10px #00f2ff; }
         
-        /* Stats Panel for IndexedDB Storage */
-        #stats-panel { background: rgba(0,0,0,0.6); border: 1px solid #ff00ff; padding: 10px 20px; border-radius: 8px; margin-bottom: 20px; color: #ff00ff; font-size: 14px; text-shadow: 1px 1px 0 #000; display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
-        .stat-item span { color: #fff; font-weight: bold; }
+        /* High Records Display Board */
+        #record-board { background: rgba(255, 242, 0, 0.08); border: 2px solid #ffff00; border-radius: 12px; padding: 10px 15px; margin-bottom: 15px; font-size: 14px; color: #fff; width: 95%; max-width: 600px; display: flex; justify-content: space-around; text-shadow: 1px 1px 2px #000; box-sizing: border-box; box-shadow: 0 0 15px rgba(255,242,0,0.15); }
+        .record-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+        .record-label { font-size: 11px; color: #00f2ff; text-transform: uppercase; letter-spacing: 1px; }
+        .record-val { font-size: 18px; color: #ffff00; font-weight: bold; }
 
+        /* Desktop Keyboard Helper Container */
+        #desktop-instructions { font-size: 12px; color: #a2aab0; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; max-width: 600px; width: 95%; box-sizing: border-box; line-height: 1.4; text-align: center; }
+        
         /* Ghost Character Cast Grid */
         #ghost-cast-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-width: 600px; width: 95%; margin-bottom: 20px; background: rgba(0, 0, 0, 0.5); padding: 10px; border: 2px solid #0033ff; border-radius: 10px; text-align: left; box-sizing: border-box; }
         @media(max-width: 480px) { #ghost-cast-container { grid-template-columns: 1fr; font-size: 11px; } }
@@ -67,7 +72,7 @@
         #freezeBar { width: 100%; height: 100%; background: #00ffff; }
         
         .retry-btn { padding: 15px 40px; margin-top: 20px; font-weight: bold; cursor: pointer; border: none; font-size: 20px; border-radius: 10px; }
-        #camera-hint { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); color: rgba(255,255,255,0.8); font-size: 12px; pointer-events: none; text-align: center; text-shadow: 1px 1px 2px #000; }
+        #camera-hint { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); color: rgba(255,255,255,0.4); font-size: 12px; pointer-events: none; text-align: center; }
         
         .floating-text { position: absolute; color: yellow; font-weight: bold; font-size: 20px; pointer-events: none; animation: floatUp 1s ease-out forwards; text-shadow: 2px 2px 0 #000; z-index: 50; }
         @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0; } }
@@ -76,20 +81,36 @@
         #lives-container { display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; }
 
         /* Ready Go Presentation */
-        #ready-go-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center; z-index: 200; pointer-events: none; font-size: 60px; font-weight: bold; color: #ffff00; text-shadow: 4px 4px 0 #ff0000; letter-spacing: 5px; flex-direction: column;}
+        #ready-go-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center; z-index: 200; pointer-events: none; font-size: 60px; font-weight: bold; color: #ffff00; text-shadow: 4px 4px 0 #ff0000; letter-spacing: 5px; }
     </style>
 </head>
 <body>
     <div id="menu-screen">
         <h1>PAC-MAN 3D</h1>
         <h2>3D LABYRINTH</h2>
-        
-        <div id="stats-panel">
-            <div class="stat-item">HIGH SCORE: <span id="stat-score">0</span></div>
-            <div class="stat-item">MAX LEVEL: <span id="stat-level">1</span></div>
-            <div class="stat-item">GHOSTS BUSTED: <span id="stat-kills">0</span></div>
+
+        <!-- Record Archive Board -->
+        <div id="record-board">
+            <div class="record-item">
+                <span class="record-label">🏆 High Level</span>
+                <span class="record-val" id="rec-level">1</span>
+            </div>
+            <div class="record-item">
+                <span class="record-label">⭐ High Score</span>
+                <span class="record-val" id="rec-score">0</span>
+            </div>
+            <div class="record-item">
+                <span class="record-label">💀 Ghost Kills</span>
+                <span class="record-val" id="rec-kills">0</span>
+            </div>
         </div>
 
+        <!-- Desktop Controls Reference Indicator -->
+        <div id="desktop-instructions">
+            🎮 <strong>Desktop controls:</strong> Use <b style="color:#ffff00">W, A, S, D</b> or <b style="color:#ffff00">Arrow Keys</b> to move. Press <b style="color:#ffff00">Spacebar</b> to jump.<br>
+            🖱️ Click &amp; drag anywhere on the screen to rotate the 3D camera view!
+        </div>
+        
         <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY</button>
 
         <div id="ghost-cast-container">
@@ -165,7 +186,7 @@
     
     <div id="joystick-container"><div id="joystick-knob"></div></div>
     
-    <div id="camera-hint">↕ Drag / Mouse ↔<br>to rotate<br><br>WASD to Move<br>SPACE to Jump</div>
+    <div id="camera-hint">↕ Drag here ↔<br>to rotate</div>
 
     <div id="controls-right">
         <div id="btnJump" class="btn">JUMP</div>
@@ -178,89 +199,13 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- INDEXED DB HIGH SCORES & RECORDS ---
-        let localStats = { highestScore: 0, maxLevel: 1, maxKills: 0 };
-        const dbName = "PacMan3DStatsDB";
-        const idbRequest = indexedDB.open(dbName, 1);
-        
-        idbRequest.onupgradeneeded = (e) => {
-            const db = e.target.result;
-            if(!db.objectStoreNames.contains("stats")) {
-                db.createObjectStore("stats");
-            }
-        };
-        
-        idbRequest.onsuccess = (e) => {
-            const db = e.target.result;
-            const tx = db.transaction("stats", "readonly");
-            const store = tx.objectStore("stats");
-            const getReq = store.get("userStats");
-            
-            getReq.onsuccess = (res) => {
-                if(res.target.result) {
-                    localStats = res.target.result;
-                    document.getElementById('stat-score').innerText = localStats.highestScore;
-                    document.getElementById('stat-level').innerText = localStats.maxLevel;
-                    document.getElementById('stat-kills').innerText = localStats.maxKills;
-                }
-            };
-        };
-
-        function saveLocalStats() {
-            try {
-                const db = idbRequest.result;
-                if(db) {
-                    const tx = db.transaction("stats", "readwrite");
-                    const store = tx.objectStore("stats");
-                    store.put(localStats, "userStats");
-                }
-            } catch(e) {
-                console.error("IDB Save Error", e);
-            }
-        }
-
-        function checkStatsUpdate(newScore, newLevel, killsInc) {
-            let updated = false;
-            if(newScore > localStats.highestScore) {
-                localStats.highestScore = newScore;
-                updated = true;
-                document.getElementById('stat-score').innerText = localStats.highestScore;
-            }
-            if(newLevel > localStats.maxLevel) {
-                localStats.maxLevel = newLevel;
-                updated = true;
-                document.getElementById('stat-level').innerText = localStats.maxLevel;
-            }
-            if(killsInc > 0) {
-                localStats.maxKills += killsInc;
-                updated = true;
-                document.getElementById('stat-kills').innerText = localStats.maxKills;
-            }
-            if(updated) {
-                saveLocalStats();
-            }
-        }
-
-        // --- THEMES & COLORS ---
-        const THEMES = [
-            { name: "CLASSIC", floor: 0x000a22, wall: 0x0033ff, light: 0xffffff },
-            { name: "LIGHT BLUE", floor: 0x002233, wall: 0xadd8e6, light: 0xddffff },
-            { name: "GREEN", floor: 0x002200, wall: 0x00ff00, light: 0xddffdd },
-            { name: "YELLOW", floor: 0x222200, wall: 0xffff00, light: 0xffffff },
-            { name: "ORANGE", floor: 0x331100, wall: 0xff8800, light: 0xffddaa },
-            { name: "RED", floor: 0x220000, wall: 0xff0000, light: 0xffaaaa },
-            { name: "PINK", floor: 0x220011, wall: 0xff66b2, light: 0xffccdd },
-            { name: "MAGNET", floor: 0x002222, wall: 0x00cccc, light: 0xccffff },
-            { name: "PURPLE", floor: 0x110022, wall: 0x800080, light: 0xeeaaff },
-            { name: "WHITE", floor: 0x222222, wall: 0xffffff, light: 0xffffff }
-        ];
-
         // --- GAME STATE ---
         let level = 1;
         let score = 0, lives = 3, remainingDots = 0;
         let nextLifeThreshold = 10000;
         let gameState = 'lobby'; // lobby, ready, playing, dying, intermission, victory256
         let ghostCombo = 0;
+        let currentGhostKills = 0; // Tracks active ghost kills in this current play session
         
         // Powerups
         let powerUp = false, laserMode = false, speedMode = false, freezeMode = false;
@@ -276,6 +221,105 @@
         // --- COOPERATIVE INTEL & COMPASS SHARED SYSTEM ---
         let lastPacmanSeenPos = new THREE.Vector3(0, 0.8, 32);
         let wasPacmanSeenThisFrame = false;
+
+        // --- DYNAMIC WALL COLOR MAP PALETTE CONFIGURATION ---
+        // Rotates after every stage/intermission level cleared
+        const mapColors = [
+            0x0033ff, // classic blue
+            0x00d4ff, // light blue
+            0x00ff00, // green
+            0xffff00, // yellow
+            0xff5100, // orange
+            0xff0000, // red
+            0xff8da1, // pink
+            0xff00ff, // magenta (deep magnet/magenta style)
+            0x800080, // purple
+            0xffffff  // white
+        ];
+
+        // --- INDEXED DB ARCHIVE STATE VARIABLES ---
+        let db;
+        let highLevel = 1;
+        let highScore = 0;
+        let highGhostKills = 0;
+
+        // Open/Initialize IndexedDB
+        function initIndexedDB() {
+            try {
+                const request = indexedDB.open("Pacman3D_LocalRecords", 1);
+                request.onupgradeneeded = function(e) {
+                    const activeDb = e.target.result;
+                    if (!activeDb.objectStoreNames.contains("playerRecords")) {
+                        activeDb.createObjectStore("playerRecords", { keyPath: "id" });
+                    }
+                };
+                request.onsuccess = function(e) {
+                    db = e.target.result;
+                    loadRecordsFromDB();
+                };
+                request.onerror = function() {
+                    console.log("IndexedDB could not be opened. Record progression falling back to session space.");
+                };
+            } catch(e) {
+                console.log("IndexedDB error initialization fallback: ", e);
+            }
+        }
+
+        function loadRecordsFromDB() {
+            if (!db) return;
+            try {
+                const transaction = db.transaction(["playerRecords"], "readonly");
+                const store = transaction.objectStore("playerRecords");
+                const query = store.get("global_record");
+                
+                query.onsuccess = function() {
+                    if (query.result) {
+                        highLevel = query.result.highLevel || 1;
+                        highScore = query.result.highScore || 0;
+                        highGhostKills = query.result.highGhostKills || 0;
+                    }
+                    updateRecordDashboardDOM();
+                };
+            } catch(e) {
+                console.log("Failed reading database records: ", e);
+            }
+        }
+
+        function saveRecordsToDB() {
+            // Update active variables before commit logic checks
+            if (level > highLevel) highLevel = level;
+            if (score > highScore) highScore = score;
+            if (currentGhostKills > highGhostKills) highGhostKills = currentGhostKills;
+
+            updateRecordDashboardDOM();
+
+            if (!db) return;
+            try {
+                const transaction = db.transaction(["playerRecords"], "readwrite");
+                const store = transaction.objectStore("playerRecords");
+                store.put({
+                    id: "global_record",
+                    highLevel: highLevel,
+                    highScore: highScore,
+                    highGhostKills: highGhostKills
+                });
+            } catch(e) {
+                console.log("Failed writing database record values: ", e);
+            }
+        }
+
+        function updateRecordDashboardDOM() {
+            const recLvlEl = document.getElementById("rec-level");
+            const recScrEl = document.getElementById("rec-score");
+            const recKlsEl = document.getElementById("rec-kills");
+            if (recLvlEl) recLvlEl.innerText = highLevel;
+            if (recScrEl) recScrEl.innerText = highScore;
+            if (recKlsEl) recKlsEl.innerText = highGhostKills;
+        }
+
+        // Run Local DB initialization immediately
+        initIndexedDB();
+
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -430,27 +474,22 @@
         window.startGame = function() {
             document.getElementById('menu-screen').style.display = 'none';
             document.getElementById('ui').style.display = 'block';
-            
-            // Only show touch controls if on a touch device
-            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-                document.getElementById('joystick-container').style.display = 'flex';
-                document.getElementById('controls-right').style.display = 'flex';
-            }
+            document.getElementById('joystick-container').style.display = 'flex';
+            document.getElementById('controls-right').style.display = 'flex';
             document.getElementById('minimap').style.display = 'block';
             
             gameState = 'ready'; // Setup ready phase to prevent movement
             updateLivesDisplay();
             
             // Present Ready/Go Theme System Modals
-            const theme = THEMES[Math.floor((level - 1) / 3) % THEMES.length];
             const readyGoScreen = document.getElementById('ready-go-screen');
             const readyGoText = document.getElementById('ready-go-text');
             readyGoScreen.style.display = 'flex';
-            readyGoText.innerHTML = `READY?<br><span style="font-size: 24px; color: #${theme.wall.toString(16).padStart(6, '0')}; text-shadow: 2px 2px #000;">WORLD: ${theme.name}</span>`;
+            readyGoText.innerText = "READY?";
             readyGoText.style.color = "#ffff00";
 
             playPacmanTheme(() => {
-                readyGoText.innerHTML = "GO!";
+                readyGoText.innerText = "GO!";
                 readyGoText.style.color = "#00ff00";
                 
                 setTimeout(() => {
@@ -504,9 +543,6 @@
         const ghostBoxWalls = [];
         const boxMat = new THREE.MeshPhongMaterial({ color: 0xff00ff, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
 
-        scene.add(new THREE.AmbientLight(0x404040));
-        const light = new THREE.PointLight(0xffffff, 50, 60); scene.add(light);
-
         function buildMap() {
             walls.forEach(w => scene.remove(w.mesh));
             ghostBoxWalls.forEach(gW => scene.remove(gW.mesh));
@@ -517,17 +553,16 @@
             dots = []; 
             remainingDots = 0;
 
-            const theme = THEMES[Math.floor((level - 1) / 3) % THEMES.length];
-            floorMat.color.setHex(theme.floor);
-            light.color.setHex(theme.light);
-            const wallMaterial = new THREE.MeshPhongMaterial({ color: theme.wall });
+            // Determine active level wall color from thematic rotational list array
+            const wallHexColor = mapColors[(level - 1) % mapColors.length];
+            const activeWallMat = new THREE.MeshPhongMaterial({ color: wallHexColor });
 
             mapTemplate.forEach((row, z) => {
                 row.forEach((cell, x) => {
                     const pos = [(x - 13.5) * 4, 0, (z - 15) * 4];
                     
                     if (cell === 1) {
-                        const wall = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), wallMaterial);
+                        const wall = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), activeWallMat);
                         wall.position.set(...pos); scene.add(wall);
                         walls.push({ box: new THREE.Box3().setFromObject(wall), mesh: wall });
                     } else if (cell === 8) {
@@ -552,6 +587,9 @@
             });
             document.getElementById('remaining').innerText = remainingDots;
         }
+
+        scene.add(new THREE.AmbientLight(0x404040));
+        const light = new THREE.PointLight(0xffffff, 50, 60); scene.add(light);
 
         // --- GHOSTS (8 Unique Named Personalities) ---
         const ghostTypes = [
@@ -662,7 +700,9 @@
                 g.currentAIState = 'walk';
             });
             
-            powerUp = laserMode = speedMode = freezeMode = false;
+            powerUp = laserMode = speedMode = false;
+            // Retain freezeMode check from existing code if active, but turn off otherwise
+            freezeMode = false;
             auraMesh.visible = false;
             auraLight.intensity = 0;
             document.querySelectorAll('.bar-container').forEach(el => el.style.display = 'none');
@@ -672,6 +712,9 @@
             updateLivesDisplay();
             
             lastPacmanSeenPos.set(0, 0.8, 32);
+
+            // Commit/Check records storage anytime the positions/level re-init
+            saveRecordsToDB();
         }
 
         // --- LASER LOGIC WITH COMPREHENSIVE WALL IMPACT DISTANCE CLIPPING ---
@@ -717,7 +760,11 @@
                 ghostCombo++;
             }
             addScore(pts, g.position);
-            checkStatsUpdate(score, level, 1);
+            
+            // Increment & check DB Ghost kills
+            currentGhostKills++;
+            saveRecordsToDB();
+
             playSfx(500 + ghostCombo*100, 0.2, 'square');
         }
 
@@ -730,9 +777,9 @@
             const mapX = (x) => ((x + 56) / 112) * canvas.width;
             const mapY = (z) => ((z + 62) / 124) * canvas.height;
 
-            const theme = THEMES[Math.floor((level - 1) / 3) % THEMES.length];
-            ctx.fillStyle = "#" + theme.wall.toString(16).padStart(6, '0');
-            
+            // Align Minimap wall colors with dynamic stage theme values
+            const wallHexColor = mapColors[(level - 1) % mapColors.length];
+            ctx.fillStyle = '#' + wallHexColor.toString(16).padStart(6, '0');
             walls.forEach(w => {
                 ctx.fillRect(mapX(w.mesh.position.x) - 1.5, mapY(w.mesh.position.z) - 1.5, 3, 3);
             });
@@ -791,70 +838,84 @@
                 playSfx(1500, 0.6, 'sine', 0.1); 
                 if (pos3D) showFloatingText("1 UP!", pos3D.clone().add(new THREE.Vector3(0, 1.5, 0)));
             }
-            checkStatsUpdate(score, level, 0);
+
+            // Sync score records in real-time on score updates
+            saveRecordsToDB();
         }
 
-        // --- INPUTS ---
+        // --- INPUTS & COMPATIBILITIES (TOUCH & KEYBOARD/MOUSE) ---
         let moveF = 0, moveS = 0;
         let camAngleY = Math.PI/2, camAngleX = 0.4, camRadius = 15;
         let touchStartX = 0, touchStartY = 0, isDraggingCamera = false;
-        
-        // Desktop Keyboard Setup
-        const keys = { up: false, down: false, left: false, right: false };
-        
-        window.addEventListener('keydown', e => {
-            if(e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = true;
-            if(e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = true;
-            if(e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
-            if(e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
-            if(e.code === 'Space') { 
-                e.preventDefault(); 
-                if(!isJumping && gameState === 'playing') { 
-                    velocityY = 0.25; 
-                    isJumping = true; 
-                    playSfx(300, 0.2, 'square'); 
-                } 
+        let isJoystickActive = false; // Prevents joystick and keyboard fighting each other
+
+        // Keyboard Action Maps
+        const activeKeys = {};
+
+        window.addEventListener('keydown', (e) => {
+            activeKeys[e.code] = true;
+            if (e.code === 'Space') {
+                e.preventDefault();
+                triggerJumpAction();
             }
         });
-        
-        window.addEventListener('keyup', e => {
-            if(e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = false;
-            if(e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = false;
-            if(e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
-            if(e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+
+        window.addEventListener('keyup', (e) => {
+            activeKeys[e.code] = false;
         });
 
-        // Desktop Mouse Setup
-        window.addEventListener('mousedown', e => {
-            if(e.target.closest('.btn') || e.target.closest('.menu-btn')) return;
-            isDraggingCamera = true; 
-            touchStartX = e.clientX; 
-            touchStartY = e.clientY;
-        });
-        
-        window.addEventListener('mousemove', e => {
-            if(isDraggingCamera && gameState === 'playing') {
-                let deltaX = e.clientX - touchStartX, deltaY = e.clientY - touchStartY;
-                camAngleY -= deltaX * 0.01; 
-                camAngleX -= deltaY * 0.01;
-                camAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, camAngleX));
-                touchStartX = e.clientX; 
-                touchStartY = e.clientY;
+        function triggerJumpAction() {
+            if(!isJumping && gameState === 'playing') { 
+                velocityY = 0.25; 
+                isJumping = true; 
+                playSfx(300, 0.2, 'square'); 
             }
+        }
+
+        // Jump button click binding
+        document.getElementById('btnJump').addEventListener('touchstart', (e) => { 
+            e.preventDefault(); 
+            triggerJumpAction();
+        });
+        document.getElementById('btnJump').addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            triggerJumpAction();
         });
         
-        window.addEventListener('mouseup', () => isDraggingCamera = false);
+        // Desktop Click/Touch Start Mapping
+        const handleDragStart = (clientX, clientY, targetElement) => {
+            if (gameState !== 'playing') return;
+            if (targetElement.closest('.btn') || targetElement.closest('#joystick-container')) return;
+            isDraggingCamera = true;
+            touchStartX = clientX;
+            touchStartY = clientY;
+        };
 
-        document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); if(!isJumping && gameState === 'playing') { velocityY = 0.25; isJumping = true; playSfx(300, 0.2, 'square'); }});
-        
         window.addEventListener('touchstart', (e) => {
             for(let i=0; i<e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
                 if (t.clientX > window.innerWidth / 2 && !e.target.closest('.btn')) {
-                    isDraggingCamera = true; touchStartX = t.clientX; touchStartY = t.clientY;
+                    handleDragStart(t.clientX, t.clientY, e.target);
                 }
             }
         });
+
+        window.addEventListener('mousedown', (e) => {
+            handleDragStart(e.clientX, e.clientY, e.target);
+        });
+
+        // Desktop and Mobile Drag movement mapping
+        const handleDragMove = (clientX, clientY) => {
+            if (isDraggingCamera && gameState === 'playing') {
+                let deltaX = clientX - touchStartX;
+                let deltaY = clientY - touchStartY;
+                camAngleY -= deltaX * 0.007; 
+                camAngleX -= deltaY * 0.007;
+                camAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, camAngleX));
+                touchStartX = clientX;
+                touchStartY = clientY;
+            }
+        };
 
         window.addEventListener('touchmove', (e) => {
             if(gameState !== 'playing') return;
@@ -862,27 +923,35 @@
             for(let i=0; i<e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
                 if (t.clientX < window.innerWidth / 2) {
+                    isJoystickActive = true;
                     const r = document.getElementById('joystick-container').getBoundingClientRect();
                     let dx = t.clientX - (r.left + 50), dy = t.clientY - (r.top + 50);
                     const d = Math.sqrt(dx*dx+dy*dy) || 1;
                     moveS = (dx/d); moveF = (dy/d);
                     document.getElementById('joystick-knob').style.transform = `translate(${(dx/d)*Math.min(d,40)/2}px, ${(dy/d)*Math.min(d,40)/2}px)`;
                 } else if (isDraggingCamera) {
-                    let deltaX = t.clientX - touchStartX, deltaY = t.clientY - touchStartY;
-                    camAngleY -= deltaX * 0.01; camAngleX -= deltaY * 0.01;
-                    camAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, camAngleX));
-                    touchStartX = t.clientX; touchStartY = t.clientY;
+                    handleDragMove(t.clientX, t.clientY);
                 }
             }
         }, { passive: false });
 
+        window.addEventListener('mousemove', (e) => {
+            handleDragMove(e.clientX, e.clientY);
+        });
+
+        // Touch/Click end releases
         window.addEventListener('touchend', (e) => { 
             for(let i=0; i<e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
                 if(t.clientX < window.innerWidth/2) {
+                    isJoystickActive = false;
                     moveF = moveS = 0; document.getElementById('joystick-knob').style.transform = 'translate(0,0)'; 
                 } else { isDraggingCamera = false; }
             }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingCamera = false;
         });
 
         // --- GRID POSITION MATH TRANSLATIONS FOR PATHFINDING ---
@@ -1141,13 +1210,10 @@
                         level++;
                         ghostSpeedMult += 0.15;
                         document.getElementById('level').innerText = level;
-                        checkStatsUpdate(score, level, 0); // Save level milestone
+                        document.getElementById('ui').style.display = 'block';
+                        document.getElementById('minimap').style.display = 'block';
                         buildMap();
                         resetPositions();
-                        
-                        const theme = THEMES[Math.floor((level - 1) / 3) % THEMES.length];
-                        showFloatingText(`WORLD: ${theme.name}`, new THREE.Vector3(0,3,32));
-                        
                         gameState = 'playing';
                     }
                 }
@@ -1187,24 +1253,27 @@
                 if(pacman.position.y <= 0.8) { pacman.position.y = 0.8; isJumping = false; }
             }
 
-            let inputS = moveS;
-            let inputF = moveF;
+            // Keyboard Control Evaluations (Prioritized over joystick unless mobile active)
+            let finalMoveS = moveS;
+            let finalMoveF = moveF;
 
-            // Merge desktop input with mobile joystick logic if unused
-            if (inputS === 0 && inputF === 0) {
-                let dx = 0; let dy = 0;
-                if(keys.up) dy = -1;
-                if(keys.down) dy = 1;
-                if(keys.left) dx = -1;
-                if(keys.right) dx = 1;
-                let d = Math.sqrt(dx*dx+dy*dy) || 1;
-                inputS = dx/d;
-                inputF = dy/d;
+            if (!isJoystickActive) {
+                let keysMoveS = 0;
+                let keysMoveF = 0;
+                if (activeKeys['KeyW'] || activeKeys['ArrowUp']) keysMoveF = -1;
+                if (activeKeys['KeyS'] || activeKeys['ArrowDown']) keysMoveF = 1;
+                if (activeKeys['KeyA'] || activeKeys['ArrowLeft']) keysMoveS = -1;
+                if (activeKeys['KeyD'] || activeKeys['ArrowRight']) keysMoveS = 1;
+                
+                if (keysMoveS !== 0 || keysMoveF !== 0) {
+                    finalMoveS = keysMoveS;
+                    finalMoveF = keysMoveF;
+                }
             }
 
             let curSpeed = pacBaseSpeed * (speedMode ? 2.0 : 1.0);
-            const v = new THREE.Vector3(inputS, 0, inputF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize().multiplyScalar(curSpeed);
-            isMoving = (inputS !== 0 || inputF !== 0);
+            const v = new THREE.Vector3(finalMoveS, 0, finalMoveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize().multiplyScalar(curSpeed);
+            isMoving = (finalMoveS !== 0 || finalMoveF !== 0);
 
             if(isMoving) {
                 const npX = pacman.position.clone(); npX.x += v.x; if(!checkCol(npX)) pacman.position.x = npX.x;
@@ -1532,6 +1601,7 @@
                         gameState = 'dying';
                         deathTimer = 1.0;
                         playSfx(200, 1.0, 'sawtooth');
+                        saveRecordsToDB(); // Save on death events
                     }
                 }
             });
@@ -1562,8 +1632,12 @@
                             document.getElementById('minimap').style.display = 'none';
                             playSfx(100, 2.0, 'sawtooth', 0.2);
                             generateGlitchMatrix();
+                            saveRecordsToDB();
                             return;
                         }
+
+                        // Save high score progression whenever stage clears
+                        saveRecordsToDB();
 
                         if (level % 3 === 0) {
                             gameState = 'intermission';
@@ -1588,13 +1662,9 @@
                             level++;
                             ghostSpeedMult += 0.15;
                             document.getElementById('level').innerText = level;
-                            checkStatsUpdate(score, level, 0); // Save level milestone
                             buildMap();
                             resetPositions();
                             playSfx(1000, 1.0, 'square');
-                            
-                            const theme = THEMES[Math.floor((level - 1) / 3) % THEMES.length];
-                            showFloatingText(`WORLD: ${theme.name}`, new THREE.Vector3(0,3,32));
                         }
                     }
                 }
