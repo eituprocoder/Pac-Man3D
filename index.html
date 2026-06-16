@@ -119,19 +119,19 @@
         <div id="ghost-cast-container">
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ff0000;"></span>
-                <div class="ghost-info"><strong style="color:#ff0000;">BLINKY</strong><br>Direct Tracking | <span style="color:#ff5555;">RAGE</span> when close (grows &amp; speeds up)</div>
+                <div class="ghost-info"><strong style="color:#ff0000;">BLINKY</strong><br>shadow | <span style="color:#ff5555;">RAGE</span> when close (grows &amp; speeds up)</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffb8ff;"></span>
-                <div class="ghost-info"><strong style="color:#ffb8ff;">PINKY</strong><br>Ambush interceptor | <span style="color:#ff66cc;">DASHES</span> forward when in line of sight</div>
+                <div class="ghost-info"><strong style="color:#ffb8ff;">PINKY</strong><br>speedy | <span style="color:#ff66cc;">DASHES</span> forward when in line of sight</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#00ffff;"></span>
-                <div class="ghost-info"><strong style="color:#00ffff;">INKY</strong><br>Shortcuts calculator | <span style="color:#55ffff;">JUMPS</span> over walls &amp; hurdles to trap you</div>
+                <div class="ghost-info"><strong style="color:#00ffff;">INKY</strong><br>bashful | <span style="color:#55ffff;">JUMPS</span> over walls &amp; hurdles to trap you</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffb852;"></span>
-                <div class="ghost-info"><strong style="color:#ffb852;">CLYDE</strong><br>Attacks &amp; retreats | Spawns harmless <span style="color:#ffb852;">ILLUSIONS</span> to confuse you</div>
+                <div class="ghost-info"><strong style="color:#ffb852;">CLYDE</strong><br> pokey | Spawns harmless <span style="color:#ffb852;">ILLUSIONS</span> to confuse you</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#800080;"></span>
@@ -2194,6 +2194,33 @@
         initGhosts();
         resetPositions();
         animate();
+// ==========================================
+// MÚSICA DE FONDO PARA TU PAC-MAN 3D
+// ==========================================
+
+// 1. Creamos el cargador y los elementos de audio de Three.js
+const listener = new THREE.AudioListener();
+camera.add(listener); // Añade el oyente a tu cámara existente
+
+const soundtrack = new THREE.Audio(listener);
+const audioLoader = new THREE.AudioLoader();
+
+// 2. Cargamos tu archivo "PAC JUMP UP!.mp3"
+audioLoader.load('PAC JUMP UP!.mp3', function(buffer) {
+    soundtrack.setBuffer(buffer);
+    soundtrack.setLoop(true);     // Reproducción infinita
+    soundtrack.setVolume(0.3);    // Volumen moderado (30%) para no aturdir
+    
+    // 3. Activador por clic para evitar el bloqueo del navegador
+    const startAudio = () => {
+        if (!soundtrack.isPlaying) {
+            soundtrack.play();
+        }
+    };
+
+    // El audio se activará en cuanto el usuario haga clic o presione una tecla para jugar
+    window.addEventListener('startGame', startAudio);
+});
 
     </script>
 </body>
