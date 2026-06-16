@@ -2194,34 +2194,6 @@
         initGhosts();
         resetPositions();
         animate();
-// ==========================================
-// MÚSICA DE FONDO PARA TU PAC-MAN 3D
-// ==========================================
-
-// 1. Creamos el cargador y los elementos de audio de Three.js
-const listener = new THREE.AudioListener();
-camera.add(listener); // Añade el oyente a tu cámara existente
-
-const soundtrack = new THREE.Audio(listener);
-const audioLoader = new THREE.AudioLoader();
-
-// 2. Cargamos tu archivo "PAC JUMP UP!.mp3"
-audioLoader.load('PAC JUMP UP!.mp3', function(buffer) {
-    soundtrack.setBuffer(buffer);
-    soundtrack.setLoop(true);     // Reproducción infinita
-    soundtrack.setVolume(0.3);    // Volumen moderado (30%) para no aturdir
-    
-    // 3. Activador por clic para evitar el bloqueo del navegador
-    const startAudio = () => {
-        if (!soundtrack.isPlaying) {
-            soundtrack.play();
-        }
-    };
-
-    // El audio se activará en cuanto el usuario haga clic o presione una tecla para jugar
-    window.addEventListener('startGame', startAudio);
-});
-
     </script>
 </body>
 </html>
