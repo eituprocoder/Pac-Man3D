@@ -40,6 +40,25 @@
         .record-label { font-size: 11px; color: #00f2ff; text-transform: uppercase; letter-spacing: 1px; }
         .record-val { font-size: 18px; color: #ffff00; font-weight: bold; }
 
+        /* Trophies Display Board */
+        #trophy-board { background: rgba(0, 242, 255, 0.08); border: 2px solid #00f2ff; border-radius: 12px; padding: 12px; margin-bottom: 15px; width: 95%; max-width: 600px; box-sizing: border-box; color: #fff; box-shadow: 0 0 15px rgba(0, 242, 255, 0.15); }
+        #trophy-board h3 { margin: 0 0 10px 0; font-size: 14px; color: #00f2ff; letter-spacing: 2px; }
+        .trophy-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        @media(max-width: 480px) { .trophy-grid { grid-template-columns: repeat(2, 1fr); } }
+        .trophy-item { background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,255,0.2); border-radius: 8px; padding: 6px; display: flex; flex-direction: column; align-items: center; filter: grayscale(1); opacity: 0.5; transition: all 0.3s ease; }
+        .trophy-item.unlocked { filter: grayscale(0); opacity: 1; border-color: #ffff00; background: rgba(255, 242, 0, 0.05); }
+        .trophy-icon { font-size: 20px; margin-bottom: 2px; }
+        .trophy-name { font-size: 9px; font-weight: bold; text-align: center; color: #a2aab0; }
+        .trophy-item.unlocked .trophy-name { color: #fff; }
+
+        /* Real-time Achievement Unlocked Toast */
+        #achievement-popup { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: rgba(0, 4, 17, 0.95); border: 3px solid #ffff00; border-radius: 12px; padding: 12px 25px; display: flex; align-items: center; gap: 15px; color: #fff; z-index: 2000; box-shadow: 0 0 25px rgba(255, 242, 0, 0.5); transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #achievement-popup.show { top: 20px; }
+        .toast-icon { font-size: 32px; animation: bounce 1s infinite alternate; }
+        .toast-info { text-align: left; }
+        .toast-title { font-size: 11px; color: #00f2ff; letter-spacing: 1px; }
+        .toast-name { font-size: 16px; font-weight: bold; color: #ffff00; }
+
         /* Desktop Keyboard Helper Container */
         #desktop-instructions { font-size: 12px; color: #a2aab0; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; max-width: 600px; width: 95%; box-sizing: border-box; line-height: 1.4; text-align: center; }
         
@@ -72,6 +91,11 @@
         #freezeBar { width: 100%; height: 100%; background: #00ffff; }
         #dashBar { width: 100%; height: 100%; background: #00ffff; }
         
+        /* Mega Boss UI Indicators */
+        #bossBarContainer { display: none; width: 280px; height: 18px; border: 3px solid #ff0055; border-radius: 8px; margin: 8px auto; background: #20000a; position: relative; box-shadow: 0 0 15px rgba(255,0,85,0.6); }
+        #bossBar { width: 100%; height: 100%; background: linear-gradient(90deg, #ff0055, #ff5500); transition: width 0.1s ease-out; }
+        .boss-label { font-size: 11px; position: absolute; width: 280px; text-align: center; top: 1px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px #000; z-index: 5; }
+
         .retry-btn { padding: 15px 40px; margin-top: 20px; font-weight: bold; cursor: pointer; border: none; font-size: 20px; border-radius: 10px; }
         #camera-hint { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); color: rgba(255,255,255,0.4); font-size: 12px; pointer-events: none; text-align: center; }
         
@@ -83,12 +107,16 @@
 
         /* Ready Go Presentation */
         #ready-go-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center; z-index: 200; pointer-events: none; font-size: 60px; font-weight: bold; color: #ffff00; text-shadow: 4px 4px 0 #ff0000; letter-spacing: 5px; }
+        
+        /* Interactive Soundtrack Label */
+        #soundtrack-tag { display: inline-block; margin-top: 6px; font-size: 11px; color: #00ff00; background: rgba(0, 255, 0, 0.1); padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(0, 255, 0, 0.3); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; text-shadow: 0 0 5px #00ff00; } }
     </style>
 </head>
 <body>
     <div id="menu-screen">
         <h1>PAC-MAN 3D</h1>
-        <h2>3D LABYRINTH &amp; ENHANCED ABILITIES</h2>
+        <h2>3D LABYRINTH</h2>
 
         <!-- Record Archive Board -->
         <div id="record-board">
@@ -103,6 +131,45 @@
             <div class="record-item">
                 <span class="record-label">💀 Ghost Kills</span>
                 <span class="record-val" id="rec-kills">0</span>
+            </div>
+        </div>
+
+        <!-- Trophy Board Collection -->
+        <div id="trophy-board">
+            <h3>🏆 TROPHY HALL 🏆</h3>
+            <div class="trophy-grid">
+                <div class="trophy-item" id="tr-first-bite" title="Unlock by eating your first dot!">
+                    <span class="trophy-icon">🍕</span>
+                    <span class="trophy-name">First Bite</span>
+                </div>
+                <div class="trophy-item" id="tr-ghost-buster" title="Vanquish 5 ghosts in a single game session!">
+                    <span class="trophy-icon">👻</span>
+                    <span class="trophy-name">Ghost Buster</span>
+                </div>
+                <div class="trophy-item" id="tr-high-roller" title="Collect 5,000 score points!">
+                    <span class="trophy-icon">💰</span>
+                    <span class="trophy-name">High Roller</span>
+                </div>
+                <div class="trophy-item" id="tr-speed-demon" title="Perform Quick Dash 5 times!">
+                    <span class="trophy-icon">⚡</span>
+                    <span class="trophy-name">Speed Demon</span>
+                </div>
+                <div class="trophy-item" id="tr-level-clear" title="Clear Stage 3 intermission!">
+                    <span class="trophy-icon">🎖️</span>
+                    <span class="trophy-name">Gladiator</span>
+                </div>
+                <div class="trophy-item" id="tr-boss-slayer" title="Defeat a Mega Rainbow Ghost boss!">
+                    <span class="trophy-icon">👑</span>
+                    <span class="trophy-name">Boss Slayer</span>
+                </div>
+                <div class="trophy-item" id="tr-quad-core" title="Unlock all 4 powerups in a single level!">
+                    <span class="trophy-icon">🚀</span>
+                    <span class="trophy-name">Quad Core</span>
+                </div>
+                <div class="trophy-item" id="tr-immortal" title="Score over 15,000 points without dying once!">
+                    <span class="trophy-icon">🔮</span>
+                    <span class="trophy-name">Immortal</span>
+                </div>
             </div>
         </div>
 
@@ -131,11 +198,11 @@
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffb852;"></span>
-                <div class="ghost-info"><strong style="color:#ffb852;">CLYDE</strong><br>Pokey | Spawns harmless <span style="color:#ffb852;">ILLUSIONS</span> to confuse you</div>
+                <div class="ghost-info"><strong style="color:#ffb852;">CLYDE</strong><br> Pokey | Spawns harmless <span style="color:#ffb852;">ILLUSIONS</span> to confuse you</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#800080;"></span>
-                <div class="ghost-info"><strong style="color:#800080;">TIM</strong><br>Tracker | <span style="color:#cc55ff;">TELEPORTS</span> symmetrically across the map to intercept</div>
+                <div class="ghost-info"><strong style="color:#800080;">TIM</strong><br>Stalker Tracker | <span style="color:#cc55ff;">TELEPORTS</span> symmetrically across the map to intercept</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#00ff00;"></span>
@@ -157,11 +224,13 @@
     <div id="ui">
         LEVEL: <span id="level">1</span> | SCORE: <span id="score">0</span> | LIVES: <span id="lives-container"></span><br>
         DOTS LEFT: <span id="remaining">0</span>
+        <div id="soundtrack-tag">SOUNDTRACK: INITIALIZING...</div>
         <div id="powerBarContainer" class="bar-container"><div class="bar-label">POWER PELLET</div><div id="powerBar"></div></div>
         <div id="laserBarContainer" class="bar-container"><div class="bar-label">LASER</div><div id="laserBar"></div></div>
         <div id="speedBarContainer" class="bar-container"><div class="bar-label">SPEED BOOST</div><div id="speedBar"></div></div>
         <div id="freezeBarContainer" class="bar-container"><div class="bar-label">GHOST FREEZE</div><div id="freezeBar"></div></div>
         <div id="dashBarContainer" class="bar-container" style="display: block;"><div class="bar-label" id="dashLabel">QUICK DASH: READY</div><div id="dashBar"></div></div>
+        <div id="bossBarContainer"><div class="boss-label">👑 MEGA RAINBOW GHOST HEALTH 👑</div><div id="bossBar"></div></div>
         <div id="fruitIndicator" style="display:none; color: #ff00ff; margin-top: 10px; font-size: 18px; animation: pulse 1s infinite;">FRUIT APPEARED!</div>
     </div>
     
@@ -195,6 +264,15 @@
     <div id="controls-right">
         <div id="btnJump" class="btn">JUMP</div>
         <div id="btnDash" class="btn" style="background: rgba(0, 242, 255, 0.3); border-color: #00f2ff; color: #00f2ff; box-shadow: 0 0 15px #00f2ff; margin-top: 10px;">DASH</div>
+    </div>
+
+    <!-- Achievement Toast Notification UI -->
+    <div id="achievement-popup">
+        <div class="toast-icon">🏆</div>
+        <div class="toast-info">
+            <div class="toast-title">ACHIEVEMENT UNLOCKED!</div>
+            <div class="toast-name" id="achievement-toast-name">First Bite</div>
+        </div>
     </div>
 
     <script type="importmap">
@@ -231,6 +309,7 @@
         let dashTimeRemaining = 0;
         let dashVelocity = new THREE.Vector3();
         let dashGlowTimer = 0;
+        let totalDashesPerformed = 0;
 
         // --- NEW: COOPERATIVE ESCAPE ROUTE INTEL MEMORY SYSTEM ---
         let escapeRouteHistory = [];   // Array of Vector3 positions tracking Pacman's escape path
@@ -242,8 +321,158 @@
         let goldyWalls = [];           // Placed barriers
         let activeIllusions = [];      // Clyde's phantom projection meshes
 
+        // --- NEW: BOSS GHOST STATS AND ATTACK ENGINES ---
+        let bossActive = false;
+        let bossHealth = 100;
+        let bossMaxHealth = 100;
+        let bossGhostEntity = null;
+        let bossProjectiles = [];
+        let bossShockwaves = [];
+        let bossSlamTimer = 0;
+        let bossShootTimer = 0;
+
+        // --- NEW: PROCEDURAL SYNTHESIZER SOUNDTRACK SYSTEM ---
+        let synthSchedulerInterval = null;
+        let synthTempo = 110;
+        let synthBeatStep = 0;
+        let audioCtxReady = false;
+        const tracksMeta = [
+            { name: "RETRO CHIP BOUNCE", tempo: 112, waveform: "square" },
+            { name: "NEON TECHNO DIGIT", tempo: 124, waveform: "triangle" },
+            { name: "SPOOKY HOUSE HAUNT", tempo: 100, waveform: "sawtooth" },
+            { name: "PAC SPEEDRUN MARATHON", tempo: 135, waveform: "square" },
+            { name: "8-BIT SYNAPSE SLAM", tempo: 118, waveform: "sine" },
+            { name: "DEEP SPACE LABYRINTH", tempo: 105, waveform: "sawtooth" },
+            { name: "MEGA BOSS MARCH OF OMEGA", tempo: 140, waveform: "square" },
+            { name: "HEROIC ANTHEM OUTRUN", tempo: 125, waveform: "triangle" }
+        ];
+
+        // --- NEW: HIGH-PERFORMANCE PARTICLE SYSTEM ENGINE ---
+        const activeParticles = [];
+        const particlePool = [];
+
+        function createExplosion(pos, colorHex, count = 25, size = 0.25, speed = 0.2) {
+            for (let i = 0; i < count; i++) {
+                let pMesh;
+                if (particlePool.length > 0) {
+                    pMesh = particlePool.pop();
+                    pMesh.material.color.setHex(colorHex);
+                    pMesh.visible = true;
+                } else {
+                    pMesh = new THREE.Mesh(
+                        new THREE.BoxGeometry(size, size, size),
+                        new THREE.MeshBasicMaterial({ color: colorHex })
+                    );
+                }
+                pMesh.position.copy(pos);
+                scene.add(pMesh);
+
+                const dir = new THREE.Vector3(
+                    (Math.random() - 0.5) * 2,
+                    (Math.random() - 0.2) * 2,
+                    (Math.random() - 0.5) * 2
+                ).normalize().multiplyScalar(Math.random() * speed + 0.05);
+
+                activeParticles.push({
+                    mesh: pMesh,
+                    velocity: dir,
+                    gravity: 0.005,
+                    life: 1.0,
+                    decay: Math.random() * 0.03 + 0.02
+                });
+            }
+        }
+
+        function createSparkParticles(pos, colorHex = 0xffffff, count = 5) {
+            createExplosion(pos, colorHex, count, 0.12, 0.1);
+        }
+
+        function createDashTrailEffect(pos) {
+            for (let i = 0; i < 2; i++) {
+                const trailGeo = new THREE.BoxGeometry(0.35, 0.35, 0.35);
+                const trailMat = new THREE.MeshBasicMaterial({
+                    color: 0x00ffff,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const trailMesh = new THREE.Mesh(trailGeo, trailMat);
+                trailMesh.position.copy(pos).add(new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.8,
+                    (Math.random() - 0.5) * 0.8,
+                    (Math.random() - 0.5) * 0.8
+                ));
+                scene.add(trailMesh);
+
+                activeParticles.push({
+                    mesh: trailMesh,
+                    velocity: new THREE.Vector3(0, 0, 0),
+                    gravity: -0.001,
+                    life: 1.0,
+                    decay: 0.07
+                });
+            }
+        }
+
+        function updateParticleEngine(deltaMs) {
+            for (let i = activeParticles.length - 1; i >= 0; i--) {
+                const p = activeParticles[i];
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    p.mesh.visible = false;
+                    scene.remove(p.mesh);
+                    particlePool.push(p.mesh);
+                    activeParticles.splice(i, 1);
+                } else {
+                    p.mesh.position.add(p.velocity);
+                    p.velocity.y -= p.gravity;
+                    p.mesh.scale.setScalar(p.life);
+                    if (p.mesh.material) {
+                        p.mesh.material.opacity = p.life;
+                    }
+                }
+            }
+        }
+
+        // --- NEW: COMPREHENSIVE TROPHIES ENGINE ---
+        let unlockedTrophies = {};
+        const trophiesList = {
+            "tr-first-bite": { title: "First Bite", hint: "Unlocked first dot!", icon: "🍕" },
+            "tr-ghost-buster": { title: "Ghost Buster", hint: "Defeated 5 ghosts in a session!", icon: "👻" },
+            "tr-high-roller": { title: "High Roller", hint: "Scored 5,000 points!", icon: "💰" },
+            "tr-speed-demon": { title: "Speed Demon", hint: "Quick Dashed 5 times!", icon: "⚡" },
+            "tr-level-clear": { title: "Gladiator", hint: "Passed the level 3 intermission!", icon: "🎖️" },
+            "tr-boss-slayer": { title: "Boss Slayer", hint: "Defeated the Mega Rainbow Ghost!", icon: "👑" },
+            "tr-quad-core": { title: "Quad Core", hint: "Had all 4 powerups active simultaneously!", icon: "🚀" },
+            "tr-immortal": { title: "Immortal", hint: "Reached 15,000 points without losing a life!", icon: "🔮" }
+        };
+
+        function triggerTrophyUnlock(id) {
+            if (unlockedTrophies[id]) return;
+            unlockedTrophies[id] = true;
+            
+            // Render popup
+            const info = trophiesList[id];
+            if (info) {
+                const popup = document.getElementById('achievement-popup');
+                const toastName = document.getElementById('achievement-toast-name');
+                if (popup && toastName) {
+                    toastName.innerText = info.title;
+                    document.querySelector('.toast-icon').innerText = info.icon;
+                    popup.classList.add('show');
+                    setTimeout(() => popup.classList.remove('show'), 4000);
+                }
+                playSfx(1200, 0.4, 'sine', 0.25);
+                playSfx(1500, 0.4, 'triangle', 0.25);
+            }
+            
+            const card = document.getElementById(id);
+            if (card) {
+                card.classList.add('unlocked');
+            }
+            saveTrophiesToDB();
+        }
+
         // --- DYNAMIC WALL COLOR MAP PALETTE CONFIGURATION ---
-        // Rotates after every stage/intermission level cleared
         const mapColors = [
             0x0033ff, // classic blue
             0x00d4ff, // light blue
@@ -252,7 +481,7 @@
             0xff5100, // orange
             0xff0000, // red
             0xff8da1, // pink
-            0xff00ff, // magenta (deep magnet/magenta style)
+            0xff00ff, // magenta
             0x800080, // purple
             0xffffff  // white
         ];
@@ -263,7 +492,6 @@
         let highScore = 0;
         let highGhostKills = 0;
 
-        // Open/Initialize IndexedDB
         function initIndexedDB() {
             try {
                 const request = indexedDB.open("Pacman3D_LocalRecords", 1);
@@ -278,10 +506,10 @@
                     loadRecordsFromDB();
                 };
                 request.onerror = function() {
-                    console.log("IndexedDB could not be opened. Record progression falling back to session space.");
+                    console.log("IndexedDB failed. Falling back to session space.");
                 };
             } catch(e) {
-                console.log("IndexedDB error initialization fallback: ", e);
+                console.log("IndexedDB initialization error fallback: ", e);
             }
         }
 
@@ -297,16 +525,17 @@
                         highLevel = query.result.highLevel || 1;
                         highScore = query.result.highScore || 0;
                         highGhostKills = query.result.highGhostKills || 0;
+                        unlockedTrophies = query.result.unlockedTrophies || {};
                     }
                     updateRecordDashboardDOM();
+                    updateTrophiesDOM();
                 };
             } catch(e) {
-                console.log("Failed reading database records: ", e);
+                console.log("Failed reading records database: ", e);
             }
         }
 
         function saveRecordsToDB() {
-            // Update active variables before commit logic checks
             if (level > highLevel) highLevel = level;
             if (score > highScore) highScore = score;
             if (currentGhostKills > highGhostKills) highGhostKills = currentGhostKills;
@@ -321,11 +550,16 @@
                     id: "global_record",
                     highLevel: highLevel,
                     highScore: highScore,
-                    highGhostKills: highGhostKills
+                    highGhostKills: highGhostKills,
+                    unlockedTrophies: unlockedTrophies
                 });
             } catch(e) {
-                console.log("Failed writing database record values: ", e);
+                console.log("Failed writing records: ", e);
             }
+        }
+
+        function saveTrophiesToDB() {
+            saveRecordsToDB();
         }
 
         function updateRecordDashboardDOM() {
@@ -337,9 +571,16 @@
             if (recKlsEl) recKlsEl.innerText = highGhostKills;
         }
 
-        // Run Local DB initialization immediately
-        initIndexedDB();
+        function updateTrophiesDOM() {
+            Object.keys(trophiesList).forEach(id => {
+                const card = document.getElementById(id);
+                if (card && unlockedTrophies[id]) {
+                    card.classList.add('unlocked');
+                }
+            });
+        }
 
+        initIndexedDB();
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -361,7 +602,72 @@
             } catch(e){}
         }
 
-        // --- SYNTHESIZED CLASSIC THEME ADDITION ---
+        // --- PROCEDURAL SYNTHESIZED MUSIC SEQUENCER ---
+        const synthScale = [130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00]; // Pentatonic major
+        
+        function startProceduralSoundtrack() {
+            audioCtxReady = true;
+            if (synthSchedulerInterval) clearInterval(synthSchedulerInterval);
+            
+            const trackIdx = (level - 1) % tracksMeta.length;
+            const meta = tracksMeta[trackIdx];
+            document.getElementById('soundtrack-tag').innerText = `SOUNDTRACK: ${meta.name} 🎵`;
+            synthTempo = meta.tempo;
+            
+            const stepMs = (60 / synthTempo / 2) * 1000; // eighth notes
+            
+            synthSchedulerInterval = setInterval(() => {
+                if (gameState !== 'playing' && gameState !== 'ready') return;
+                
+                // Basslines & Arpeggios loops procedural generator
+                const step = synthBeatStep % 16;
+                synthBeatStep++;
+                
+                try {
+                    const ctx = audioCtx;
+                    if(ctx.state === 'suspended') ctx.resume();
+                    
+                    // Bass on beats 0, 4, 8, 12
+                    if (step % 4 === 0) {
+                        const bOsc = ctx.createOscillator();
+                        const bGain = ctx.createGain();
+                        bOsc.type = "sawtooth";
+                        // Play a very retro low note
+                        const rootNote = synthScale[Math.floor((level - 1) % 4)] / 2;
+                        bOsc.frequency.setValueAtTime(rootNote, ctx.currentTime);
+                        bGain.gain.setValueAtTime(0.04, ctx.currentTime);
+                        bGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
+                        bOsc.connect(bGain);
+                        bGain.connect(ctx.destination);
+                        bOsc.start();
+                        bOsc.stop(ctx.currentTime + 0.3);
+                    }
+                    
+                    // Lead Arpeggiator pattern
+                    let noteIdx = (step * 3) % synthScale.length;
+                    if (level % 10 === 0) {
+                        // Boss music aggressive scaling
+                        noteIdx = (step * 7) % synthScale.length;
+                    }
+                    
+                    // Pseudo-random but deterministic melody sequence
+                    const playMelody = (step % 3 === 0) || (step % 4 === 1);
+                    if (playMelody) {
+                        const lOsc = ctx.createOscillator();
+                        const lGain = ctx.createGain();
+                        lOsc.type = meta.waveform;
+                        lOsc.frequency.setValueAtTime(synthScale[noteIdx] * (level % 10 === 0 ? 1.5 : 1), ctx.currentTime);
+                        lGain.gain.setValueAtTime(0.025, ctx.currentTime);
+                        lGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+                        lOsc.connect(lGain);
+                        lGain.connect(ctx.destination);
+                        lOsc.start();
+                        lOsc.stop(ctx.currentTime + 0.15);
+                    }
+                } catch(err) {}
+            }, stepMs);
+        }
+
         function playPacmanTheme(onComplete) {
             try {
                 if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -424,7 +730,7 @@
                     if(onComplete) onComplete();
                 }, (startTime - ctx.currentTime) * 1000);
             } catch(e) {
-                if(onComplete) onComplete(); // Fallback on immediate execute if AudioContext fails
+                if(onComplete) onComplete(); 
             }
         }
 
@@ -450,7 +756,6 @@
             if (!container) return;
             container.innerHTML = '';
             for (let i = 0; i < lives; i++) {
-                // Classic arcade styled vector Pac-Man icon facing left
                 container.innerHTML += `
                     <svg width="18" height="18" viewBox="0 0 20 20" style="display:inline-block;">
                         <path d="M 10 10 L 2 6 A 8 8 0 1 1 2 14 Z" fill="#ffff00"/>
@@ -473,7 +778,6 @@
         const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.35, 0.4, 0.6);
         const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(-0.35, 0.4, 0.6);
         
-        // Dynamic Matrix Aura Mesh & Light additions across all actions
         const auraGeo = new THREE.SphereGeometry(1.2, 16, 16);
         const auraMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, wireframe: true });
         const auraMesh = new THREE.Mesh(auraGeo, auraMat);
@@ -498,11 +802,10 @@
             document.getElementById('controls-right').style.display = 'flex';
             document.getElementById('minimap').style.display = 'block';
             
-            gameState = 'ready'; // Setup ready phase to prevent movement
+            gameState = 'ready'; 
             updateLivesDisplay();
             updateDashBarUI();
             
-            // Present Ready/Go Theme System Modals
             const readyGoScreen = document.getElementById('ready-go-screen');
             const readyGoText = document.getElementById('ready-go-text');
             readyGoScreen.style.display = 'flex';
@@ -516,11 +819,12 @@
                 setTimeout(() => {
                     readyGoScreen.style.display = 'none';
                     gameState = 'playing';
+                    startProceduralSoundtrack();
                 }, 1000);
             });
         };
 
-        // --- MAP GENERATION (Accurate Classic Arcade Map) ---
+        // --- MAP GENERATION ---
         const mapTemplate = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -537,7 +841,7 @@
             [1,1,1,1,1,1,0,1,1,3,1,1,1,8,8,1,1,1,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1],
             [3,3,3,3,3,3,0,3,3,3,1,9,9,9,9,9,9,1,3,3,3,0,3,3,3,3,3,3],
-            [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1], // Synchronized map bound spacing
+            [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1], 
             [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,3,3,3,3,3,3,3,3,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
@@ -569,7 +873,6 @@
             ghostBoxWalls.forEach(gW => scene.remove(gW.mesh));
             dots.forEach(d => scene.remove(d));
             
-            // Clear Goldy's walls if any remain from prior runs
             goldyWalls.forEach(gw => {
                 scene.remove(gw.mesh);
             });
@@ -580,7 +883,6 @@
             dots = []; 
             remainingDots = 0;
 
-            // Determine active level wall color from thematic rotational list array
             const wallHexColor = mapColors[(level - 1) % mapColors.length];
             const activeWallMat = new THREE.MeshPhongMaterial({ color: wallHexColor });
 
@@ -618,7 +920,7 @@
         scene.add(new THREE.AmbientLight(0x404040));
         const light = new THREE.PointLight(0xffffff, 50, 60); scene.add(light);
 
-        // --- GHOSTS (8 Unique Named Personalities with Extended Custom Mechanics) ---
+        // --- GHOSTS ---
         const ghostTypes = [
             { name: 'BLINKY', c: 0xff0000, t: 'chase', s: 1.05 },   
             { name: 'PINKY',  c: 0xffb8ff, t: 'ambush', s: 0.95 },  
@@ -636,60 +938,133 @@
                 scene.remove(g);
                 if (g.abilityIndicator) scene.remove(g.abilityIndicator);
             });
-            ghosts = ghostTypes.map((config, index) => {
-                const group = new THREE.Group();
+            
+            // Clean prior projectiles & shockwaves
+            bossProjectiles.forEach(proj => scene.remove(proj.mesh));
+            bossProjectiles = [];
+            bossShockwaves.forEach(sh => scene.remove(sh.mesh));
+            bossShockwaves = [];
+            
+            // Check if level % 10 === 0 -> BOSS MODE
+            if (level % 10 === 0) {
+                bossActive = true;
+                bossMaxHealth = 150 + level * 10;
+                bossHealth = bossMaxHealth;
+                document.getElementById('bossBarContainer').style.display = 'block';
+                updateBossBarUI();
                 
+                // Spawn one giant Boss Mega Rainbow Ghost
+                const group = new THREE.Group();
                 const bodyGroup = new THREE.Group();
-                const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.5, 4, 8), new THREE.MeshPhongMaterial({color: config.c}));
-                body.position.y = 0.5;
+                const body = new THREE.Mesh(new THREE.CapsuleGeometry(1.5, 1.5, 4, 16), new THREE.MeshPhongMaterial({color: 0xff0055, shininess: 100}));
+                body.position.y = 1.5;
                 bodyGroup.add(body);
                 group.add(bodyGroup);
 
+                // Giant glowing eyes
                 const eyesGroup = new THREE.Group();
-                const eGeo = new THREE.SphereGeometry(0.12, 8, 8), pGeo = new THREE.SphereGeometry(0.05, 8, 8);
+                const eGeo = new THREE.SphereGeometry(0.36, 16, 16), pGeo = new THREE.SphereGeometry(0.15, 16, 16);
                 const eMat = new THREE.MeshBasicMaterial({color: 0xffffff}), pMat = new THREE.MeshBasicMaterial({color: 0x000000});
-                const lE = new THREE.Mesh(eGeo, eMat); lE.position.set(0.2, 0.8, 0.4);
-                const lP = new THREE.Mesh(pGeo, pMat); lP.position.set(0.2, 0.8, 0.5);
-                const rE = new THREE.Mesh(eGeo, eMat); rE.position.set(-0.2, 0.8, 0.4);
-                const rP = new THREE.Mesh(pGeo, pMat); rP.position.set(-0.2, 0.8, 0.5);
+                const lE = new THREE.Mesh(eGeo, eMat); lE.position.set(0.6, 2.4, 1.2);
+                const lP = new THREE.Mesh(pGeo, pMat); lP.position.set(0.6, 2.4, 1.5);
+                const rE = new THREE.Mesh(eGeo, eMat); rE.position.set(-0.6, 2.4, 1.2);
+                const rP = new THREE.Mesh(pGeo, pMat); rP.position.set(-0.6, 2.4, 1.5);
                 eyesGroup.add(lE, lP, rE, rP);
                 group.add(eyesGroup);
 
                 group.bodyGroup = bodyGroup;
                 group.eyesGroup = eyesGroup;
-                group.ghostName = config.name;
-                group.baseColor = config.c; 
-                group.aiType = config.t;
-                group.baseSpeed = config.s;
+                group.ghostName = 'OMEGA';
+                group.baseColor = 0xff0055;
+                group.aiType = 'boss';
+                group.baseSpeed = 0.8;
                 group.isDead = false;
-                group.dir = new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize();
+                group.dir = new THREE.Vector3(0, 0, 1);
+                group.scale.setScalar(2.0); // Mega scale
                 
-                // --- ADVANCED PATHFINDING & STATE VARIABLES ---
-                group.currentAIState = 'walk'; // 5 States: chase, scape, scared, help, walk
+                group.currentAIState = 'chase';
                 group.aStarPath = [];
-                group.pathUpdateTimer = Math.random() * 200; 
+                group.pathUpdateTimer = 100;
                 group.currentTargetCell = {x: 14, z: 15};
-
-                // --- NEW: ABILITY STATES & COOLDOWNS MAPPED ON EACH GHOST ---
-                group.abilityCooldown = 3000 + Math.random() * 6000; // Trigger spacing
-                group.isUsingAbility = false;
-                group.abilityDurationLeft = 0;
-                group.isStunned = false;
-                group.stunTimer = 0;
-
-                // Shield visual for Whity's companion support
+                
                 group.shieldMesh = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.9, 16, 16),
-                    new THREE.MeshBasicMaterial({color: 0x00aaff, transparent: true, opacity: 0.4, wireframe: true})
+                    new THREE.SphereGeometry(2.5, 32, 32),
+                    new THREE.MeshBasicMaterial({color: 0xff00ff, transparent: true, opacity: 0.35, wireframe: true})
                 );
-                group.shieldMesh.position.y = 0.5;
+                group.shieldMesh.position.y = 1.5;
                 group.shieldMesh.visible = false;
                 group.add(group.shieldMesh);
                 group.isShielded = false;
-                
+
                 scene.add(group);
-                return group;
-            });
+                ghosts = [group];
+                bossGhostEntity = group;
+            } else {
+                bossActive = false;
+                bossGhostEntity = null;
+                document.getElementById('bossBarContainer').style.display = 'none';
+                
+                ghosts = ghostTypes.map((config, index) => {
+                    const group = new THREE.Group();
+                    
+                    const bodyGroup = new THREE.Group();
+                    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.5, 4, 8), new THREE.MeshPhongMaterial({color: config.c}));
+                    body.position.y = 0.5;
+                    bodyGroup.add(body);
+                    group.add(bodyGroup);
+
+                    const eyesGroup = new THREE.Group();
+                    const eGeo = new THREE.SphereGeometry(0.12, 8, 8), pGeo = new THREE.SphereGeometry(0.05, 8, 8);
+                    const eMat = new THREE.MeshBasicMaterial({color: 0xffffff}), pMat = new THREE.MeshBasicMaterial({color: 0x000000});
+                    const lE = new THREE.Mesh(eGeo, eMat); lE.position.set(0.2, 0.8, 0.4);
+                    const lP = new THREE.Mesh(pGeo, pMat); lP.position.set(0.2, 0.8, 0.5);
+                    const rE = new THREE.Mesh(eGeo, eMat); rE.position.set(-0.2, 0.8, 0.4);
+                    const rP = new THREE.Mesh(pGeo, pMat); rP.position.set(-0.2, 0.8, 0.5);
+                    eyesGroup.add(lE, lP, rE, rP);
+                    group.add(eyesGroup);
+
+                    group.bodyGroup = bodyGroup;
+                    group.eyesGroup = eyesGroup;
+                    group.ghostName = config.name;
+                    group.baseColor = config.c; 
+                    group.aiType = config.t;
+                    group.baseSpeed = config.s;
+                    group.isDead = false;
+                    group.dir = new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize();
+                    
+                    group.currentAIState = 'walk'; 
+                    group.aStarPath = [];
+                    group.pathUpdateTimer = Math.random() * 200; 
+                    group.currentTargetCell = {x: 14, z: 15};
+
+                    group.abilityCooldown = 3000 + Math.random() * 6000; 
+                    group.isUsingAbility = false;
+                    group.abilityDurationLeft = 0;
+                    group.isStunned = false;
+                    group.stunTimer = 0;
+
+                    group.shieldMesh = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.9, 16, 16),
+                        new THREE.MeshBasicMaterial({color: 0x00aaff, transparent: true, opacity: 0.4, wireframe: true})
+                    );
+                    group.shieldMesh.position.y = 0.5;
+                    group.shieldMesh.visible = false;
+                    group.add(group.shieldMesh);
+                    group.isShielded = false;
+                    
+                    scene.add(group);
+                    return group;
+                });
+            }
+        }
+
+        // --- NEW: BOSS STATS BARS UPDATER ---
+        function updateBossBarUI() {
+            const bar = document.getElementById('bossBar');
+            if (bar) {
+                const pct = Math.max(0, (bossHealth / bossMaxHealth) * 100);
+                bar.style.width = pct + '%';
+            }
         }
 
         // --- FRUITS ---
@@ -738,32 +1113,47 @@
             bottomHalf.rotation.x = 0;
             pacman.scale.setScalar(1);
             
-            // Clean up temporary objects
             goldyWalls.forEach(gw => scene.remove(gw.mesh));
             goldyWalls = [];
 
             activeIllusions.forEach(ill => scene.remove(ill.mesh));
             activeIllusions = [];
 
-            ghosts.forEach((g, i) => {
-                g.position.set((Math.random()-0.5)*4, 0.3, -4 + (Math.random()-0.5)*2);
-                g.isDead = false;
-                g.bodyGroup.visible = true;
-                g.bodyGroup.children[0].material.color.set(g.baseColor);
-                g.aStarPath = [];
-                g.currentAIState = 'walk';
-                g.isStunned = false;
-                g.stunTimer = 0;
-                g.isUsingAbility = false;
-                g.isShielded = false;
-                g.shieldMesh.visible = false;
-                g.abilityCooldown = 3000 + Math.random() * 5000;
-                g.scale.setScalar(1);
-                g.eyesGroup.position.set(0,0,0);
-            });
+            bossProjectiles.forEach(p => scene.remove(p.mesh));
+            bossProjectiles = [];
+
+            bossShockwaves.forEach(sw => scene.remove(sw.mesh));
+            bossShockwaves = [];
+
+            if (bossActive) {
+                if (bossGhostEntity) {
+                    bossGhostEntity.position.set(0, 1.5, -4);
+                    bossGhostEntity.isDead = false;
+                    bossGhostEntity.aStarPath = [];
+                    bossGhostEntity.isStunned = false;
+                    bossHealth = bossMaxHealth;
+                    updateBossBarUI();
+                }
+            } else {
+                ghosts.forEach((g, i) => {
+                    g.position.set((Math.random()-0.5)*4, 0.3, -4 + (Math.random()-0.5)*2);
+                    g.isDead = false;
+                    g.bodyGroup.visible = true;
+                    g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
+                    g.aStarPath = [];
+                    g.currentAIState = 'walk';
+                    g.isStunned = false;
+                    g.stunTimer = 0;
+                    g.isUsingAbility = false;
+                    g.isShielded = false;
+                    g.shieldMesh.visible = false;
+                    g.abilityCooldown = 3000 + Math.random() * 5000;
+                    g.scale.setScalar(1);
+                    g.eyesGroup.position.set(0,0,0);
+                });
+            }
             
             powerUp = laserMode = speedMode = false;
-            // Retain freezeMode check from existing code if active, but turn off otherwise
             freezeMode = false;
             auraMesh.visible = false;
             auraLight.intensity = 0;
@@ -786,17 +1176,15 @@
             
             lastPacmanSeenPos.set(0, 0.8, 32);
 
-            // Commit/Check records storage anytime the positions/level re-init
             saveRecordsToDB();
         }
 
-        // --- LASER LOGIC WITH COMPREHENSIVE WALL IMPACT DISTANCE CLIPPING ---
+        // --- LASER LOGIC ---
         function fireLaser() {
             playSfx(1000, 0.1, 'sawtooth');
             const laserDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
             const raycaster = new THREE.Raycaster(pacman.position, laserDir);
             
-            // Limit laser distance based on walls obstacle collisions
             let maxLaserRange = 30.0;
             const targetWallMeshes = walls.map(w => w.mesh);
             const wallHits = raycaster.intersectObjects(targetWallMeshes);
@@ -804,12 +1192,21 @@
                 maxLaserRange = wallHits[0].distance;
             }
             
+            // Create high density laser sparks on walls
+            if (wallHits.length > 0) {
+                createSparkParticles(wallHits[0].point, 0xff3300, 8);
+            }
+
             ghosts.forEach(g => {
                 if(!g.isDead) {
                     const distToPoint = raycaster.ray.distanceToPoint(g.position);
                     const projectedDist = raycaster.ray.origin.distanceTo(g.position);
                     if (distToPoint < 2.0 && projectedDist <= maxLaserRange) {
-                        killGhost(g, true);
+                        if (bossActive) {
+                            damageBoss(15);
+                        } else {
+                            killGhost(g, true);
+                        }
                     }
                 }
             });
@@ -822,8 +1219,35 @@
             setTimeout(() => scene.remove(line), 100);
         }
 
+        // --- NEW: BOSS DAMAGE ALGORITHM ---
+        function damageBoss(amount) {
+            bossHealth -= amount;
+            createExplosion(bossGhostEntity.position, 0xff0055, 12, 0.4, 0.3);
+            playSfx(200, 0.15, 'sawtooth', 0.2);
+            showFloatingText(`-${amount} HP`, bossGhostEntity.position);
+            updateBossBarUI();
+            
+            if (bossHealth <= 0) {
+                triggerTrophyUnlock("tr-boss-slayer");
+                createExplosion(bossGhostEntity.position, 0xffff00, 60, 0.6, 0.4);
+                createExplosion(bossGhostEntity.position, 0xff00ff, 60, 0.6, 0.4);
+                bossGhostEntity.isDead = true;
+                bossActive = false;
+                document.getElementById('bossBarContainer').style.display = 'none';
+                
+                addScore(5000, bossGhostEntity.position);
+                
+                // Advance level
+                level++;
+                ghostSpeedMult += 0.15;
+                document.getElementById('level').innerText = level;
+                buildMap();
+                resetPositions();
+                playSfx(1200, 1.0, 'square');
+            }
+        }
+
         function killGhost(g, fromLaser = false) {
-            // Check Shield Absorption Ability
             if (g.isShielded) {
                 g.isShielded = false;
                 g.shieldMesh.visible = false;
@@ -839,6 +1263,9 @@
             g.isStunned = false;
             g.scale.setScalar(1);
             
+            // Create beautiful spectral burst explosion
+            createExplosion(g.position, g.baseColor, 35, 0.28, 0.22);
+            
             let pts = 200;
             if(!fromLaser) {
                 pts = 200 * Math.pow(2, Math.min(ghostCombo, 4));
@@ -846,8 +1273,10 @@
             }
             addScore(pts, g.position);
             
-            // Increment & check DB Ghost kills
             currentGhostKills++;
+            if (currentGhostKills >= 5) {
+                triggerTrophyUnlock("tr-ghost-buster");
+            }
             saveRecordsToDB();
 
             playSfx(500 + ghostCombo*100, 0.2, 'square');
@@ -862,7 +1291,6 @@
             const mapX = (x) => ((x + 56) / 112) * canvas.width;
             const mapY = (z) => ((z + 62) / 124) * canvas.height;
 
-            // Align Minimap wall colors with dynamic stage theme values
             const wallHexColor = mapColors[(level - 1) % mapColors.length];
             ctx.fillStyle = '#' + wallHexColor.toString(16).padStart(6, '0');
             walls.forEach(w => {
@@ -874,7 +1302,6 @@
                 ctx.fillRect(mapX(w.mesh.position.x) - 1.5, mapY(w.mesh.position.z) - 1.5, 3, 3);
             });
 
-            // Draw Goldy's Golden Walls (Yellow dashed on minimap)
             ctx.fillStyle = '#ffaa00';
             goldyWalls.forEach(gw => {
                 ctx.fillRect(mapX(gw.mesh.position.x) - 1.5, mapY(gw.mesh.position.z) - 1.5, 3, 3);
@@ -909,10 +1336,10 @@
                     ctx.fillStyle = '#' + g.baseColor.toString(16).padStart(6, '0');
                 }
                 
-                ctx.beginPath(); ctx.arc(mapX(g.position.x), mapY(g.position.z), 2, 0, Math.PI*2); ctx.fill();
+                const r = bossActive ? 4 : 2;
+                ctx.beginPath(); ctx.arc(mapX(g.position.x), mapY(g.position.z), r, 0, Math.PI*2); ctx.fill();
             });
 
-            // Draw Clyde's illusions as small faded orange circles
             activeIllusions.forEach(ill => {
                 ctx.fillStyle = 'rgba(255, 120, 0, 0.5)';
                 ctx.beginPath(); ctx.arc(mapX(ill.mesh.position.x), mapY(ill.mesh.position.z), 1.5, 0, Math.PI*2); ctx.fill();
@@ -923,7 +1350,6 @@
             ctx.fillStyle = '#ffff00';
             ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI*2); ctx.fill();
             
-            // Render active power aura indicator ring onto minimap bounds
             if (powerUp || laserMode || speedMode || freezeMode || isDashing) {
                 ctx.strokeStyle = auraMesh.material.color.getStyle();
                 ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.stroke();
@@ -936,6 +1362,13 @@
             document.getElementById('score').innerText = score;
             if (pos3D) showFloatingText(`+${amount}`, pos3D);
             
+            if (score >= 5000) {
+                triggerTrophyUnlock("tr-high-roller");
+            }
+            if (score >= 15000 && lives === 3) {
+                triggerTrophyUnlock("tr-immortal");
+            }
+
             if (score >= nextLifeThreshold) {
                 lives++;
                 nextLifeThreshold += 10000;
@@ -944,7 +1377,6 @@
                 if (pos3D) showFloatingText("1 UP!", pos3D.clone().add(new THREE.Vector3(0, 1.5, 0)));
             }
 
-            // Sync score records in real-time on score updates
             saveRecordsToDB();
         }
 
@@ -952,9 +1384,8 @@
         let moveF = 0, moveS = 0;
         let camAngleY = Math.PI/2, camAngleX = 0.4, camRadius = 15;
         let touchStartX = 0, touchStartY = 0, isDraggingCamera = false;
-        let isJoystickActive = false; // Prevents joystick and keyboard fighting each other
+        let isJoystickActive = false; 
 
-        // Keyboard Action Maps
         const activeKeys = {};
 
         window.addEventListener('keydown', (e) => {
@@ -981,7 +1412,7 @@
             }
         }
 
-        // --- NEW: QUICK DASH TRIGGER ABILITY ---
+        // --- QUICK DASH TRIGGER ABILITY ---
         function triggerDashAction() {
             if (gameState !== 'playing' || isDashing) return;
             
@@ -991,13 +1422,16 @@
                 return;
             }
 
-            // Perform dash calculation
             isDashing = true;
             dashTimeRemaining = dashDuration;
             dashCharge = 0;
             updateDashBarUI();
 
-            // Calculate directional vector
+            totalDashesPerformed++;
+            if (totalDashesPerformed >= 5) {
+                triggerTrophyUnlock("tr-speed-demon");
+            }
+
             let finalMoveS = moveS;
             let finalMoveF = moveF;
 
@@ -1014,28 +1448,33 @@
                 }
             }
 
-            // Fallback to facing direction if completely static
             if (finalMoveS === 0 && finalMoveF === 0) {
                 dashVelocity.set(0, 0, 1).applyQuaternion(pacman.quaternion).normalize();
             } else {
                 dashVelocity.set(finalMoveS, 0, finalMoveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize();
             }
 
-            // Sizable speed surge
             dashVelocity.multiplyScalar(0.9); 
 
             playSfx(1400, 0.15, 'sawtooth', 0.25);
             playSfx(900, 0.2, 'sine', 0.15);
 
-            // STUN CLASH: Damage/Stun ghosts around Pacman
+            // STUN CLASH & BOSS DAMAGE DIRECT CONFLICT
             ghosts.forEach(g => {
-                if (!g.isDead && pacman.position.distanceTo(g.position) < 8.0) {
-                    g.isStunned = true;
-                    g.stunTimer = 3000; // 3 seconds stun
-                    g.aStarPath = [];
-                    g.bodyGroup.children[0].material.color.setHex(0x3355ff); // Stun blue
-                    showFloatingText("STUNNED!", g.position);
-                    playSfx(150, 0.4, 'triangle');
+                if (!g.isDead) {
+                    const dist = pacman.position.distanceTo(g.position);
+                    if (dist < 8.0) {
+                        if (bossActive) {
+                            damageBoss(25); // Dash does heavy damage to Omega!
+                        } else {
+                            g.isStunned = true;
+                            g.stunTimer = 3000; 
+                            g.aStarPath = [];
+                            g.bodyGroup.children[0].material.color.setHex(0x3355ff); 
+                            showFloatingText("STUNNED!", g.position);
+                            playSfx(150, 0.4, 'triangle');
+                        }
+                    }
                 }
             });
         }
@@ -1056,7 +1495,6 @@
             }
         }
 
-        // Jump button click binding
         document.getElementById('btnJump').addEventListener('touchstart', (e) => { 
             e.preventDefault(); 
             triggerJumpAction();
@@ -1066,7 +1504,6 @@
             triggerJumpAction();
         });
 
-        // Dash button bindings
         document.getElementById('btnDash').addEventListener('touchstart', (e) => {
             e.preventDefault();
             triggerDashAction();
@@ -1076,7 +1513,6 @@
             triggerDashAction();
         });
         
-        // Desktop Click/Touch Start Mapping
         const handleDragStart = (clientX, clientY, targetElement) => {
             if (gameState !== 'playing') return;
             if (targetElement.closest('.btn') || targetElement.closest('#joystick-container')) return;
@@ -1098,7 +1534,6 @@
             handleDragStart(e.clientX, e.clientY, e.target);
         });
 
-        // Desktop and Mobile Drag movement mapping
         const handleDragMove = (clientX, clientY) => {
             if (isDraggingCamera && gameState === 'playing') {
                 let deltaX = clientX - touchStartX;
@@ -1133,7 +1568,6 @@
             handleDragMove(e.clientX, e.clientY);
         });
 
-        // Touch/Click end releases
         window.addEventListener('touchend', (e) => { 
             for(let i=0; i<e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
@@ -1148,9 +1582,6 @@
             isDraggingCamera = false;
         });
 
-        // --- GRID POSITION MATH TRANSLATIONS FOR PATHFINDING ---
-        // Formula mapping: Real world X position = (gridX - 13.5) * 4 -> gridX = Math.round(X / 4 + 13.5)
-        // Formula mapping: Real world Z position = (gridZ - 15) * 4 -> gridZ = Math.round(Z / 4 + 15)
         function worldToGrid(pos) {
             let cx = Math.round(pos.x / 4 + 13.5);
             let cz = Math.round(pos.z / 4 + 15);
@@ -1161,10 +1592,9 @@
             return new THREE.Vector3((gx - 13.5) * 4, 0.3, (gz - 15) * 4);
         }
 
-        // --- PAC-MAN SPECIFIC COLLISION: BLOCKS GHOST HOUSE DOORS (cell === 8), GOLDY BARRIERS & PREVENTS JUMP EXPLOIT ---
         function checkCol(p, size=1.6) { 
             const checkP = p.clone();
-            checkP.y = 0.8; // Override Y to perfectly mimic ground trajectory, effectively blocking jumping over full vertical 4x4 scale walls
+            checkP.y = 0.8; 
             
             const hitsWall = walls.some(w => new THREE.Box3().setFromCenterAndSize(checkP, new THREE.Vector3(size,size,size)).intersectsBox(w.box)); 
             if (hitsWall) return true;
@@ -1172,7 +1602,6 @@
             const hitsGhostBox = ghostBoxWalls.some(gW => new THREE.Box3().setFromCenterAndSize(checkP, new THREE.Vector3(size,size,size)).intersectsBox(gW.box));
             if (hitsGhostBox) return true;
 
-            // NEW: Intersect Goldy's dropped golden barricades
             const hitsGoldyBar = goldyWalls.some(gw => {
                 const gwBox = new THREE.Box3().setFromObject(gw.mesh);
                 return new THREE.Box3().setFromCenterAndSize(checkP, new THREE.Vector3(size, size, size)).intersectsBox(gwBox);
@@ -1182,19 +1611,16 @@
             return false;
         }
 
-        // --- GHOST SPECIFIC COLLISION: ALLOWS GHOSTS TO PASS THROUGH PURPLE BLOCKS (cell === 8) & GOLDY WALLS ---
         function checkGhostColGrid(gx, gz) {
             if (gx < 0 || gx >= 28 || gz < 0 || gz >= 31) return true;
             const cellVal = mapTemplate[gz][gx];
-            if (cellVal === 1) return true; // solid wall
+            if (cellVal === 1) return true; 
             
-            return false; // Free open path (allows ghosts to pass through standard lanes, doors, and golden walls)
+            return false; 
         }
 
-        // --- A* PATHFINDING ALGORITHM IMPLEMENTATION FOR LABYRINTH NAVIGATION ---
         function computeAStarPath(startGrid, targetGrid) {
             if (checkGhostColGrid(targetGrid.x, targetGrid.z)) {
-                // Find nearest reachable grid coordinate fallback neighborhood if target is closed
                 let bestNode = { x: 14, z: 15 };
                 let minDist = Infinity;
                 for (let dx = -1; dx <= 1; dx++) {
@@ -1235,7 +1661,7 @@
                         curr = curr.parent;
                     }
                     path.reverse();
-                    return path; // Retain standard path coordinates
+                    return path; 
                 }
                 
                 closedSet.add(nodeKey(current));
@@ -1245,7 +1671,6 @@
                     let nx = current.x + dirs[i].x;
                     let nz = current.z + dirs[i].z;
                     
-                    // Labyrinth wraparound tunnel integration check
                     if (nz === 14) {
                         if (nx < 0) nx = 27;
                         if (nx > 27) nx = 0;
@@ -1271,7 +1696,7 @@
                     }
                 }
             }
-            return []; // Fail safe return fallback empty layout trace array
+            return []; 
         }
 
         function generateGlitchMatrix() {
@@ -1346,6 +1771,9 @@
             const deltaMs = now - lastTime;
             lastTime = now;
             
+            // Render engine updates
+            updateParticleEngine(deltaMs);
+
             if (gameState === 'lobby') {
                 renderer.render(scene, camera);
                 return;
@@ -1359,7 +1787,6 @@
             if (gameState === 'victory256') {
                 if (Math.random() < 0.15) generateGlitchMatrix();
                 
-                // --- 3D Victory Animation Added Integration ---
                 pacman.rotation.y += 0.05;
                 pacman.position.y = 0.8 + Math.sin(now * 0.005) * 2;
                 
@@ -1419,6 +1846,7 @@
                         buildMap();
                         resetPositions();
                         gameState = 'playing';
+                        startProceduralSoundtrack();
                     }
                 }
                 renderer.render(interScene, interCamera);
@@ -1442,6 +1870,7 @@
                     } else {
                         resetPositions();
                         gameState = 'playing';
+                        startProceduralSoundtrack();
                     }
                 }
                 renderer.render(scene, camera);
@@ -1457,14 +1886,15 @@
             if (isDashing) {
                 dashTimeRemaining -= deltaMs / 1000;
                 
-                // Dash Motion directly translates
                 const npX = pacman.position.clone(); npX.x += dashVelocity.x; if(!checkCol(npX)) pacman.position.x = npX.x;
                 const npZ = pacman.position.clone(); npZ.z += dashVelocity.z; if(!checkCol(npZ)) pacman.position.z = npZ.z;
                 
                 if (pacman.position.x > 56) pacman.position.x = -56;
                 else if (pacman.position.x < -56) pacman.position.x = 56;
 
-                // Glowing Dash Aesthetics
+                // Create dash sparks
+                createDashTrailEffect(pacman.position);
+
                 dashGlowTimer += deltaMs;
                 if (Math.floor(dashGlowTimer / 30) % 2 === 0) {
                     topHalf.material.color.setHex(0x00ffff);
@@ -1485,7 +1915,6 @@
                     if(pacman.position.y <= 0.8) { pacman.position.y = 0.8; isJumping = false; }
                 }
 
-                // Keyboard Control Evaluations (Prioritized over joystick unless mobile active)
                 let finalMoveS = moveS;
                 let finalMoveF = moveF;
 
@@ -1529,25 +1958,22 @@
             camera.lookAt(pacman.position);
             light.position.copy(pacman.position).add(new THREE.Vector3(0, 3, 0));
 
-            // --- ESCAPE ROUTE INTEL MEMORY RECORDER ---
             escapeRouteTimer += deltaMs;
-            if (escapeRouteTimer > 150) { // log every 150ms
+            if (escapeRouteTimer > 150) { 
                 escapeRouteTimer = 0;
                 const currentPacGrid = worldToGrid(pacman.position);
                 
-                // Only insert if distinct from last recorded
                 if (escapeRouteHistory.length === 0 || 
                     escapeRouteHistory[escapeRouteHistory.length - 1].x !== currentPacGrid.x || 
                     escapeRouteHistory[escapeRouteHistory.length - 1].z !== currentPacGrid.z) {
                     
                     escapeRouteHistory.push(currentPacGrid);
-                    if (escapeRouteHistory.length > 20) { // Limit trace memory depth to 20 grids
+                    if (escapeRouteHistory.length > 20) { 
                         escapeRouteHistory.shift();
                     }
                 }
             }
 
-            // --- LINE OF SIGHT & RETINAL SCAN INTELLIGENCE COMPASS ---
             const pacmanGridPos = worldToGrid(pacman.position);
             wasPacmanSeenThisFrame = false;
             
@@ -1569,30 +1995,33 @@
                 lastPacmanSeenPos.copy(pacman.position);
             }
 
-            // --- DECREMENT POWER TIMERS ---
             if(powerUp) powerTimeLeft -= deltaMs;
             if(laserMode) { laserTimeLeft -= deltaMs; laserCooldown -= deltaMs; }
             if(speedMode) speedTimeLeft -= deltaMs;
             if(freezeMode) freezeTimeLeft -= deltaMs;
 
-            // --- ALL-POWERUP AURA CONTROLLER ---
+            // Trophy check: Quad Core (All 4 powerups active at once!)
+            if (powerUp && laserMode && speedMode && freezeMode) {
+                triggerTrophyUnlock("tr-quad-core");
+            }
+
+            // Aura Control
             if (powerUp || laserMode || speedMode || freezeMode || isDashing) {
                 auraMesh.visible = true;
                 auraLight.intensity = 65; 
                 
                 let currentAuraColor = new THREE.Color();
                 if (isDashing) {
-                    currentAuraColor.setHex(0x00ffff); // Electric dash blue
+                    currentAuraColor.setHex(0x00ffff); 
                 } else if (powerUp) {
-                    // Classic Rainbow Cycle
                     const hue = (now % 2000) / 2000;
                     currentAuraColor.setHSL(hue, 1.0, 0.5);
                 } else if (freezeMode) {
-                    currentAuraColor.setHex(0x00ffff); // Glacial Blue
+                    currentAuraColor.setHex(0x00ffff); 
                 } else if (speedMode) {
-                    currentAuraColor.setHex(0x00ff00); // Chrono Green
+                    currentAuraColor.setHex(0x00ff00); 
                 } else if (laserMode) {
-                    currentAuraColor.setHex(0xff6400); // Plasma Orange
+                    currentAuraColor.setHex(0xff6400); 
                 }
                 
                 auraMat.color.copy(currentAuraColor);
@@ -1602,7 +2031,6 @@
                 auraLight.intensity = 0;
             }
 
-            // --- INDIVIDUAL POWERUP BAR & CLEANUP TRACKING ---
             if(powerUp) {
                 document.getElementById('powerBar').style.width = (powerTimeLeft / 8000 * 100) + '%';
                 if(powerTimeLeft <= 0) { 
@@ -1619,7 +2047,7 @@
             }
             if(laserMode) {
                 document.getElementById('laserBar').style.width = (laserTimeLeft / 10000 * 100) + '%';
-                if(laserCooldown <= 0) { fireLaser(); laserCooldown = 100; }
+                if(laserCooldown <= 0) { fireLaser(); laserCooldown = 80; }
                 if(laserTimeLeft <= 0) { laserMode = false; document.getElementById('laserBarContainer').style.display = 'none'; }
             }
             if(speedMode) {
@@ -1631,7 +2059,6 @@
                 if(freezeTimeLeft <= 0) { freezeMode = false; document.getElementById('freezeBarContainer').style.display = 'none'; }
             }
 
-            // Fruits logic
             fruitTimer += deltaMs;
             if (fruitTimer > 15000 && !fruitMesh) {
                 spawnFruit();
@@ -1645,8 +2072,8 @@
                     document.getElementById('fruitIndicator').style.display = 'none';
                 } else if (pacman.position.distanceTo(fruitMesh.position) < 2.0) {
                     addScore(fruitMesh.fruitScore, fruitMesh.position);
+                    createExplosion(fruitMesh.position, 0xff00ff, 15, 0.2, 0.15);
                     
-                    // Instant full Quick Dash recharge on Fruit!
                     dashCharge = maxDashCharge;
                     updateDashBarUI();
                     
@@ -1656,7 +2083,6 @@
                 }
             }
 
-            // --- PROCESSED GOLDY WALL TIMERS ---
             for (let i = goldyWalls.length - 1; i >= 0; i--) {
                 const gw = goldyWalls[i];
                 gw.timeLeft -= deltaMs;
@@ -1664,13 +2090,11 @@
                     scene.remove(gw.mesh);
                     goldyWalls.splice(i, 1);
                 } else {
-                    // Pulsing golden visual
                     const scalePulse = 1.0 + Math.sin(now * 0.01) * 0.15;
                     gw.mesh.scale.set(1.0, scalePulse, 1.0);
                 }
             }
 
-            // --- CLYDE'S ILLUSIONS LOGIC ---
             for (let i = activeIllusions.length - 1; i >= 0; i--) {
                 const ill = activeIllusions[i];
                 ill.duration -= deltaMs;
@@ -1678,13 +2102,10 @@
                     scene.remove(ill.mesh);
                     activeIllusions.splice(i, 1);
                 } else {
-                    // Slow wander movement
                     const speed = 0.07;
                     const npX = ill.mesh.position.clone().addScaledVector(ill.dir, speed);
-                    // Check simple wall collision
                     const checkGrid = worldToGrid(npX);
                     if (checkGhostColGrid(checkGrid.x, checkGrid.z)) {
-                        // Reverse direction on clashing
                         ill.dir.negate();
                     } else {
                         ill.mesh.position.copy(npX);
@@ -1693,12 +2114,119 @@
                 }
             }
 
-            // --- GHOST STATE DRIVEN CONTROL SYSTEM & ABILITY ORCHESTRATION ---
+            // --- BOSS MODE GHOST LAUNCHED ATTACKS (PROJECTILES AND SHOCKWAVES) ---
+            if (bossActive && !bossGhostEntity.isDead) {
+                // Omega Boss attack behaviors
+                bossSlamTimer += deltaMs;
+                bossShootTimer += deltaMs;
+
+                // 1. Rainbow cycling skin
+                if (bossGhostEntity.bodyGroup && bossGhostEntity.bodyGroup.children[0]) {
+                    bossGhostEntity.bodyGroup.children[0].material.color.setHSL((now * 0.0003) % 1, 1.0, 0.5);
+                }
+
+                // 2. Seismic Slamshock (Shockwave ring expansion)
+                if (bossSlamTimer > 6000) {
+                    bossSlamTimer = 0;
+                    playSfx(180, 0.6, 'sawtooth', 0.3);
+                    showFloatingText("SEISMIC SLAM!", bossGhostEntity.position);
+                    
+                    // Spawn ring mesh
+                    const ringGeo = new THREE.RingGeometry(0.5, 1.5, 32);
+                    const ringMat = new THREE.MeshBasicMaterial({color: 0xff0055, side: THREE.DoubleSide, transparent: true, opacity: 0.8});
+                    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+                    ringMesh.rotation.x = Math.PI / 2;
+                    ringMesh.position.copy(bossGhostEntity.position);
+                    ringMesh.position.y = 0.1;
+                    scene.add(ringMesh);
+
+                    bossShockwaves.push({
+                        mesh: ringMesh,
+                        radius: 1.5,
+                        maxRadius: 28.0,
+                        speed: 0.35
+                    });
+                }
+
+                // 3. Spawning energy tracking orbs
+                if (bossShootTimer > 3500) {
+                    bossShootTimer = 0;
+                    playSfx(800, 0.2, 'sine', 0.15);
+                    
+                    // Create projectile sphere
+                    const projMesh = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.5, 16, 16),
+                        new THREE.MeshBasicMaterial({color: 0xff00ff})
+                    );
+                    projMesh.position.copy(bossGhostEntity.position).add(new THREE.Vector3(0, 2.0, 0));
+                    scene.add(projMesh);
+
+                    bossProjectiles.push({
+                        mesh: projMesh,
+                        velocity: pacman.position.clone().sub(projMesh.position).normalize().multiplyScalar(0.25),
+                        life: 6000 // 6 seconds range
+                    });
+                }
+            }
+
+            // Update Boss Projectiles
+            for (let i = bossProjectiles.length - 1; i >= 0; i--) {
+                const proj = bossProjectiles[i];
+                proj.life -= deltaMs;
+                if (proj.life <= 0) {
+                    scene.remove(proj.mesh);
+                    bossProjectiles.splice(i, 1);
+                } else {
+                    // Slight tracking alignment towards Pacman
+                    const toPac = pacman.position.clone().sub(proj.mesh.position).normalize();
+                    proj.velocity.lerp(toPac.multiplyScalar(0.25), 0.05);
+                    proj.mesh.position.add(proj.velocity);
+                    
+                    // Visual fire trails
+                    createSparkParticles(proj.mesh.position, 0xff00ff, 1);
+
+                    // Collision check
+                    if (proj.mesh.position.distanceTo(pacman.position) < 1.6) {
+                        scene.remove(proj.mesh);
+                        bossProjectiles.splice(i, 1);
+                        if (!isJumping && !isDashing) {
+                            gameState = 'dying';
+                            deathTimer = 1.0;
+                            playSfx(200, 1.0, 'sawtooth');
+                        }
+                    }
+                }
+            }
+
+            // Update Boss Shockwaves
+            for (let i = bossShockwaves.length - 1; i >= 0; i--) {
+                const sw = bossShockwaves[i];
+                sw.radius += sw.speed;
+                sw.mesh.scale.setScalar(sw.radius);
+                
+                // Dim down opacity
+                sw.mesh.material.opacity = Math.max(0, 1.0 - sw.radius / sw.maxRadius);
+
+                if (sw.radius >= sw.maxRadius) {
+                    scene.remove(sw.mesh);
+                    bossShockwaves.splice(i, 1);
+                } else {
+                    // Check if shockwave matches distance to Pacman
+                    const dist = pacman.position.distanceTo(sw.mesh.position);
+                    if (Math.abs(dist - sw.radius) < 1.0) {
+                        // Stun or damage if player is grounded! (Must jump to dodge!)
+                        if (!isJumping && pacman.position.y <= 0.82 && !isDashing) {
+                            gameState = 'dying';
+                            deathTimer = 1.0;
+                            playSfx(200, 1.0, 'sawtooth');
+                        }
+                    }
+                }
+            }
+
             const centerBox = new THREE.Vector3(0, 0.3, -4);
             const gridCenterBox = worldToGrid(centerBox);
             
-            // DYNAMIC PERSONALITIES ADAPTING TO LEVELS
-            // Higher levels make abilities occur more frequently and with shorter cooldowns!
             const levelAbilityFrequencyMult = Math.min(2.5, 1.0 + (level * 0.15));
 
             ghosts.forEach(g => {
@@ -1710,14 +2238,13 @@
                         g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
                         g.aStarPath = [];
                         g.isUsingAbility = false;
-                        g.scale.setScalar(1);
+                        g.scale.setScalar(bossActive ? 2.0 : 1);
                         g.isShielded = false;
                         g.shieldMesh.visible = false;
                         g.abilityCooldown = 3000 + Math.random() * 4000;
                     } else {
-                        // --- A* Pathfinding integrated for defeated ghost eyes --- 
                         let gGrid = worldToGrid(g.position);
-                        let targetGrid = { x: 14, z: 15 }; // Ghost house center target
+                        let targetGrid = { x: 14, z: 15 }; 
                         
                         g.pathUpdateTimer -= deltaMs;
                         if (g.pathUpdateTimer <= 0 || !g.aStarPath || g.aStarPath.length === 0) {
@@ -1725,7 +2252,7 @@
                             g.aStarPath = computeAStarPath(gGrid, targetGrid);
                         }
                         
-                        let eyeSpeed = 0.4; // Boost eyes speed multiplier
+                        let eyeSpeed = 0.4; 
                         
                         if (g.aStarPath && g.aStarPath.length > 1) {
                             let nextNode = g.aStarPath[1];
@@ -1744,7 +2271,6 @@
                                 g.dir.copy(moveVec);
                             }
                         } else {
-                            // Close proximity fallback in case grid locking occurs at the gate
                             let fallbackVec = toCenter.clone();
                             fallbackVec.y = 0;
                             if(fallbackVec.length() > 0.1) {
@@ -1758,14 +2284,13 @@
                     return;
                 }
 
-                // --- STUN DECREMENT ---
                 if (g.isStunned) {
                     g.stunTimer -= deltaMs;
                     if (g.stunTimer <= 0) {
                         g.isStunned = false;
                         g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
                     }
-                    return; // Fully immobile while stunned
+                    return; 
                 }
 
                 if(freezeMode) return;
@@ -1773,14 +2298,10 @@
                 let gSpeed = g.baseSpeed * ghostSpeedMult * ghostSpeedFactor;
                 if(powerUp) gSpeed *= 0.5;
 
-                // --- NEW: ABILITY TIMING TRIGGERS & ABILITY UPDATES ---
                 g.abilityCooldown -= deltaMs * levelAbilityFrequencyMult;
                 let isTriggerable = (g.abilityCooldown <= 0 && !powerUp && gameState === 'playing' && !g.isDead);
 
-                // --- 1. INDIVIDUAL GHOST UNIQUE ABILITIES ---
-                
-                // --- BLINKY: RAGE ABILITY ---
-                // Blinky rages automatically when Pac-Man gets too close!
+                // --- GHOST UNIQUE ABILITIES ---
                 if (g.ghostName === 'BLINKY') {
                     const distToPac = g.position.distanceTo(pacman.position);
                     if (distToPac < 8.0 && !powerUp) {
@@ -1789,9 +2310,9 @@
                             showFloatingText("BLINKY RAGES!", g.position);
                             playSfx(440, 0.3, 'sawtooth');
                         }
-                        gSpeed *= 1.6; // Speed boost
-                        g.scale.setScalar(1.35); // Enlarge size
-                        g.bodyGroup.children[0].material.color.setHex(0xffaa00); // Lava red/orange rage
+                        gSpeed *= 1.6; 
+                        g.scale.setScalar(1.35); 
+                        g.bodyGroup.children[0].material.color.setHex(0xffaa00); 
                     } else {
                         if (g.isUsingAbility) {
                             g.isUsingAbility = false;
@@ -1801,12 +2322,11 @@
                     }
                 }
 
-                // --- INKY: WALL HOP/JUMP INTERCEPT ---
                 if (g.ghostName === 'INKY') {
                     if (g.isUsingAbility) {
                         g.eyesGroup.position.y += g.abilityDurationLeft; 
                         g.bodyGroup.position.y += g.abilityDurationLeft;
-                        g.abilityDurationLeft -= 0.015; // Gravity
+                        g.abilityDurationLeft -= 0.015; 
                         
                         if (g.bodyGroup.position.y <= 0) {
                             g.bodyGroup.position.y = 0;
@@ -1815,21 +2335,19 @@
                             g.abilityCooldown = 5000 + Math.random() * 4000;
                         }
                     } else if (isTriggerable) {
-                        // Trigger wall jump to bypass corners or leap towards Pac-man
                         g.isUsingAbility = true;
-                        g.abilityDurationLeft = 0.28; // Vertical velocity initial jump pulse
-                        g.abilityCooldown = 99999; // Reset cooldown trigger
+                        g.abilityDurationLeft = 0.28; 
+                        g.abilityCooldown = 99999; 
                         playSfx(600, 0.25, 'triangle');
                         showFloatingText("WALL HOP!", g.position);
                     }
                 }
 
-                // --- PINKY: SIGHT DENSITY SPEED DASH ---
                 if (g.ghostName === 'PINKY') {
                     if (g.isUsingAbility) {
                         g.abilityDurationLeft -= deltaMs;
-                        gSpeed *= 3.0; // Rapid lunge!
-                        g.bodyGroup.children[0].material.color.setHex(0xff33cc); // Bright hot pink
+                        gSpeed *= 3.0; 
+                        g.bodyGroup.children[0].material.color.setHex(0xff33cc); 
                         
                         if (g.abilityDurationLeft <= 0) {
                             g.isUsingAbility = false;
@@ -1837,23 +2355,20 @@
                             g.abilityCooldown = 6000 + Math.random() * 4000;
                         }
                     } else if (isTriggerable && wasPacmanSeenThisFrame) {
-                        // Only trigger if in direct line of sight
                         g.isUsingAbility = true;
-                        g.abilityDurationLeft = 1200; // 1.2 second dash burst
+                        g.abilityDurationLeft = 1200; 
                         g.abilityCooldown = 99999;
                         playSfx(900, 0.3, 'sawtooth');
                         showFloatingText("PINKY LUNGES!", g.position);
                     }
                 }
 
-                // --- CLYDE: PHANTOM CLONE ILLUSIONS ---
                 if (g.ghostName === 'CLYDE') {
                     if (isTriggerable) {
-                        g.abilityCooldown = 12000 + Math.random() * 5000; // long spacing
+                        g.abilityCooldown = 12000 + Math.random() * 5000; 
                         showFloatingText("PHANTOM IMAGES!", g.position);
                         playSfx(300, 0.5, 'sine');
 
-                        // Create 2 harmless phantoms
                         for (let k = 0; k < 2; k++) {
                             const cloneGroup = new THREE.Group();
                             const cloneMesh = new THREE.Mesh(
@@ -1867,27 +2382,23 @@
                             scene.add(cloneGroup);
                             activeIllusions.push({
                                 mesh: cloneGroup,
-                                duration: 5000, // persists 5 seconds
+                                duration: 5000, 
                                 dir: new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize()
                             });
                         }
                     }
                 }
 
-                // --- TIM: SYMMETRICAL MAP SYMMETRY TELEPORT ---
                 if (g.ghostName === 'TIM') {
                     if (isTriggerable && g.position.distanceTo(pacman.position) > 15.0) {
                         g.abilityCooldown = 10000 + Math.random() * 6000;
                         
-                        // Warp to opposite coordinates around the map's origin point!
                         const targetTeleport = g.position.clone().negate();
-                        targetTeleport.y = g.position.y; // retain elevation
+                        targetTeleport.y = g.position.y; 
 
-                        // Clamp targets inside boundary limits
                         targetTeleport.x = Math.max(-50, Math.min(50, targetTeleport.x));
                         targetTeleport.z = Math.max(-50, Math.min(50, targetTeleport.z));
 
-                        // Spawn flash line visually
                         const startGeo = new THREE.SphereGeometry(1.0, 8, 8);
                         const flashMesh = new THREE.Mesh(startGeo, new THREE.MeshBasicMaterial({color: 0x800080, transparent: true, opacity: 0.8}));
                         flashMesh.position.copy(g.position);
@@ -1903,12 +2414,10 @@
                     }
                 }
 
-                // --- SPIKE: COORDINATES POSITION SWAP ---
                 if (g.ghostName === 'SPIKE') {
                     if (isTriggerable && g.position.distanceTo(pacman.position) < 14.0) {
                         g.abilityCooldown = 15000 + Math.random() * 5000;
                         
-                        // Select a random active, non-dead, non-stunned companion ghost
                         const companions = ghosts.filter(gh => gh !== g && !gh.isDead && !gh.isStunned);
                         if (companions.length > 0) {
                             const chosenOne = companions[Math.floor(Math.random() * companions.length)];
@@ -1916,7 +2425,6 @@
                             const spikePos = g.position.clone();
                             const chosenPos = chosenOne.position.clone();
                             
-                            // Visual swap indicators
                             showFloatingText("SWAP!", g.position);
                             showFloatingText("SWAP!", chosenOne.position);
 
@@ -1929,12 +2437,10 @@
                     }
                 }
 
-                // --- GOLDY: DROP GOLDEN PASS BARRIERS ---
                 if (g.ghostName === 'GOLDY') {
                     if (isTriggerable) {
                         g.abilityCooldown = 14000 + Math.random() * 6000;
                         
-                        // Drop a visual barrier at current position
                         const barGeo = new THREE.BoxGeometry(3.6, 3.6, 3.6);
                         const barMat = new THREE.MeshPhongMaterial({
                             color: 0xffcc00, 
@@ -1944,12 +2450,12 @@
                         });
                         const barMesh = new THREE.Mesh(barGeo, barMat);
                         barMesh.position.copy(g.position);
-                        barMesh.position.y = 1.8; // Align perfectly
+                        barMesh.position.y = 1.8; 
                         
                         scene.add(barMesh);
                         goldyWalls.push({
                             mesh: barMesh,
-                            timeLeft: 4500 // Barrier lasts 4.5 seconds
+                            timeLeft: 4500 
                         });
 
                         playSfx(750, 0.25, 'triangle');
@@ -1957,12 +2463,10 @@
                     }
                 }
 
-                // --- WHITY: DEFENSIVE BUBBLE SHIELD PROJECTION ---
                 if (g.ghostName === 'WHITY') {
                     if (isTriggerable) {
                         g.abilityCooldown = 10000 + Math.random() * 5000;
                         
-                        // Find closest companion within 10 units
                         let targetCompanion = null;
                         let closestDist = 12.0;
                         ghosts.forEach(gh => {
@@ -1984,93 +2488,81 @@
                     }
                 }
 
-
-                // --- 2. ADVANCED TACTICAL TEAMPLAY SYNERGY NAVIGATION ---
+                // Tactical Navigation Pathfinders
                 let gGrid = worldToGrid(g.position);
                 g.pathUpdateTimer -= deltaMs;
 
                 if (g.pathUpdateTimer <= 0 || g.aStarPath.length === 0) {
-                    g.pathUpdateTimer = 250 + Math.random() * 200; // Throttle to prevent frame degradation
+                    g.pathUpdateTimer = 250 + Math.random() * 200; 
                     
                     let targetGrid = { x: 14, z: 15 };
                     
-                    // IF SIGHT COMPASS ACQUIRED, DIRECT TRACK; ELSE REPLAY PAC-MAN'S RECORDED ESCAPE PATH HISTORY!
                     let pacCurrentTarget;
                     if (wasPacmanSeenThisFrame) {
                         pacCurrentTarget = pacmanGridPos;
                     } else if (escapeRouteHistory.length > 0) {
-                        // Chase along tracked escape coordinates
-                        // Higher level ghosts track closer to Pacman's current step (i.e. more recent history)
                         const historyOffset = Math.max(0, escapeRouteHistory.length - 1 - Math.floor(level * 0.5));
                         pacCurrentTarget = escapeRouteHistory[historyOffset];
                     } else {
                         pacCurrentTarget = worldToGrid(lastPacmanSeenPos);
                     }
 
-                    // TEAMWORK BEHAVIORS MAPPED TO ORIGINAL RETRO PERSONALITIES
-                    switch (g.ghostName) {
-                        case 'BLINKY':
-                            // BLINKY: Direct relentless target track
-                            targetGrid = pacCurrentTarget;
-                            break;
-                            
-                        case 'PINKY':
-                            // PINKY: Tactical Ambush Intercept. Forecasts 4 tiles ahead of Pac-Man.
-                            let pDir = new THREE.Vector3(0, 0, 1).applyQuaternion(pacman.quaternion);
-                            let leadPos = pacman.position.clone().add(pDir.multiplyScalar(16));
-                            targetGrid = worldToGrid(leadPos);
-                            break;
-                            
-                        case 'INKY':
-                            // INKY: Complex Shortcut Calculation flank.
-                            // Uses Blinky's position relative to Pacman to sandwich the player.
-                            let blinkyGhost = ghosts.find(gh => gh.ghostName === 'BLINKY');
-                            if (blinkyGhost) {
-                                let blinkGrid = worldToGrid(blinkyGhost.position);
-                                targetGrid = {
-                                    x: Math.max(1, Math.min(26, pacCurrentTarget.x * 2 - blinkGrid.x)),
-                                    z: Math.max(1, Math.min(29, pacCurrentTarget.z * 2 - blinkGrid.z))
-                                };
-                            } else {
+                    if (bossActive) {
+                        targetGrid = pacCurrentTarget; // Relentless Boss tracking
+                    } else {
+                        switch (g.ghostName) {
+                            case 'BLINKY':
                                 targetGrid = pacCurrentTarget;
-                            }
-                            break;
+                                break;
+                                
+                            case 'PINKY':
+                                let pDir = new THREE.Vector3(0, 0, 1).applyQuaternion(pacman.quaternion);
+                                let leadPos = pacman.position.clone().add(pDir.multiplyScalar(16));
+                                targetGrid = worldToGrid(leadPos);
+                                break;
+                                
+                            case 'INKY':
+                                let blinkyGhost = ghosts.find(gh => gh.ghostName === 'BLINKY');
+                                if (blinkyGhost) {
+                                    let blinkGrid = worldToGrid(blinkyGhost.position);
+                                    targetGrid = {
+                                        x: Math.max(1, Math.min(26, pacCurrentTarget.x * 2 - blinkGrid.x)),
+                                        z: Math.max(1, Math.min(29, pacCurrentTarget.z * 2 - blinkGrid.z))
+                                    };
+                                } else {
+                                    targetGrid = pacCurrentTarget;
+                                }
+                                break;
 
-                        case 'CLYDE':
-                            // CLYDE: Attack & Retreat Trickster logic.
-                            // If far from Pac-man (> 9.0 units), chase him aggressively.
-                            // If close (< 9.0 units), Clyde tricks Pacman by fleeing to bottom-left corner!
-                            let distToPacman = g.position.distanceTo(pacman.position);
-                            if (distToPacman > 9.0) {
+                            case 'CLYDE':
+                                let distToPacman = g.position.distanceTo(pacman.position);
+                                if (distToPacman > 9.0) {
+                                    targetGrid = pacCurrentTarget;
+                                } else {
+                                    targetGrid = { x: 2, z: 28 }; 
+                                }
+                                break;
+                                
+                            case 'scared':
+                                if (g.ghostName === 'BLINKY') targetGrid = { x: 2, z: 2 };
+                                else if (g.ghostName === 'PINKY') targetGrid = { x: 25, z: 2 };
+                                else if (g.ghostName === 'INKY') targetGrid = { x: 2, z: 28 };
+                                else targetGrid = { x: 25, z: 28 };
+                                break;
+                                
+                            default:
                                 targetGrid = pacCurrentTarget;
-                            } else {
-                                targetGrid = { x: 2, z: 28 }; // Bottom Left Corner
-                            }
-                            break;
-                            
-                        case 'scared':
-                            // Escape retreat behaviors
-                            if (g.ghostName === 'BLINKY') targetGrid = { x: 2, z: 2 };
-                            else if (g.ghostName === 'PINKY') targetGrid = { x: 25, z: 2 };
-                            else if (g.ghostName === 'INKY') targetGrid = { x: 2, z: 28 };
-                            else targetGrid = { x: 25, z: 28 };
-                            break;
-                            
-                        default:
-                            targetGrid = pacCurrentTarget;
-                            break;
+                                break;
+                        }
                     }
                     
                     g.currentTargetCell = targetGrid;
                     g.aStarPath = computeAStarPath(gGrid, targetGrid);
                 }
 
-                // 3. TRAVEL SMOOTHLY ALONG PRECOMPUTED UNBROKEN HIGH VELOCITY A* PATH PATHWAYS
                 if (g.aStarPath.length > 1) {
                     let nextNode = g.aStarPath[1];
                     let worldNext = gridToWorld(nextNode.x, nextNode.z);
-                    
-                    // Maintain standard elevation offset alignment
                     worldNext.y = g.position.y; 
                     
                     let moveVec = worldNext.clone().sub(g.position);
@@ -2078,14 +2570,13 @@
                     
                     if (stepDist < gSpeed) {
                         g.position.copy(worldNext);
-                        g.aStarPath.shift(); // Move on forward towards next subsequent intersection index point
+                        g.aStarPath.shift(); 
                     } else {
                         moveVec.normalize();
                         g.position.add(moveVec.multiplyScalar(gSpeed));
                         g.dir.copy(moveVec);
                     }
                 } else {
-                    // Fallback to localized default tracking vector in case of full grid locks
                     let targetWorld = gridToWorld(g.currentTargetCell.x, g.currentTargetCell.z);
                     let fallbackVec = targetWorld.sub(g.position);
                     fallbackVec.y = 0;
@@ -2096,21 +2587,23 @@
                     }
                 }
 
-                // Warp map boundaries integration check
                 if (g.position.x > 56) g.position.x = -56;
                 else if (g.position.x < -56) g.position.x = 56;
 
                 g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
 
-                // Check fatal collision intersections with Pacman
-                if(pacman.position.distanceTo(g.position) < 1.6) {
+                if(pacman.position.distanceTo(g.position) < (bossActive ? 2.5 : 1.6)) {
                     if(powerUp) {
-                        killGhost(g);
+                        if (bossActive) {
+                            damageBoss(30);
+                        } else {
+                            killGhost(g);
+                        }
                     } else if(!isJumping && !isDashing) {
                         gameState = 'dying';
                         deathTimer = 1.0;
                         playSfx(200, 1.0, 'sawtooth');
-                        saveRecordsToDB(); // Save on death events
+                        saveRecordsToDB(); 
                     }
                 }
             });
@@ -2121,7 +2614,11 @@
                     d.visible = false; 
                     addScore(10);
                     
-                    // Increment and update player Quick Dash charge!
+                    triggerTrophyUnlock("tr-first-bite");
+
+                    // Small sparkling dot particle splash
+                    createSparkParticles(d.position, d.material.color.getHex(), 4);
+
                     if (dashCharge < maxDashCharge) {
                         dashCharge++;
                         updateDashBarUI();
@@ -2152,7 +2649,6 @@
                             return;
                         }
 
-                        // Save high score progression whenever stage clears
                         saveRecordsToDB();
 
                         if (level % 3 === 0) {
@@ -2160,6 +2656,8 @@
                             document.getElementById('ui').style.display = 'none';
                             document.getElementById('minimap').style.display = 'none';
                             playSfx(1000, 1.0, 'square');
+                            
+                            triggerTrophyUnlock("tr-level-clear");
 
                             interTimer = 0; interPhase = 0;
                             
@@ -2180,7 +2678,9 @@
                             document.getElementById('level').innerText = level;
                             buildMap();
                             resetPositions();
+                            initGhosts();
                             playSfx(1000, 1.0, 'square');
+                            startProceduralSoundtrack();
                         }
                     }
                 }
@@ -2189,11 +2689,11 @@
             renderer.render(scene, camera);
         }
 
-        // Initialize elements
         buildMap();
         initGhosts();
         resetPositions();
         animate();
+
     </script>
 </body>
 </html>
