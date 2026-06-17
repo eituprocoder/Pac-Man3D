@@ -349,19 +349,165 @@
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
-        function playSfx(f, d=0.1, t='sine', vol=0.05) {
+        // --- UPGRADED ADVANCED SFX SYNTHESIZER ---
+        let wakaHigh = true;
+        function playSfx(typeOrFreq, dOrConfig = 0.1, t = 'sine', vol = 0.05) {
             try {
                 if(audioCtx.state === 'suspended') audioCtx.resume();
-                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-                o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
-                g.gain.setValueAtTime(vol, audioCtx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + d);
-                o.connect(g); g.connect(audioCtx.destination);
-                o.start(); o.stop(audioCtx.currentTime + d);
+                const ctx = audioCtx;
+                const now = ctx.currentTime;
+
+                if (typeof typeOrFreq === 'string') {
+                    const type = typeOrFreq;
+                    if (type === 'waka') {
+                        // Dynamic rhythmic waka alternating frequency sweep
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = 'triangle';
+                        const f1 = wakaHigh ? 550 : 380;
+                        const f2 = wakaHigh ? 440 : 250;
+                        wakaHigh = !wakaHigh;
+                        o.frequency.setValueAtTime(f1, now);
+                        o.frequency.exponentialRampToValueAtTime(f2, now + 0.08);
+                        g.gain.setValueAtTime(0.04, now);
+                        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+                        o.connect(g); g.connect(ctx.destination);
+                        o.start(); o.stop(now + 0.08);
+                    } else if (type === 'ghost_eat') {
+                        // Multi-octave cascading arpeggio on ghost kill
+                        const notes = [600, 500, 400, 300, 200];
+                        notes.forEach((freq, idx) => {
+                            const o = ctx.createOscillator();
+                            const g = ctx.createGain();
+                            o.type = 'sawtooth';
+                            o.frequency.setValueAtTime(freq, now + idx * 0.05);
+                            g.gain.setValueAtTime(0.08, now + idx * 0.05);
+                            g.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.05 + 0.1);
+                            o.connect(g); g.connect(ctx.destination);
+                            o.start(now + idx * 0.05); o.stop(now + idx * 0.05 + 0.1);
+                        });
+                    } else if (type === 'power_pellet') {
+                        // Rising tension siren for power up pellets
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = 'sine';
+                        o.frequency.setValueAtTime(300, now);
+                        o.frequency.linearRampToValueAtTime(900, now + 0.35);
+                        g.gain.setValueAtTime(0.06, now);
+                        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+                        o.connect(g); g.connect(ctx.destination);
+                        o.start(); o.stop(now + 0.35);
+                    } else if (type === 'dash') {
+                        // Futuristic swooshing transition
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = 'sawtooth';
+                        o.frequency.setValueAtTime(900, now);
+                        o.frequency.exponentialRampToValueAtTime(200, now + 0.2);
+                        g.gain.setValueAtTime(0.12, now);
+                        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+                        o.connect(g); g.connect(ctx.destination);
+                        o.start(); o.stop(now + 0.2);
+                    } else if (type === 'jump') {
+                        // Classic retro cartoon pitch bend boing
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = 'sine';
+                        o.frequency.setValueAtTime(250, now);
+                        o.frequency.exponentialRampToValueAtTime(850, now + 0.25);
+                        g.gain.setValueAtTime(0.08, now);
+                        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+                        o.connect(g); g.connect(ctx.destination);
+                        o.start(); o.stop(now + 0.25);
+                    } else if (type === 'landing') {
+                        // Soft dust thud
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(140, now);
+                        o.frequency.exponentialRampToValueAtTime(50, now + 0.1);
+                        g.gain.setValueAtTime(0.15, now);
+                        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+                        o.connect(g); g.connect(ctx.destination);
+                        o.start(); o.stop(now + 0.1);
+                    } else if (type === 'death') {
+                        // Retro chromatic game over down sweep
+                        const notes = [450, 400, 350, 300, 220, 160];
+                        notes.forEach((freq, idx) => {
+                            const o = ctx.createOscillator();
+                            const g = ctx.createGain();
+                            o.type = 'sawtooth';
+                            o.frequency.setValueAtTime(freq, now + idx * 0.12);
+                            g.gain.setValueAtTime(0.1, now + idx * 0.12);
+                            g.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.12 + 0.25);
+                            o.connect(g); g.connect(ctx.destination);
+                            o.start(now + idx * 0.12); o.stop(now + idx * 0.12 + 0.25);
+                        });
+                    } else if (type === 'level_clear') {
+                        // Triumphant classic major chord sequence
+                        const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+                        notes.forEach((freq, idx) => {
+                            const o = ctx.createOscillator();
+                            const g = ctx.createGain();
+                            o.type = 'square';
+                            o.frequency.setValueAtTime(freq, now + idx * 0.08);
+                            g.gain.setValueAtTime(0.08, now + idx * 0.08);
+                            g.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.2);
+                            o.connect(g); g.connect(ctx.destination);
+                            o.start(now + idx * 0.08); o.stop(now + idx * 0.08 + 0.2);
+                        });
+                    }
+                } else {
+                    // Fully compatible backward frequency branch
+                    const f = typeOrFreq;
+                    const d = typeof dOrConfig === 'number' ? dOrConfig : 0.1;
+                    const o = ctx.createOscillator(), g = ctx.createGain();
+                    o.type = t; o.frequency.setValueAtTime(f, now);
+                    g.gain.setValueAtTime(vol, now);
+                    g.gain.exponentialRampToValueAtTime(0.0001, now + d);
+                    o.connect(g); g.connect(ctx.destination);
+                    o.start(); o.stop(now + d);
+                }
             } catch(e){}
         }
 
-        // --- SYNTHESIZED CLASSIC THEME ADDITION ---
+        // --- DYNAMIC PARTICLE ENGINE ---
+        const particles = [];
+        function createParticleExplosion(pos, color, count = 12, speed = 0.15, size = 0.15, geometryType = 'sphere') {
+            const geo = geometryType === 'box' 
+                ? new THREE.BoxGeometry(size, size, size) 
+                : new THREE.SphereGeometry(size, 4, 4);
+
+            for (let i = 0; i < count; i++) {
+                const mat = new THREE.MeshBasicMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: 1.0
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.copy(pos);
+                
+                // Random 3D spherical direction
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos((Math.random() * 2) - 1);
+                const velocity = new THREE.Vector3(
+                    Math.sin(phi) * Math.cos(theta),
+                    Math.sin(phi) * Math.sin(theta),
+                    Math.cos(phi)
+                ).multiplyScalar(speed * (0.4 + Math.random() * 0.6));
+
+                scene.add(mesh);
+                particles.push({
+                    mesh,
+                    velocity,
+                    life: 1.0,
+                    decay: 0.02 + Math.random() * 0.03,
+                    scaleSpeed: 0.95
+                });
+            }
+        }
+
+        // --- SYNTHESIZED CLASSIC THEME ---
         function playPacmanTheme(onComplete) {
             try {
                 if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -640,9 +786,30 @@
                 const group = new THREE.Group();
                 
                 const bodyGroup = new THREE.Group();
-                const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.5, 4, 8), new THREE.MeshPhongMaterial({color: config.c}));
+                const ghostMat = new THREE.MeshPhongMaterial({color: config.c});
+                const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.5, 4, 8), ghostMat);
                 body.position.y = 0.5;
                 bodyGroup.add(body);
+                
+                // --- ADD GHOST BOTTOM TRIANGLE SKIRT FLAPS ---
+                const skirtFlaps = [];
+                const flapCount = 6;
+                const flapRadius = 0.44; // Placed at circumference boundary
+                const flapGeo = new THREE.ConeGeometry(0.14, 0.25, 4); // cone is retro triangular prism when rotated
+                flapGeo.rotateX(Math.PI); // Point downwards
+                
+                for (let fIdx = 0; fIdx < flapCount; fIdx++) {
+                    const angle = (fIdx / flapCount) * Math.PI * 2;
+                    const flapMesh = new THREE.Mesh(flapGeo, ghostMat); // Share material for automated scared/rage mode colors
+                    flapMesh.position.set(
+                        Math.cos(angle) * flapRadius,
+                        0.08, 
+                        Math.sin(angle) * flapRadius
+                    );
+                    bodyGroup.add(flapMesh);
+                    skirtFlaps.push({ mesh: flapMesh, baseAngle: angle });
+                }
+                group.skirtFlaps = skirtFlaps;
                 group.add(bodyGroup);
 
                 const eyesGroup = new THREE.Group();
@@ -804,6 +971,14 @@
                 maxLaserRange = wallHits[0].distance;
             }
             
+            // Fire laser trail sparks
+            for (let i = 0; i < maxLaserRange; i += 2) {
+                const sparkPos = pacman.position.clone().add(laserDir.clone().multiplyScalar(i));
+                if (Math.random() < 0.4) {
+                    createParticleExplosion(sparkPos, 0xff5500, 2, 0.04, 0.06, 'box');
+                }
+            }
+
             ghosts.forEach(g => {
                 if(!g.isDead) {
                     const distToPoint = raycaster.ray.distanceToPoint(g.position);
@@ -829,6 +1004,7 @@
                 g.shieldMesh.visible = false;
                 playSfx(400, 0.3, 'sine', 0.2);
                 showFloatingText("SHIELD DEFLECTED!", g.position);
+                createParticleExplosion(g.position, 0x00aaff, 15, 0.08, 0.08, 'sphere');
                 return;
             }
 
@@ -839,6 +1015,9 @@
             g.isStunned = false;
             g.scale.setScalar(1);
             
+            // Spawn espectacular colored ghost fragments burst!
+            createParticleExplosion(g.position, g.baseColor, 35, 0.16, 0.12, 'sphere');
+
             let pts = 200;
             if(!fromLaser) {
                 pts = 200 * Math.pow(2, Math.min(ghostCombo, 4));
@@ -850,7 +1029,7 @@
             currentGhostKills++;
             saveRecordsToDB();
 
-            playSfx(500 + ghostCombo*100, 0.2, 'square');
+            playSfx('ghost_eat');
         }
 
         // --- MINIMAP LOGIC ---
@@ -942,6 +1121,11 @@
                 updateLivesDisplay();
                 playSfx(1500, 0.6, 'sine', 0.1); 
                 if (pos3D) showFloatingText("1 UP!", pos3D.clone().add(new THREE.Vector3(0, 1.5, 0)));
+                
+                // Spawn sparkles cascade for extra life celebration!
+                if(pos3D) {
+                    createParticleExplosion(pos3D, 0x00ff00, 25, 0.15, 0.1, 'sphere');
+                }
             }
 
             // Sync score records in real-time on score updates
@@ -977,7 +1161,10 @@
             if(!isJumping && gameState === 'playing' && !isDashing) { 
                 velocityY = 0.25; 
                 isJumping = true; 
-                playSfx(300, 0.2, 'square'); 
+                playSfx('jump'); 
+                
+                // Jump ground takeoff puff
+                createParticleExplosion(pacman.position.clone().setY(0.2), 0xffffff, 8, 0.04, 0.08, 'sphere');
             }
         }
 
@@ -1024,8 +1211,10 @@
             // Sizable speed surge
             dashVelocity.multiplyScalar(0.9); 
 
-            playSfx(1400, 0.15, 'sawtooth', 0.25);
-            playSfx(900, 0.2, 'sine', 0.15);
+            playSfx('dash');
+
+            // Quick dash particle sonic boom ring
+            createParticleExplosion(pacman.position, 0x00ffff, 20, 0.18, 0.15, 'box');
 
             // STUN CLASH: Damage/Stun ghosts around Pacman
             ghosts.forEach(g => {
@@ -1036,6 +1225,9 @@
                     g.bodyGroup.children[0].material.color.setHex(0x3355ff); // Stun blue
                     showFloatingText("STUNNED!", g.position);
                     playSfx(150, 0.4, 'triangle');
+                    
+                    // Stun static sparkles
+                    createParticleExplosion(g.position, 0x3355ff, 12, 0.08, 0.08, 'sphere');
                 }
             });
         }
@@ -1317,6 +1509,25 @@
         const csBlinkyBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.8, 0.8, 2, 8), csBlinkyMat);
         csBlinkyBody.position.y = 0.8;
         
+        // --- ADD INTERMISSION BLINKY TRIANGLE SKIRT FLAPS ---
+        const csSkirtFlaps = [];
+        const csFlapCount = 6;
+        const csFlapRadius = 0.7;
+        const csFlapGeo = new THREE.ConeGeometry(0.22, 0.4, 4);
+        csFlapGeo.rotateX(Math.PI);
+
+        for (let fIdx = 0; fIdx < csFlapCount; fIdx++) {
+            const angle = (fIdx / csFlapCount) * Math.PI * 2;
+            const csFlapMesh = new THREE.Mesh(csFlapGeo, csBlinkyMat);
+            csFlapMesh.position.set(
+                Math.cos(angle) * csFlapRadius,
+                0.12,
+                Math.sin(angle) * csFlapRadius
+            );
+            csBlinky.add(csFlapMesh);
+            csSkirtFlaps.push({ mesh: csFlapMesh, baseAngle: angle });
+        }
+        
         const csEyesGroup = new THREE.Group();
         const csLE = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color:0xffffff}));
         csLE.position.set(0.3, 1.2, 0.6);
@@ -1346,6 +1557,22 @@
             const deltaMs = now - lastTime;
             lastTime = now;
             
+            // --- DYNAMIC PARTICLE RENDER ENGINE ---
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    p.mesh.geometry.dispose();
+                    p.mesh.material.dispose();
+                    particles.splice(i, 1);
+                } else {
+                    p.mesh.position.add(p.velocity);
+                    p.mesh.scale.multiplyScalar(p.scaleSpeed);
+                    p.mesh.material.opacity = p.life;
+                }
+            }
+
             if (gameState === 'lobby') {
                 renderer.render(scene, camera);
                 return;
@@ -1370,6 +1597,13 @@
                         g.bodyGroup.children[0].material.color.setHSL((now * 0.001 + index * 0.1) % 1, 1, 0.5);
                     }
                 });
+
+                // Spawn beautiful colorful fireworks sparkles randomly during final screen
+                if(Math.random() < 0.1) {
+                    const sparkLoc = new THREE.Vector3((Math.random()-0.5)*30, 5 + Math.random()*10, (Math.random()-0.5)*30);
+                    const col = new THREE.Color().setHSL(Math.random(), 1.0, 0.5);
+                    createParticleExplosion(sparkLoc, col, 20, 0.12, 0.15, 'sphere');
+                }
                 
                 camera.position.x = pacman.position.x + Math.sin(now * 0.001) * 20;
                 camera.position.z = pacman.position.z + Math.cos(now * 0.001) * 20;
@@ -1387,6 +1621,13 @@
                 csTopHalf.rotation.x = -mouthAngle; 
                 csBotHalf.rotation.x = mouthAngle;
 
+                // Wave intermission skirt wiggles
+                if (csSkirtFlaps) {
+                    csSkirtFlaps.forEach((flap, fIdx) => {
+                        flap.mesh.position.y = 0.12 + Math.sin(interTimer * 0.02 + fIdx * 2.0) * 0.1;
+                    });
+                }
+
                 if (interPhase === 0) {
                     csPacman.position.x -= 0.015 * deltaMs;
                     csBlinky.position.x -= 0.016 * deltaMs; 
@@ -1400,6 +1641,9 @@
                         csPacman.rotation.y = Math.PI/2; 
                         csBlinky.rotation.y = Math.PI/2;
                         playSfx(1000, 0.5, 'triangle');
+                        
+                        // Blue smoke ring on giant Pac-Man appearance
+                        createParticleExplosion(csPacman.position, 0x00aaff, 25, 0.15, 0.2, 'sphere');
                     }
                 } else if (interPhase === 1) {
                     csPacman.position.x += 0.018 * deltaMs;
@@ -1408,6 +1652,9 @@
                     if (csPacman.position.x >= csBlinky.position.x - 2.0 && csBlinkyBody.visible) {
                         csBlinkyBody.visible = false; 
                         playSfx(500, 0.2, 'square');
+                        
+                        // Red debris on collision
+                        createParticleExplosion(csBlinky.position, 0xff0000, 30, 0.18, 0.15, 'sphere');
                     }
                     
                     if (csPacman.position.x > 30) {
@@ -1432,6 +1679,11 @@
                 let s = Math.max(0.01, deathTimer);
                 pacman.scale.setScalar(s);
                 
+                // Spawn dying yellow sparks cascade
+                if (Math.random() < 0.4) {
+                    createParticleExplosion(pacman.position, 0xffff00, 2, 0.03, 0.06, 'sphere');
+                }
+
                 if (deathTimer <= 0) {
                     lives--; updateLivesDisplay();
                     if (lives <= 0) {
@@ -1474,6 +1726,12 @@
                     bottomHalf.material.color.setHex(0xffff00);
                 }
 
+                // Spawn magnificent cyan dash wind tail particles
+                if(Math.random() < 0.7) {
+                    const dashTrail = pacman.position.clone().add(new THREE.Vector3((Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5));
+                    createParticleExplosion(dashTrail, 0x00ffff, 3, 0.05, 0.08, 'box');
+                }
+
                 if (dashTimeRemaining <= 0) {
                     isDashing = false;
                     topHalf.material.color.setHex(0xffff00);
@@ -1482,7 +1740,16 @@
             } else {
                 if(isJumping) {
                     pacman.position.y += velocityY; velocityY -= 0.015;
-                    if(pacman.position.y <= 0.8) { pacman.position.y = 0.8; isJumping = false; }
+                    
+                    // Landing dust trigger check
+                    if(pacman.position.y <= 0.8) { 
+                        pacman.position.y = 0.8; 
+                        isJumping = false; 
+                        playSfx('landing');
+                        
+                        // Ground dust particles
+                        createParticleExplosion(pacman.position.clone().setY(0.1), 0x888888, 14, 0.05, 0.07, 'sphere');
+                    }
                 }
 
                 // Keyboard Control Evaluations (Prioritized over joystick unless mobile active)
@@ -1516,6 +1783,12 @@
                     const mouthAngle = (Math.sin(mouthTimer) + 1) * 0.3;
                     topHalf.rotation.x = -mouthAngle; bottomHalf.rotation.x = mouthAngle;
                     
+                    // Spawn wind trail sparks while running
+                    if (Math.random() < 0.15) {
+                        const runDust = pacman.position.clone().add(new THREE.Vector3((Math.random()-0.5)*0.3, -0.4, (Math.random()-0.5)*0.3));
+                        createParticleExplosion(runDust, 0xffffff, 1, 0.01, 0.04, 'sphere');
+                    }
+
                     if (pacman.position.x > 56) pacman.position.x = -56;
                     else if (pacman.position.x < -56) pacman.position.x = 56;
                 } else {
@@ -1587,6 +1860,12 @@
                     // Classic Rainbow Cycle
                     const hue = (now % 2000) / 2000;
                     currentAuraColor.setHSL(hue, 1.0, 0.5);
+                    
+                    // Ambient colorful sparkles on Power Mode
+                    if(Math.random() < 0.25) {
+                        const sparkle = pacman.position.clone().add(new THREE.Vector3((Math.random()-0.5)*1.2, (Math.random()-0.5)*1.2, (Math.random()-0.5)*1.2));
+                        createParticleExplosion(sparkle, currentAuraColor, 1, 0.02, 0.06, 'box');
+                    }
                 } else if (freezeMode) {
                     currentAuraColor.setHex(0x00ffff); // Glacial Blue
                 } else if (speedMode) {
@@ -1646,6 +1925,9 @@
                 } else if (pacman.position.distanceTo(fruitMesh.position) < 2.0) {
                     addScore(fruitMesh.fruitScore, fruitMesh.position);
                     
+                    // Spawn special stars explosion on fruit eaten!
+                    createParticleExplosion(fruitMesh.position, fruitMesh.material.color.getHex(), 20, 0.14, 0.12, 'sphere');
+
                     // Instant full Quick Dash recharge on Fruit!
                     dashCharge = maxDashCharge;
                     updateDashBarUI();
@@ -1702,6 +1984,13 @@
             const levelAbilityFrequencyMult = Math.min(2.5, 1.0 + (level * 0.15));
 
             ghosts.forEach(g => {
+                // Wave skirt wiggles classic-arcade style
+                if (!g.isDead && g.skirtFlaps) {
+                    g.skirtFlaps.forEach((flap, fIdx) => {
+                        flap.mesh.position.y = 0.08 + Math.sin(now * 0.015 + fIdx * 2.0) * 0.06;
+                    });
+                }
+
                 if(g.isDead) {
                     let toCenter = centerBox.clone().sub(g.position);
                     if(toCenter.length() < 0.5) {
@@ -1792,6 +2081,11 @@
                         gSpeed *= 1.6; // Speed boost
                         g.scale.setScalar(1.35); // Enlarge size
                         g.bodyGroup.children[0].material.color.setHex(0xffaa00); // Lava red/orange rage
+                        
+                        // Fire sparkles around Blinky Rage
+                        if(Math.random() < 0.25) {
+                            createParticleExplosion(g.position.clone().add(new THREE.Vector3(0, 0.5, 0)), 0xff3300, 1, 0.05, 0.05, 'box');
+                        }
                     } else {
                         if (g.isUsingAbility) {
                             g.isUsingAbility = false;
@@ -1813,6 +2107,9 @@
                             g.eyesGroup.position.y = 0;
                             g.isUsingAbility = false;
                             g.abilityCooldown = 5000 + Math.random() * 4000;
+                            
+                            // Dust impact on wall land
+                            createParticleExplosion(g.position.clone().setY(0.1), 0x00ffff, 10, 0.06, 0.08, 'sphere');
                         }
                     } else if (isTriggerable) {
                         // Trigger wall jump to bypass corners or leap towards Pac-man
@@ -1821,6 +2118,9 @@
                         g.abilityCooldown = 99999; // Reset cooldown trigger
                         playSfx(600, 0.25, 'triangle');
                         showFloatingText("WALL HOP!", g.position);
+                        
+                        // Jump burst sparks
+                        createParticleExplosion(g.position, 0x00ffff, 10, 0.05, 0.07, 'sphere');
                     }
                 }
 
@@ -1831,6 +2131,11 @@
                         gSpeed *= 3.0; // Rapid lunge!
                         g.bodyGroup.children[0].material.color.setHex(0xff33cc); // Bright hot pink
                         
+                        // Pink speed trails
+                        if (Math.random() < 0.4) {
+                            createParticleExplosion(g.position, 0xff33cc, 2, 0.04, 0.06, 'sphere');
+                        }
+
                         if (g.abilityDurationLeft <= 0) {
                             g.isUsingAbility = false;
                             g.bodyGroup.children[0].material.color.setHex(g.baseColor);
@@ -1843,6 +2148,8 @@
                         g.abilityCooldown = 99999;
                         playSfx(900, 0.3, 'sawtooth');
                         showFloatingText("PINKY LUNGES!", g.position);
+                        
+                        createParticleExplosion(g.position, 0xff00ff, 15, 0.1, 0.1, 'box');
                     }
                 }
 
@@ -1870,6 +2177,9 @@
                                 duration: 5000, // persists 5 seconds
                                 dir: new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize()
                             });
+                            
+                            // Spawn smoke on clone
+                            createParticleExplosion(cloneGroup.position, 0xffb852, 10, 0.05, 0.1, 'sphere');
                         }
                     }
                 }
@@ -1894,8 +2204,14 @@
                         scene.add(flashMesh);
                         setTimeout(() => scene.remove(flashMesh), 400);
 
+                        // Departure purple sparks
+                        createParticleExplosion(g.position, 0x800080, 20, 0.12, 0.1, 'box');
+
                         g.position.copy(targetTeleport);
                         g.aStarPath = [];
+
+                        // Arrival purple sparks
+                        createParticleExplosion(g.position, 0x800080, 20, 0.12, 0.1, 'box');
 
                         playSfx(150, 0.4, 'sine', 0.2);
                         playSfx(1100, 0.2, 'sawtooth', 0.1);
@@ -1919,6 +2235,10 @@
                             // Visual swap indicators
                             showFloatingText("SWAP!", g.position);
                             showFloatingText("SWAP!", chosenOne.position);
+
+                            // Green swap particle rings on both ghosts
+                            createParticleExplosion(g.position, 0x00ff00, 15, 0.1, 0.08, 'sphere');
+                            createParticleExplosion(chosenOne.position, 0x00ff00, 15, 0.1, 0.08, 'sphere');
 
                             g.position.copy(chosenPos); g.aStarPath = [];
                             chosenOne.position.copy(spikePos); chosenOne.aStarPath = [];
@@ -1954,6 +2274,9 @@
 
                         playSfx(750, 0.25, 'triangle');
                         showFloatingText("GOLDEN WALL!", g.position);
+
+                        // Golden dust splash
+                        createParticleExplosion(g.position, 0xffcc00, 16, 0.09, 0.1, 'box');
                     }
                 }
 
@@ -1980,6 +2303,9 @@
                             targetCompanion.shieldMesh.visible = true;
                             showFloatingText("SHIELDED!", targetCompanion.position);
                             playSfx(950, 0.4, 'sine');
+                            
+                            // Futuristic cyan defense shield sparkles
+                            createParticleExplosion(targetCompanion.position, 0x00aaff, 15, 0.08, 0.08, 'sphere');
                         }
                     }
                 }
@@ -2109,7 +2435,11 @@
                     } else if(!isJumping && !isDashing) {
                         gameState = 'dying';
                         deathTimer = 1.0;
-                        playSfx(200, 1.0, 'sawtooth');
+                        playSfx('death');
+                        
+                        // Yellow Pacman explosion burst
+                        createParticleExplosion(pacman.position, 0xffff00, 35, 0.14, 0.1, 'sphere');
+                        
                         saveRecordsToDB(); // Save on death events
                     }
                 }
@@ -2121,23 +2451,33 @@
                     d.visible = false; 
                     addScore(10);
                     
+                    // Spawn nice small dot-eating sparkle pop
+                    createParticleExplosion(d.position, d.material.color.getHex(), 6, 0.06, 0.07, 'sphere');
+
                     // Increment and update player Quick Dash charge!
                     if (dashCharge < maxDashCharge) {
                         dashCharge++;
                         updateDashBarUI();
                     }
 
-                    playSfx(600, 0.05);
+                    playSfx('waka');
                     
                     if(d.type === 0) {
                         remainingDots--;
                         document.getElementById('remaining').innerText = remainingDots;
                     } else {
                         addScore(40);
-                        if(d.type === 2) { powerUp = true; powerTimeLeft = 8000; ghostCombo = 0; document.getElementById('powerBarContainer').style.display = 'block'; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); }); }
-                        if(d.type === 4) { laserMode = true; laserTimeLeft = 10000; laserCooldown=0; document.getElementById('laserBarContainer').style.display = 'block'; }
-                        if(d.type === 5) { speedMode = true; speedTimeLeft = 6000; document.getElementById('speedBarContainer').style.display = 'block'; }
-                        if(d.type === 6) { freezeMode = true; freezeTimeLeft = 5000; document.getElementById('freezeBarContainer').style.display = 'block'; }
+                        if(d.type === 2) { 
+                            powerUp = true; 
+                            powerTimeLeft = 8000; 
+                            ghostCombo = 0; 
+                            document.getElementById('powerBarContainer').style.display = 'block'; 
+                            ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); }); 
+                            playSfx('power_pellet');
+                        }
+                        if(d.type === 4) { laserMode = true; laserTimeLeft = 10000; laserCooldown=0; document.getElementById('laserBarContainer').style.display = 'block'; playSfx('power_pellet'); }
+                        if(d.type === 5) { speedMode = true; speedTimeLeft = 6000; document.getElementById('speedBarContainer').style.display = 'block'; playSfx('power_pellet'); }
+                        if(d.type === 6) { freezeMode = true; freezeTimeLeft = 5000; document.getElementById('freezeBarContainer').style.display = 'block'; playSfx('power_pellet'); }
                         showFloatingText("+50", d.position);
                     }
 
@@ -2159,7 +2499,7 @@
                             gameState = 'intermission';
                             document.getElementById('ui').style.display = 'none';
                             document.getElementById('minimap').style.display = 'none';
-                            playSfx(1000, 1.0, 'square');
+                            playSfx('level_clear');
 
                             interTimer = 0; interPhase = 0;
                             
@@ -2180,7 +2520,7 @@
                             document.getElementById('level').innerText = level;
                             buildMap();
                             resetPositions();
-                            playSfx(1000, 1.0, 'square');
+                            playSfx('level_clear');
                         }
                     }
                 }
@@ -2197,3 +2537,5 @@
     </script>
 </body>
 </html>
+
+
