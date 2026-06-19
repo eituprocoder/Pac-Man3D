@@ -62,7 +62,7 @@
         #mythical-screen { background: rgba(0, 0, 0, 0.75); color: #00ff00; overflow: hidden; font-family: monospace; }
         .glitch-split { width: 100%; height: 100%; display: flex; }
         .glitch-left { width: 50%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-right: 2px dashed #00ff00; }
-        .glitch-right { width: 50%; height: 100%; padding: 10px; background: rgba(5, 5, 5, 0.7); color: #ff00ff; word-break: break-all; font-size: 10px; overflow: hidden; opacity: 0.8; text-align: left; }
+        .glitch-right { width: 50%; height: 100%; padding: 10px; background: rgba(5, 5, 5, 0.7); word-break: break-all; font-size: 10px; overflow: hidden; opacity: 0.9; text-align: left; }
         
         .bar-container { display: none; width: 250px; height: 12px; border: 2px solid white; border-radius: 6px; margin: 5px auto; overflow: hidden; background: #000; position: relative; }
         .bar-label { font-size: 10px; position: absolute; width: 250px; text-align: center; margin-top: -1px; color: #fff; text-shadow: 1px 1px 0 #000; z-index: 5; }
@@ -713,7 +713,7 @@
         ];
 
         let walls = []; let dots = [];
-        const floorMat = new THREE.MeshPhongMaterial({ color: 0x000a22 });
+        const floorMat = new THREE.MeshPhongMaterial({ color: 0x00a22 });
         const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), floorMat);
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
@@ -1485,14 +1485,19 @@
         function generateGlitchMatrix() {
             const container = document.getElementById('glitch-matrix');
             let content = '';
+            // Palette of bright neon colors for the Level 256 glitch elements
+            const neonColors = ['#ff0055', '#00ffcc', '#ffff00', '#39ff14', '#ff6600', '#ff00ff', '#00ffff', '#cc00ff', '#ff3300', '#00ff00'];
             for (let i = 0; i < 40; i++) {
                 let row = '';
                 for (let j = 0; j < 60; j++) {
                     const charType = Math.random();
+                    const color = neonColors[Math.floor(Math.random() * neonColors.length)];
                     if (charType < 0.3) {
-                        row += String.fromCharCode(33 + Math.floor(Math.random() * 50));
+                        const symbol = String.fromCharCode(33 + Math.floor(Math.random() * 50));
+                        row += `<span style="color:${color}; text-shadow: 0 0 5px ${color}">${symbol}</span>`;
                     } else if (charType < 0.6) {
-                        row += Math.floor(Math.random() * 10);
+                        const num = Math.floor(Math.random() * 10);
+                        row += `<span style="color:${color}; text-shadow: 0 0 5px ${color}">${num}</span>`;
                     } else {
                         row += '&nbsp;';
                     }
@@ -2320,23 +2325,26 @@
                         pacCurrentTarget = worldToGrid(lastPacmanSeenPos);
                     }
 
-                    // TEAMWORK BEHAVIORS MAPPED TO ORIGINAL RETRO PERSONALITIES
+                    // --- NEW HIGH-INTELLIGENCE MULTI-ANGLE COORDINATED ENCIRCLEMENT ---
+                    // Instead of heading in from the same entrance corridor, all 8 ghosts compute distinct flanking grids:
+                    let pDir = new THREE.Vector3(0, 0, 1).applyQuaternion(pacman.quaternion).normalize();
+                    let leftFlankVec = pDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2).normalize();
+                    let rightFlankVec = pDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2).normalize();
+
                     switch (g.ghostName) {
                         case 'BLINKY':
-                            // BLINKY: Direct relentless target track
+                            // BLINKY (Direct Assault): Attacks directly from the rear/rear-center
                             targetGrid = pacCurrentTarget;
                             break;
                             
                         case 'PINKY':
-                            // PINKY: Tactical Ambush Intercept. Forecasts 4 tiles ahead of Pac-Man.
-                            let pDir = new THREE.Vector3(0, 0, 1).applyQuaternion(pacman.quaternion);
-                            let leadPos = pacman.position.clone().add(pDir.multiplyScalar(16));
-                            targetGrid = worldToGrid(leadPos);
+                            // PINKY (Frontal Ambush): Forecasts and cuts off Pac-Man's front path (4 tiles ahead)
+                            let frontLead = pacman.position.clone().add(pDir.clone().multiplyScalar(16));
+                            targetGrid = worldToGrid(frontLead);
                             break;
                             
                         case 'INKY':
-                            // INKY: Complex Shortcut Calculation flank.
-                            // Uses Blinky's position relative to Pacman to sandwich the player.
+                            // INKY (Opposite Mirror Flank): Coordinates with Blinky's position to pinch Pac-Man
                             let blinkyGhost = ghosts.find(gh => gh.ghostName === 'BLINKY');
                             if (blinkyGhost) {
                                 let blinkGrid = worldToGrid(blinkyGhost.position);
@@ -2350,19 +2358,41 @@
                             break;
 
                         case 'CLYDE':
-                            // CLYDE: Attack & Retreat Trickster logic.
-                            // If far from Pac-man (> 9.0 units), chase him aggressively.
-                            // If close (< 9.0 units), Clyde tricks Pacman by fleeing to bottom-left corner!
+                            // CLYDE (Attack and Retreat): Approaches if far; retreats to the bottom-left if close
                             let distToPacman = g.position.distanceTo(pacman.position);
-                            if (distToPacman > 9.0) {
+                            if (distToPacman > 10.0) {
                                 targetGrid = pacCurrentTarget;
                             } else {
-                                targetGrid = { x: 2, z: 28 }; // Bottom Left Corner
+                                targetGrid = { x: 2, z: 28 }; // Escapes to southwest safety
                             }
+                            break;
+
+                        case 'TIM':
+                            // TIM (Rear Tail Cutoff): Actively blocks behind Pac-Man to stop him from doubling back
+                            let rearLead = pacman.position.clone().add(pDir.clone().multiplyScalar(-12));
+                            targetGrid = worldToGrid(rearLead);
+                            break;
+
+                        case 'SPIKE':
+                            // SPIKE (Left-Flank Encirclement): Maneuvers towards Pac-Man's left shoulder (3 tiles left)
+                            let leftShoulder = pacman.position.clone().add(leftFlankVec.multiplyScalar(12));
+                            targetGrid = worldToGrid(leftShoulder);
+                            break;
+
+                        case 'GOLDY':
+                            // GOLDY (Right-Flank Encirclement): Maneuvers towards Pac-Man's right shoulder (3 tiles right)
+                            let rightShoulder = pacman.position.clone().add(rightFlankVec.multiplyScalar(12));
+                            targetGrid = worldToGrid(rightShoulder);
+                            break;
+
+                        case 'WHITY':
+                            // WHITY (Diagonal Intercept): Closes in through northeast/southwest diagonal corridors
+                            let diagonalPos = pacman.position.clone().add(new THREE.Vector3(12, 0, -12));
+                            targetGrid = worldToGrid(diagonalPos);
                             break;
                             
                         case 'scared':
-                            // Escape retreat behaviors
+                            // Escape retreat behaviors (scared configuration fallback)
                             if (g.ghostName === 'BLINKY') targetGrid = { x: 2, z: 2 };
                             else if (g.ghostName === 'PINKY') targetGrid = { x: 25, z: 2 };
                             else if (g.ghostName === 'INKY') targetGrid = { x: 2, z: 28 };
