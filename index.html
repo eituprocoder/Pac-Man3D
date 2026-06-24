@@ -46,12 +46,50 @@
         /* Streak & Daily Mission Styling */
         #streak-tag { font-size: 12px; color: #ff00ff; font-weight: bold; text-shadow: 0 0 8px #ff00ff; border: 1px solid #ff00ff; padding: 2px 8px; border-radius: 6px; background: rgba(255,0,255,0.1); margin-top: 5px; }
 
+        /* Difficulty Selector Styling */
+        #difficulty-container { background: rgba(255, 0, 0, 0.08); border: 2px solid #ff003c; border-radius: 12px; padding: 10px 15px; margin-bottom: 15px; width: 95%; max-width: 600px; box-sizing: border-box; text-align: center; }
+        .difficulty-title { font-size: 12px; color: #ff003c; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-bottom: 8px; display: block; }
+        .difficulty-options { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+        .difficulty-btn { padding: 6px 12px; font-size: 11px; font-family: 'Courier New', monospace; font-weight: bold; border: 2px solid #ff003c; background: rgba(255, 0, 60, 0.1); color: #fff; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .difficulty-btn.active { background: #ff003c; color: #000; box-shadow: 0 0 12px #ff003c; }
+
+        /* Web Notification Perm Selector */
+        #notification-perm-container { margin-bottom: 15px; width: 95%; max-width: 600px; box-sizing: border-box; }
+        .perm-btn { width: 100%; padding: 10px; background: rgba(0, 242, 255, 0.1); border: 2px dashed #00f2ff; color: #00f2ff; font-weight: bold; font-family: 'Courier New', monospace; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .perm-btn:hover { background: #00f2ff; color: #000; }
+
         /* Color Selector Styling */
         #color-selector-container { background: rgba(0, 242, 255, 0.08); border: 2px solid #00f2ff; border-radius: 12px; padding: 10px 15px; margin-bottom: 15px; width: 95%; max-width: 600px; box-sizing: border-box; text-align: center; }
         .color-title { font-size: 12px; color: #00f2ff; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-bottom: 8px; display: block; }
         .color-options { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .color-btn { width: 32px; height: 32px; border-radius: 50%; border: 3px solid #fff; cursor: pointer; transition: transform 0.2s; box-shadow: 0 0 8px rgba(255,255,255,0.3); }
         .color-btn:hover, .color-btn.active { transform: scale(1.2); border-color: #00f2ff; box-shadow: 0 0 15px #00f2ff; }
+
+        /* Level Editor Toggle button and Screen overlay styles */
+        #editor-action-container { width: 95%; max-width: 600px; display: flex; gap: 10px; margin-bottom: 15px; }
+        #editor-toggle-btn { flex: 1; }
+
+        #level-editor-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #020718; z-index: 2000; flex-direction: column; align-items: center; padding: 15px; box-sizing: border-box; overflow-y: auto; color: #fff; }
+        .editor-header { display: flex; justify-content: space-between; width: 100%; max-width: 700px; align-items: center; border-bottom: 2px solid #00f2ff; padding-bottom: 10px; margin-bottom: 10px; }
+        .editor-header h3 { margin: 0; color: #ffff00; font-size: 20px; }
+        .editor-close { background: red; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        .editor-toolbar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 700px; margin-bottom: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; border: 1px solid #00f2ff; }
+        .tool-btn { padding: 6px 12px; font-family: 'Courier New', monospace; font-size: 11px; background: #222; color: #fff; border: 1px solid #777; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+        .tool-btn.active { border-color: #ffff00; background: #005577; box-shadow: 0 0 8px #00f2ff; }
+        .tool-color { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+        .editor-workspace { width: 100%; max-width: 700px; overflow: auto; display: flex; justify-content: center; background: #000; padding: 10px; border-radius: 8px; border: 2px solid #333; margin-bottom: 10px; height: 350px; }
+        #editor-grid { display: grid; grid-template-columns: repeat(28, 16px); grid-template-rows: repeat(31, 16px); gap: 1px; background: #111; touch-action: none; }
+        .grid-cell { width: 16px; height: 16px; background: #000; border: 1px solid #222; box-sizing: border-box; cursor: pointer; }
+        .grid-cell:hover { background: #333; }
+
+        .editor-footer-controls { display: flex; justify-content: space-between; width: 100%; max-width: 700px; gap: 10px; }
+        .editor-footer-controls button { flex: 1; padding: 10px; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; border-radius: 6px; border: none; }
+        .editor-btn-classic { background: #333; color: white; }
+        .editor-btn-classic:hover { background: #444; }
+        .editor-btn-primary { background: #ffff00; color: black; }
+        .editor-btn-primary:hover { background: #ffea00; box-shadow: 0 0 10px #ffff00; }
 
         /* Daily Missions Panel */
         #missions-container { background: rgba(0, 255, 0, 0.08); border: 2px solid #00ff00; border-radius: 12px; padding: 10px 15px; margin-bottom: 15px; width: 95%; max-width: 600px; box-sizing: border-box; text-align: left; }
@@ -144,6 +182,7 @@
         </div>
     </div>
 
+    <!-- MAIN MENU SCREEN -->
     <div id="menu-screen">
         <h1>PAC-MAN 3D</h1>
         <h2>3D LABYRINTH</h2>
@@ -169,6 +208,24 @@
             </div>
         </div>
 
+        <!-- NEW: Difficulty Selector Container -->
+        <div id="difficulty-container">
+            <span class="difficulty-title">💀 Choose Game Difficulty</span>
+            <div class="difficulty-options">
+                <button class="difficulty-btn" id="diff-peaceful" onclick="setDifficulty('peaceful')">PEACEFUL</button>
+                <button class="difficulty-btn" id="diff-easy" onclick="setDifficulty('easy')">EASY</button>
+                <button class="difficulty-btn active" id="diff-medium" onclick="setDifficulty('medium')">MEDIUM</button>
+                <button class="difficulty-btn" id="diff-hard" onclick="setDifficulty('hard')">HARD</button>
+                <button class="difficulty-btn" id="diff-extreme" onclick="setDifficulty('extreme')">EXTREME</button>
+                <button class="difficulty-btn" id="diff-pro" onclick="setDifficulty('pro')">PRO</button>
+            </div>
+        </div>
+
+        <!-- NEW: Web Notification Request Button -->
+        <div id="notification-perm-container">
+            <button class="perm-btn" onclick="requestNotificationPermission()">🔔 ENABLE DEVICE NOTIFICATIONS</button>
+        </div>
+
         <!-- Pac-Man Color Selector -->
         <div id="color-selector-container">
             <span class="color-title">🎨 Choose Pac-Man Color</span>
@@ -180,6 +237,11 @@
                 <button class="color-btn" style="background:#ff00ff;" onclick="selectPacmanColor('#ff00ff', this)"></button>
                 <button class="color-btn" style="background:#ffd700;" onclick="selectPacmanColor('#ffd700', this)"></button>
             </div>
+        </div>
+
+        <!-- NEW: Interactive 2D Level Editor Launcher and Toggle buttons -->
+        <div id="editor-action-container">
+            <button id="editor-toggle-btn" class="menu-btn" style="border-color:#ffaa00; background:rgba(255,170,0,0.1); color:#ffaa00; box-shadow:0 0 15px rgba(255,170,0,0.2); font-size:16px;" onclick="openLevelEditor()">🛠️ BUILD CUSTOM MAP</button>
         </div>
 
         <!-- Daily Missions Panel -->
@@ -207,7 +269,8 @@
             👾 <strong>Boss stage every 10 levels!</strong> Clear all dots to spawn the Mega Pellet and charge to victory!
         </div>
         
-        <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY</button>
+        <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY NORMAL</button>
+        <button id="btnPlayCustom" class="menu-btn" style="display:none; border-color:#00ff00; background:rgba(0,255,0,0.1); color:#00ff00; box-shadow:0 0 15px rgba(0,255,0,0.4);" onclick="startCustomGame()">PLAY CUSTOM MAP</button>
 
         <div id="ghost-cast-container">
             <div class="ghost-card">
@@ -242,6 +305,61 @@
                 <span class="ghost-avatar" style="background:#ffffff;"></span>
                 <div class="ghost-info"><strong style="color:#ffffff;">WHITY</strong><br>Stealth | <span style="color:#ffffff;">INVISIBILITY CLOAK</span> turns self &amp; nearby companions invisible</div>
             </div>
+        </div>
+    </div>
+
+    <!-- NEW: FULL LEVEL EDITOR MODAL -->
+    <div id="level-editor-modal">
+        <div class="editor-header">
+            <h3>🛠️ Interactive Level Editor (2D Grid)</h3>
+            <button class="editor-close" onclick="closeLevelEditor()">Exit Editor</button>
+        </div>
+
+        <div class="editor-toolbar">
+            <button class="tool-btn active" id="tool-1" onclick="selectEditorTool(1)">
+                <span class="tool-color" style="background:#0033ff;"></span>Wall [1]
+            </button>
+            <button class="tool-btn" id="tool-0" onclick="selectEditorTool(0)">
+                <span class="tool-color" style="background:#ffffff;"></span>Dot [0]
+            </button>
+            <button class="tool-btn" id="tool-2" onclick="selectEditorTool(2)">
+                <span class="tool-color" style="background:#ffff00;"></span>Power Pellet [2]
+            </button>
+            <button class="tool-btn" id="tool-4" onclick="selectEditorTool(4)">
+                <span class="tool-color" style="background:#ff6400;"></span>Laser [4]
+            </button>
+            <button class="tool-btn" id="tool-5" onclick="selectEditorTool(5)">
+                <span class="tool-color" style="background:#00ff00;"></span>Speed [5]
+            </button>
+            <button class="tool-btn" id="tool-6" onclick="selectEditorTool(6)">
+                <span class="tool-color" style="background:#00ffff;"></span>Freeze [6]
+            </button>
+            <button class="tool-btn" id="tool-7" onclick="selectEditorTool(7)">
+                <span class="tool-color" style="background:#ff00ff;"></span>Magnet [7]
+            </button>
+            <button class="tool-btn" id="tool-8" onclick="selectEditorTool(8)">
+                <span class="tool-color" style="background:#ff00ff; border-radius: 0;"></span>Ghost Gate [8]
+            </button>
+            <button class="tool-btn" id="tool-3" onclick="selectEditorTool(3)">
+                <span class="tool-color" style="background:#111;"></span>Eraser [3]
+            </button>
+        </div>
+
+        <div class="editor-workspace">
+            <div id="editor-grid">
+                <!-- Built dynamically on launch -->
+            </div>
+        </div>
+
+        <div style="color: #a2aab0; font-size: 11px; margin-bottom: 15px; text-align: center;">
+            💡 <i>Click and drag to draw quickly! Ensure Pac-Man has space to move and dots are collectable.</i>
+        </div>
+
+        <div class="editor-footer-controls">
+            <button class="editor-btn-classic" onclick="clearEditorGrid()">Clear All</button>
+            <button class="editor-btn-classic" onclick="resetEditorToDefault()">Default Map</button>
+            <button class="editor-btn-classic" onclick="saveCustomEditorMap()">💾 Save Custom</button>
+            <button class="editor-btn-primary" onclick="launchCustomMapDirectly()">⚡ Play This Map!</button>
         </div>
     </div>
 
@@ -352,6 +470,23 @@
         let isMegaPelletSpawned = false;
         let cinematicTimer = 0;
         let bossProjectiles = [];
+
+        // NEW: DIFFICULTY MODIFIERS
+        let selectedDifficulty = 'medium';
+        let difficultyFactors = {
+            peaceful: { speed: 0.0, powerMultiplier: 2.0, scoreMultiplier: 0.5, canHarm: false },
+            easy:     { speed: 0.06, powerMultiplier: 1.5, scoreMultiplier: 0.8, canHarm: true },
+            medium:   { speed: 0.11, powerMultiplier: 1.0, scoreMultiplier: 1.0, canHarm: true },
+            hard:     { speed: 0.15, powerMultiplier: 0.85, scoreMultiplier: 1.2, canHarm: true },
+            extreme:  { speed: 0.20, powerMultiplier: 0.7, scoreMultiplier: 1.5, canHarm: true },
+            pro:      { speed: 0.25, powerMultiplier: 0.5, scoreMultiplier: 2.0, canHarm: true }
+        };
+
+        // NEW: LEVEL EDITOR STATE
+        let isCustomMapMode = false;
+        let selectedTool = 1; // Default to drawing walls [1]
+        let isMouseDownOnEditor = false;
+        let customGrid = [];
 
         // DAILY MISSION DEFINITIONS & TRACKERS
         let currentMissions = [
@@ -698,6 +833,57 @@
             }
         }
 
+        // --- NEW: REAL PWA WEB NOTIFICATION SERVICE ---
+        window.requestNotificationPermission = function() {
+            if (!("Notification" in window)) {
+                console.log("This browser does not support desktop notification");
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                const btn = document.querySelector(".perm-btn");
+                if (permission === "granted") {
+                    if (btn) btn.innerText = "✅ NOTIFICATIONS ENABLED!";
+                    sendPushNotification("Notifications Enabled! 🔔", "You will now receive notifications for game achievements and progress!");
+                } else {
+                    if (btn) btn.innerText = "❌ NOTIFICATIONS DENIED";
+                }
+            });
+        };
+
+        function sendPushNotification(title, body) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.showNotification(title, {
+                            body: body,
+                            icon: 'https://cdn-icons-png.flaticon.com/512/3501/3501241.png',
+                            badge: 'https://cdn-icons-png.flaticon.com/512/3501/3501241.png'
+                        });
+                    }).catch(() => {
+                        // SW Fallback
+                        new Notification(title, { body });
+                    });
+                } catch(e) {
+                    new Notification(title, { body });
+                }
+            }
+        }
+
+        // --- NEW: DIFFICULTY CONTROLLER ---
+        window.setDifficulty = function(diff) {
+            selectedDifficulty = diff;
+            document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`diff-${diff}`).classList.add('active');
+            playSfx(440 + (Object.keys(difficultyFactors).indexOf(diff) * 100), 0.1, 'sine');
+            localStorage.setItem("pac3d_difficulty", diff);
+        };
+
+        // Load saved difficulty
+        const savedDiff = localStorage.getItem("pac3d_difficulty");
+        if (savedDiff && difficultyFactors[savedDiff]) {
+            setTimeout(() => setDifficulty(savedDiff), 50);
+        }
+
         // --- INDEXED DB ARCHIVE SYSTEM ---
         function initIndexedDB() {
             try {
@@ -859,6 +1045,7 @@
             lives++;
             updateLivesDisplay();
             saveRecordsToDB();
+            sendPushNotification("Daily Mission Cleared! 📅", `You completed: ${mission.text}! Enjoy +1 Extra Life.`);
         }
 
         function renderDailyMissionsDOM() {
@@ -918,6 +1105,9 @@
                 playSfx(587, 0.15, 'sine', 0.15); 
                 setTimeout(() => playSfx(880, 0.4, 'sine', 0.15), 120);
 
+                // Send Native Notification
+                sendPushNotification("Trophy Unlocked! 🏆", `${ach.title}: ${ach.desc}`);
+
                 setTimeout(() => {
                     toast.classList.remove("visible");
                 }, 4000);
@@ -930,6 +1120,159 @@
                 const badge = card.querySelector(".achievement-badge-ico");
                 if (badge) badge.innerText = '🏆';
             }
+        }
+
+        // --- NEW: DYNAMIC LEVEL EDITOR MODULE (2D Grid Drawing) ---
+        const rows = 31;
+        const cols = 28;
+
+        window.openLevelEditor = function() {
+            document.getElementById('level-editor-modal').style.display = 'flex';
+            initializeEditorGrid();
+        };
+
+        window.closeLevelEditor = function() {
+            document.getElementById('level-editor-modal').style.display = 'none';
+        };
+
+        window.selectEditorTool = function(toolId) {
+            selectedTool = toolId;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tool-${toolId}`).classList.add('active');
+        };
+
+        function initializeEditorGrid() {
+            const gridContainer = document.getElementById('editor-grid');
+            gridContainer.innerHTML = '';
+
+            // Load existing custom map if available, or fall back to default mapTemplate
+            const savedCustom = localStorage.getItem('pac3d_custom_grid');
+            if (savedCustom) {
+                customGrid = JSON.parse(savedCustom);
+            } else {
+                customGrid = JSON.parse(JSON.stringify(mapTemplate)); // Clone default
+            }
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    
+                    updateCellVisual(cell, customGrid[r][c]);
+
+                    // Single Click
+                    cell.addEventListener('mousedown', (e) => {
+                        isMouseDownOnEditor = true;
+                        paintCell(cell);
+                    });
+
+                    // Click & Drag drawing support
+                    cell.addEventListener('mouseenter', (e) => {
+                        if (isMouseDownOnEditor) {
+                            paintCell(cell);
+                        }
+                    });
+
+                    // Touch events for mobile support
+                    cell.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        isMouseDownOnEditor = true;
+                        paintCell(cell);
+                    });
+
+                    gridContainer.appendChild(cell);
+                }
+            }
+
+            // Global mouse/touch up protection
+            window.addEventListener('mouseup', () => { isMouseDownOnEditor = false; });
+            window.addEventListener('touchend', () => { isMouseDownOnEditor = false; });
+        }
+
+        function paintCell(cellElement) {
+            const r = parseInt(cellElement.dataset.row);
+            const c = parseInt(cellElement.dataset.col);
+            
+            // Protect outer boundaries slightly to prevent complete out-of-bounds maps
+            if (r === 0 || r === rows - 1 || c === 0 || c === cols - 1) {
+                if (selectedTool !== 1) {
+                    showEditorToastHint("Outer borders must stay solid Walls!");
+                    return;
+                }
+            }
+
+            customGrid[r][c] = selectedTool;
+            updateCellVisual(cellElement, selectedTool);
+        }
+
+        function updateCellVisual(cell, value) {
+            // Colors corresponding to in-game values
+            let color = '#000000';
+            if (value === 1) color = '#0033ff'; // Wall
+            else if (value === 0) color = '#ffffff'; // Dot
+            else if (value === 2) color = '#ffff00'; // Power Pellet
+            else if (value === 4) color = '#ff6400'; // Laser
+            else if (value === 5) color = '#00ff00'; // Speed
+            else if (value === 6) color = '#00ffff'; // Freeze
+            else if (value === 7) color = '#ff00ff'; // Magnet
+            else if (value === 8) color = '#ff00b8'; // Ghost Box
+            else if (value === 3 || value === 9) color = '#111111'; // Empty path
+
+            cell.style.backgroundColor = color;
+        }
+
+        window.clearEditorGrid = function() {
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    // Retain simple border walls for playable standard
+                    if (r === 0 || r === rows - 1 || c === 0 || c === cols - 1) {
+                        customGrid[r][c] = 1;
+                    } else {
+                        customGrid[r][c] = 3; // Clear path
+                    }
+                }
+            }
+            refreshEditorVisuals();
+        };
+
+        window.resetEditorToDefault = function() {
+            customGrid = JSON.parse(JSON.stringify(mapTemplate));
+            refreshEditorVisuals();
+        };
+
+        function refreshEditorVisuals() {
+            const cells = document.querySelectorAll('.grid-cell');
+            cells.forEach(cell => {
+                const r = parseInt(cell.dataset.row);
+                const c = parseInt(cell.dataset.col);
+                updateCellVisual(cell, customGrid[r][c]);
+            });
+        }
+
+        window.saveCustomEditorMap = function() {
+            localStorage.setItem('pac3d_custom_grid', JSON.stringify(customGrid));
+            showEditorToastHint("💾 Custom Labyrinth Saved Successfully!");
+            playSfx(880, 0.3, 'sine');
+
+            // Make Play Custom option visible on the main menu
+            document.getElementById('btnPlayCustom').style.display = 'inline-block';
+        };
+
+        window.launchCustomMapDirectly = function() {
+            saveCustomEditorMap();
+            closeLevelEditor();
+            startCustomGame();
+        };
+
+        function showEditorToastHint(text) {
+            showFloatingText(text, new THREE.Vector3(0, 3, 0));
+        }
+
+        // Show "Play Custom Map" if a saved custom grid exists
+        if (localStorage.getItem('pac3d_custom_grid')) {
+            document.getElementById('btnPlayCustom').style.display = 'inline-block';
         }
 
         // Initial setup calls
@@ -1070,8 +1413,19 @@
         let isMoving = false;
         let deathTimer = 1.0; 
 
-        // --- START GAME ---
+        // --- START NORMAL GAME ---
         window.startGame = function() {
+            isCustomMapMode = false;
+            initiateGameLaunch();
+        };
+
+        // --- START CUSTOM LEVEL GAME ---
+        window.startCustomGame = function() {
+            isCustomMapMode = true;
+            initiateGameLaunch();
+        };
+
+        function initiateGameLaunch() {
             document.getElementById('menu-screen').style.display = 'none';
             document.getElementById('ui').style.display = 'block';
             document.getElementById('joystick-container').style.display = 'flex';
@@ -1091,11 +1445,17 @@
                 addScore(currentStreak * 100);
             }
 
+            // Adjust Ghost speeds dynamically based on difficulty
+            ghostSpeedFactor = difficultyFactors[selectedDifficulty].speed;
+
             const readyGoScreen = document.getElementById('ready-go-screen');
             const readyGoText = document.getElementById('ready-go-text');
             readyGoScreen.style.display = 'flex';
             readyGoText.innerText = "READY?";
             readyGoText.style.color = "#ffff00";
+
+            buildMap();
+            resetPositions();
 
             playPacmanTheme(() => {
                 readyGoText.innerText = "GO!";
@@ -1106,9 +1466,9 @@
                     gameState = 'playing';
                 }, 1000);
             });
-        };
+        }
 
-        // --- MAP GENERATION ---
+        // --- MAP TEMPLATE ---
         const mapTemplate = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -1169,7 +1529,8 @@
             levelTimer = 0;
             livesLostThisLevel = 0;
 
-            isBossStage = (level % 10 === 0);
+            isBossStage = (level % 10 === 0 && !isCustomMapMode); // Boss fight triggers only on normal progression level 10
+            
             if (isBossStage) {
                 document.getElementById('boss-alert-banner').style.display = 'block';
                 if (isOstPlaying) {
@@ -1187,7 +1548,16 @@
             const wallHexColor = isBossStage ? 0xff0055 : mapColors[(level - 1) % mapColors.length];
             const activeWallMat = new THREE.MeshPhongMaterial({ color: wallHexColor });
 
-            mapTemplate.forEach((row, z) => {
+            // Choose either the custom drawn map or standard progression layout
+            let activeGridTemplate = mapTemplate;
+            if (isCustomMapMode) {
+                const savedGrid = localStorage.getItem('pac3d_custom_grid');
+                if (savedGrid) {
+                    activeGridTemplate = JSON.parse(savedGrid);
+                }
+            }
+
+            activeGridTemplate.forEach((row, z) => {
                 row.forEach((cell, x) => {
                     const pos = [(x - 13.5) * 4, 0, (z - 15) * 4];
                     
@@ -1467,7 +1837,7 @@
                     g.isDead = false;
                     g.bodyGroup.visible = true;
                     g.eyesGroup.visible = true;
-                    g.bodyGroup.children[0].material.color.set(g.baseColor);
+                    g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
                     g.aStarPath = [];
                     g.currentAIState = 'walk';
                     g.isStunned = false;
@@ -1581,6 +1951,10 @@
                 pts = 200 * Math.pow(2, Math.min(ghostCombo, 4));
                 ghostCombo++;
             }
+
+            // Apply difficulty scoring multiplier
+            pts = Math.round(pts * difficultyFactors[selectedDifficulty].scoreMultiplier);
+
             addScore(pts, g.position);
             
             // --- Unlocks: Ghost Buster & Double Chomp & Total kills ---
@@ -1849,7 +2223,7 @@
         
         const handleDragStart = (clientX, clientY, targetElement) => {
             if (gameState !== 'playing' && gameState !== 'boss_cinematic') return;
-            if (targetElement.closest('.btn') || targetElement.closest('#joystick-container')) return;
+            if (targetElement.closest('.btn') || targetElement.closest('#joystick-container') || targetElement.closest('#level-editor-modal')) return;
             isDraggingCamera = true;
             touchStartX = clientX;
             touchStartY = clientY;
@@ -1882,6 +2256,7 @@
 
         window.addEventListener('touchmove', (e) => {
             if(gameState !== 'playing' && gameState !== 'boss_cinematic') return;
+            if (e.target.closest('#level-editor-modal')) return; // Avoid breaking level editor touches
             e.preventDefault();
             for(let i=0; i<e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
@@ -1947,7 +2322,14 @@
 
         function checkGhostColGrid(gx, gz) {
             if (gx < 0 || gx >= 28 || gz < 0 || gz >= 31) return true;
-            const cellVal = mapTemplate[gz][gx];
+            
+            let activeGridTemplate = mapTemplate;
+            if (isCustomMapMode) {
+                const savedGrid = localStorage.getItem('pac3d_custom_grid');
+                if (savedGrid) activeGridTemplate = JSON.parse(savedGrid);
+            }
+
+            const cellVal = activeGridTemplate[gz][gx];
             if (cellVal === 1) return true; 
             
             return false; 
@@ -2055,7 +2437,7 @@
                 }
                 content += '<div>' + row + '</div>';
             }
-            container.innerHTML = content;
+            if (container) container.innerHTML = content;
         }
 
         // --- INTERMISSION SCENE SETUP ---
@@ -2151,7 +2533,8 @@
                 topHalf.rotation.x = -0.6;
                 bottomHalf.rotation.x = 0.6;
 
-                camera.position.lerp(new THREE.Vector3(0, 10, 25), 0.05);
+                camera.position.grid = new THREE.Vector3(0, 10, 25);
+                camera.position.lerp(camera.position.grid, 0.05);
                 camera.lookAt(new THREE.Vector3(0, 2, 0));
 
                 if (cinematicTimer < 1500) {
@@ -2401,11 +2784,12 @@
             }
 
             // --- DECREMENT POWER TIMERS ---
-            if(powerUp) powerTimeLeft -= deltaMs;
-            if(laserMode) { laserTimeLeft -= deltaMs; laserCooldown -= deltaMs; }
-            if(speedMode) speedTimeLeft -= deltaMs;
-            if(freezeMode) freezeTimeLeft -= deltaMs;
-            if(magnetMode) magnetTimeLeft -= deltaMs;
+            const powerMult = difficultyFactors[selectedDifficulty].powerMultiplier;
+            if(powerUp) powerTimeLeft -= deltaMs / powerMult;
+            if(laserMode) { laserTimeLeft -= deltaMs / powerMult; laserCooldown -= deltaMs; }
+            if(speedMode) speedTimeLeft -= deltaMs / powerMult;
+            if(freezeMode) freezeTimeLeft -= deltaMs / powerMult;
+            if(magnetMode) magnetTimeLeft -= deltaMs / powerMult;
 
             // --- ALL-POWERUP AURA CONTROLLER ---
             if (powerUp || laserMode || speedMode || freezeMode || magnetMode || isDashing) {
@@ -2498,7 +2882,9 @@
                     scene.remove(fruitMesh); fruitMesh = null;
                     document.getElementById('fruitIndicator').style.display = 'none';
                 } else if (pacman.position.distanceTo(fruitMesh.position) < 2.0) {
-                    addScore(fruitMesh.fruitScore, fruitMesh.position);
+                    let pts = fruitMesh.fruitScore;
+                    pts = Math.round(pts * difficultyFactors[selectedDifficulty].scoreMultiplier);
+                    addScore(pts, fruitMesh.position);
                     
                     // --- Unlocks: Fruit Salad ---
                     unlockAchievement("ach_fruit_salad");
@@ -2551,11 +2937,13 @@
                 }
 
                 if (pacman.position.distanceTo(bossEntity.position) < 3.2 && !isJumping && !isDashing) {
-                    gameState = 'dying';
-                    deathTimer = 1.0;
-                    playDeathSfx();
-                    spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
-                    saveRecordsToDB();
+                    if (difficultyFactors[selectedDifficulty].canHarm) {
+                        gameState = 'dying';
+                        deathTimer = 1.0;
+                        playDeathSfx();
+                        spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
+                        saveRecordsToDB();
+                    }
                 }
             }
 
@@ -2566,13 +2954,15 @@
                 b.life -= deltaMs;
                 
                 if (b.mesh.position.distanceTo(pacman.position) < 1.6 && !isJumping && !isDashing) {
-                    gameState = 'dying';
-                    deathTimer = 1.0;
-                    playDeathSfx();
-                    spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
-                    scene.remove(b.mesh);
-                    bossProjectiles.splice(i, 1);
-                    continue;
+                    if (difficultyFactors[selectedDifficulty].canHarm) {
+                        gameState = 'dying';
+                        deathTimer = 1.0;
+                        playDeathSfx();
+                        spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
+                        scene.remove(b.mesh);
+                        bossProjectiles.splice(i, 1);
+                        continue;
+                    }
                 }
 
                 if (b.life <= 0) {
@@ -3071,11 +3461,13 @@
                         if(powerUp) {
                             killGhost(g);
                         } else if(!isJumping && !isDashing) {
-                            gameState = 'dying';
-                            deathTimer = 1.0;
-                            playDeathSfx();
-                            spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
-                            saveRecordsToDB(); 
+                            if (difficultyFactors[selectedDifficulty].canHarm) {
+                                gameState = 'dying';
+                                deathTimer = 1.0;
+                                playDeathSfx();
+                                spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
+                                saveRecordsToDB(); 
+                            }
                         }
                     }
                 });
@@ -3085,7 +3477,10 @@
             dots.forEach(d => {
                 if(d.visible && pacman.position.distanceTo(d.position) < 1.8) {
                     d.visible = false; 
-                    addScore(10);
+                    
+                    let basePts = 10;
+                    basePts = Math.round(basePts * difficultyFactors[selectedDifficulty].scoreMultiplier);
+                    addScore(basePts);
                     
                     totalDotsEatenSession++;
                     // --- Unlocks: First Bite ---
@@ -3124,7 +3519,9 @@
 
                     // Power Pill consumable impacts
                     if (d.type !== 0) {
-                        addScore(40);
+                        let baseBonus = 40;
+                        baseBonus = Math.round(baseBonus * difficultyFactors[selectedDifficulty].scoreMultiplier);
+                        addScore(baseBonus);
                         playPowerPelletSfx();
 
                         if(d.type === 2) { 
@@ -3164,7 +3561,7 @@
                             document.getElementById('magnetBarContainer').style.display = 'block';
                             spawnParticles(d.position, [0xff00ff, 0xffffff], 25, 0.14, 0.24, 'electric');
                         }
-                        showFloatingText("+50", d.position);
+                        showFloatingText("+" + baseBonus, d.position);
                     }
 
                     // LEVEL CLEARANCE THRESHOLDS
@@ -3197,7 +3594,8 @@
 
                         saveRecordsToDB();
 
-                        if (level % 3 === 0) {
+                        // Intermission screens do not display on custom maps
+                        if (level % 3 === 0 && !isCustomMapMode) {
                             gameState = 'intermission';
                             document.getElementById('ui').style.display = 'none';
                             document.getElementById('minimap').style.display = 'none';
@@ -3221,6 +3619,16 @@
                             csPellet.position.set(-15, 0.8, 0);
                             csPellet.visible = true;
                         } else {
+                            if (isCustomMapMode) {
+                                showFloatingText("🎉 CUSTOM MAP CLEARED!", pacman.position);
+                                playSfx(1000, 1.0, 'square');
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 3000);
+                                gameState = 'lobby';
+                                return;
+                            }
+
                             level++;
                             // --- Unlocks: Pioneer ---
                             if (level >= 5) {
@@ -3247,4 +3655,5 @@
     </script>
 </body>
 </html>
+
 
