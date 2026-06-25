@@ -13,6 +13,7 @@
 </script>
 
 <link rel="manifest" href="manifest.json">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #000411; font-family: 'Courier New', monospace; touch-action: none; user-select: none; -webkit-user-select: none; }
         
@@ -93,7 +94,7 @@
 
         /* Daily Missions Panel */
         #missions-container { background: rgba(0, 255, 0, 0.08); border: 2px solid #00ff00; border-radius: 12px; padding: 10px 15px; margin-bottom: 15px; width: 95%; max-width: 600px; box-sizing: border-box; text-align: left; }
-        .mission-title { font-size: 12px; color: #00ff00; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-bottom: 8px; text-align: center; display: block; }
+        .mission-title { font-size: 12px; color: #00ff00; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-bottom: 8px; text-align: center; display: block; position: sticky; top: 0; background: #041029; padding: 4px 0; z-index: 10; }
         .mission-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #fff; margin-bottom: 5px; border-bottom: 1px dashed rgba(0,255,0,0.2); padding-bottom: 3px; }
         .mission-status { font-weight: bold; color: #00ff00; }
         .mission-status.pending { color: #ffaa00; }
@@ -166,6 +167,19 @@
 
         /* Ready Go Presentation */
         #ready-go-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center; z-index: 200; pointer-events: none; font-size: 60px; font-weight: bold; color: #ffff00; text-shadow: 4px 4px 0 #ff0000; letter-spacing: 5px; }
+
+        /* Multiplayer Co-op Lobby Overlay Style */
+        #coop-lobby-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 4, 17, 0.95); z-index: 2500; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-family: 'Courier New', monospace; text-align: center; }
+        .lobby-box { background: rgba(0, 242, 255, 0.05); border: 2px solid #00f2ff; padding: 25px; border-radius: 15px; width: 90%; max-width: 500px; box-shadow: 0 0 25px rgba(0, 242, 255, 0.2); }
+        .lobby-title { font-size: 24px; color: #ffff00; text-shadow: 0 0 10px #ffff00; margin-bottom: 20px; }
+        .player-slot { background: rgba(255,255,255,0.05); margin: 8px 0; padding: 10px; border-radius: 8px; border: 1px solid rgba(0, 242, 255, 0.2); display: flex; justify-content: space-between; align-items: center; }
+        .ready-badge { padding: 4px 8px; border-radius: 5px; font-weight: bold; font-size: 12px; }
+        .badge-ready { background: #00ff00; color: #000; }
+        .badge-pending { background: #ffaa00; color: #000; }
+        .lobby-controls { display: flex; gap: 10px; margin-top: 20px; }
+        .lobby-btn { flex: 1; padding: 12px; font-family: 'Courier New', monospace; font-weight: bold; font-size: 16px; border-radius: 8px; cursor: pointer; border: none; }
+        .btn-ready { background: #00ff00; color: #000; box-shadow: 0 0 10px #00ff00; }
+        .btn-cancel { background: #ff003c; color: #fff; }
     </style>
 </head>
 <body>
@@ -270,6 +284,8 @@
         </div>
         
         <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY NORMAL</button>
+        <!-- NEW MULTIPLAYER BUTTON -->
+        <button id="btnPlayCoop" class="menu-btn" style="border-color:#00ff00; background:rgba(0,255,0,0.1); color:#00ff00; box-shadow:0 0 15px rgba(0,255,0,0.4);" onclick="startCoopMatchmaking()">PLAY MULTIPLAYER CO-OP</button>
         <button id="btnPlayCustom" class="menu-btn" style="display:none; border-color:#00ff00; background:rgba(0,255,0,0.1); color:#00ff00; box-shadow:0 0 15px rgba(0,255,0,0.4);" onclick="startCustomGame()">PLAY CUSTOM MAP</button>
 
         <div id="ghost-cast-container">
@@ -304,6 +320,23 @@
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffffff;"></span>
                 <div class="ghost-info"><strong style="color:#ffffff;">WHITY</strong><br>Stealth | <span style="color:#ffffff;">INVISIBILITY CLOAK</span> turns self &amp; nearby companions invisible</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CO-OP LOBBY OVERLAY MODAL -->
+    <div id="coop-lobby-modal">
+        <div class="lobby-box">
+            <h2 class="lobby-title">📡 PeerJS Pac-Man Co-op Lobby</h2>
+            <div id="coop-status-text" style="color: #00f2ff; margin-bottom: 15px; font-size: 13px;">Searching for rooms...</div>
+            
+            <div id="lobby-player-list">
+                <!-- Populated dynamically via PeerJS state broadcasts -->
+            </div>
+
+            <div class="lobby-controls">
+                <button class="lobby-btn btn-cancel" onclick="leaveCoopLobby()">Cancel</button>
+                <button class="lobby-btn btn-ready" id="btn-coop-ready" onclick="toggleCoopReadyState()">Ready!</button>
             </div>
         </div>
     </div>
@@ -416,6 +449,57 @@
 
     <script type="module">
         import * as THREE from 'three';
+
+        // --- MULTIPLAYER P2P GLOBAL STATE (PEERJS) ---
+        let isCoop = false;
+        let isHost = false;
+        let peer = null;
+        let p2pConnections = []; // Host: array of client data connections
+        let p2pServerConn = null; // Client: reference to host connection
+        let myPeerId = null;
+        let localPlayerReady = false;
+        let p2pPlayers = {}; // Dictionary of remote player entities
+        let lobbyPlayers = []; // Raw list of players inside the current lobby session
+        let p2pSearchTimeout = null;
+
+        // Exposing Lobby functions to Global scope
+        window.startCoopMatchmaking = function() {
+            document.getElementById('coop-lobby-modal').style.display = 'flex';
+            localPlayerReady = false;
+            document.getElementById('btn-coop-ready').innerText = "Ready!";
+            document.getElementById('btn-coop-ready').style.background = "#ffff00";
+            lobbyPlayers = [];
+            initP2PMatchmaking();
+        };
+
+        window.leaveCoopLobby = function() {
+            document.getElementById('coop-lobby-modal').style.display = 'none';
+            cleanupP2P();
+        };
+
+        window.toggleCoopReadyState = function() {
+            localPlayerReady = !localPlayerReady;
+            const btn = document.getElementById('btn-coop-ready');
+            if (localPlayerReady) {
+                btn.innerText = "READY! (Click to Undo)";
+                btn.style.background = "#00ff00";
+            } else {
+                btn.innerText = "Ready!";
+                btn.style.background = "#ffff00";
+            }
+            
+            if (isCoop) {
+                if (isHost) {
+                    updatePlayerReadyState(myPeerId, localPlayerReady);
+                } else if (p2pServerConn) {
+                    p2pServerConn.send({
+                        type: 'PLAYER_READY_TOGGLE',
+                        peerId: myPeerId,
+                        ready: localPlayerReady
+                    });
+                }
+            }
+        };
 
         // --- GAME STATE ---
         let level = 1;
@@ -876,6 +960,14 @@
             document.getElementById(`diff-${diff}`).classList.add('active');
             playSfx(440 + (Object.keys(difficultyFactors).indexOf(diff) * 100), 0.1, 'sine');
             localStorage.setItem("pac3d_difficulty", diff);
+            
+            // Sync difficulty change if host of multiplayer lobby
+            if (isCoop && isHost) {
+                broadcastToAll({
+                    type: 'SYNC_DIFFICULTY',
+                    diff: diff
+                });
+            }
         };
 
         // Load saved difficulty
@@ -1413,20 +1505,42 @@
         let isMoving = false;
         let deathTimer = 1.0; 
 
+        // Helper to construct remote players dynamically
+        function createRemotePlayerMesh(colorHex) {
+            const rGroup = new THREE.Group();
+            const rMat = new THREE.MeshPhongMaterial({ color: parseInt(colorHex.replace('#', '0x')), side: THREE.DoubleSide });
+            
+            const rTop = new THREE.Mesh(topGeo, rMat);
+            const rBot = new THREE.Mesh(bottomGeo, rMat);
+            
+            const rRE = new THREE.Mesh(eyeGeo, eyeMat); rRE.position.set(0.35, 0.4, 0.6);
+            const rLE = new THREE.Mesh(eyeGeo, eyeMat); rLE.position.set(-0.35, 0.4, 0.6);
+            
+            rTop.add(rRE); rTop.add(rLE);
+            rGroup.add(rTop); rGroup.add(rBot);
+            rGroup.position.set(0, -999, 0); // Hide offscreen initially
+            
+            scene.add(rGroup);
+            return { group: rGroup, top: rTop, bottom: rBot };
+        }
+
         // --- START NORMAL GAME ---
         window.startGame = function() {
+            isCoop = false;
             isCustomMapMode = false;
             initiateGameLaunch();
         };
 
         // --- START CUSTOM LEVEL GAME ---
         window.startCustomGame = function() {
+            isCoop = false;
             isCustomMapMode = true;
             initiateGameLaunch();
         };
 
         function initiateGameLaunch() {
             document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('coop-lobby-modal').style.display = 'none';
             document.getElementById('ui').style.display = 'block';
             document.getElementById('joystick-container').style.display = 'flex';
             document.getElementById('controls-right').style.display = 'flex';
@@ -2050,6 +2164,14 @@
                 ctx.beginPath(); ctx.arc(mapX(ill.mesh.position.x), mapY(ill.mesh.position.z), 1.5, 0, Math.PI*2); ctx.fill();
             });
 
+            // Draw other remote players on minimap
+            if (isCoop) {
+                Object.values(p2pPlayers).forEach(rp => {
+                    ctx.fillStyle = rp.color || '#ff00ff';
+                    ctx.beginPath(); ctx.arc(mapX(rp.entity.group.position.x), mapY(rp.entity.group.position.z), 2.5, 0, Math.PI*2); ctx.fill();
+                });
+            }
+
             const px = mapX(pacman.position.x);
             const py = mapY(pacman.position.z);
             ctx.fillStyle = selectedColorHex;
@@ -2089,6 +2211,16 @@
             }
 
             saveRecordsToDB();
+
+            // Host broadcasts updated score/lives to clients
+            if (isCoop && isHost) {
+                broadcastToAll({
+                    type: 'SYNC_LIVES_SCORE',
+                    lives: lives,
+                    score: score,
+                    nextLifeThreshold: nextLifeThreshold
+                });
+            }
         }
 
         // --- INPUTS & COMPATIBILITIES ---
@@ -2485,6 +2617,7 @@
 
         // --- MAIN LOOP ---
         let lastTime = performance.now();
+        let coopSyncTimer = 0;
 
         function animate() {
             requestAnimationFrame(animate);
@@ -2633,16 +2766,37 @@
                 }
 
                 if (deathTimer <= 0) {
-                    lives--; livesLostThisLevel++; updateLivesDisplay();
-                    if (lives <= 0) {
-                        gameState = 'gameover';
-                        document.getElementById('gameover').style.display = 'flex';
-                        document.getElementById('minimap').style.display = 'none';
-                        document.getElementById('sound-toggle-hud').style.display = 'none';
-                        document.getElementById('go-reason').innerText = "NO LIVES LEFT!";
+                    // Shared lives handling in Co-op
+                    if (isCoop) {
+                        if (isHost) {
+                            lives--; livesLostThisLevel++; updateLivesDisplay();
+                            broadcastToAll({
+                                type: 'SYNC_LIVES_SCORE',
+                                lives: lives,
+                                score: score,
+                                nextLifeThreshold: nextLifeThreshold
+                            });
+                            
+                            if (lives <= 0) {
+                                triggerCoopGameOver("NO LIVES LEFT!");
+                            } else {
+                                broadcastToAll({ type: 'COOP_TRIGGER_RESET' });
+                                resetPositions();
+                                gameState = 'playing';
+                            }
+                        }
                     } else {
-                        resetPositions();
-                        gameState = 'playing';
+                        lives--; livesLostThisLevel++; updateLivesDisplay();
+                        if (lives <= 0) {
+                            gameState = 'gameover';
+                            document.getElementById('gameover').style.display = 'flex';
+                            document.getElementById('minimap').style.display = 'none';
+                            document.getElementById('sound-toggle-hud').style.display = 'none';
+                            document.getElementById('go-reason').innerText = "NO LIVES LEFT!";
+                        } else {
+                            resetPositions();
+                            gameState = 'playing';
+                        }
                     }
                 }
                 renderer.render(scene, camera);
@@ -2745,6 +2899,33 @@
             camera.position.z = pacman.position.z + camRadius * Math.cos(camAngleY) * Math.cos(camAngleX);
             camera.lookAt(pacman.position);
             light.position.copy(pacman.position).add(new THREE.Vector3(0, 3, 0));
+
+            // MULTIPLAYER POSITIONS SYNCHRONISATION
+            if (isCoop) {
+                coopSyncTimer += deltaMs;
+                if (coopSyncTimer >= 33) { // Sync at ~30 FPS
+                    coopSyncTimer = 0;
+                    
+                    const myState = {
+                        position: { x: pacman.position.x, y: pacman.position.y, z: pacman.position.z },
+                        rotation: pacman.rotation.y,
+                        topRotation: topHalf.rotation.x,
+                        botRotation: bottomHalf.rotation.x,
+                        scale: pacman.scale.x,
+                        color: selectedColorHex
+                    };
+
+                    if (isHost) {
+                        broadcastPlayerState(myPeerId, myState);
+                    } else if (p2pServerConn) {
+                        p2pServerConn.send({
+                            type: 'CLIENT_UPDATE_STATE',
+                            peerId: myPeerId,
+                            state: myState
+                        });
+                    }
+                }
+            }
 
             escapeRouteTimer += deltaMs;
             if (escapeRouteTimer > 150) { 
@@ -2872,7 +3053,12 @@
             // Fruits logic
             fruitTimer += deltaMs;
             if (fruitTimer > 15000 && !fruitMesh) {
-                spawnFruit();
+                if (!isCoop || isHost) {
+                    spawnFruit();
+                    if (isCoop && isHost) {
+                        broadcastToAll({ type: 'SPAWN_FRUIT_TRIGGER' });
+                    }
+                }
                 fruitTimer = 0;
             }
             if (fruitMesh) {
@@ -2881,26 +3067,50 @@
                 if(fruitActiveTime <= 0) {
                     scene.remove(fruitMesh); fruitMesh = null;
                     document.getElementById('fruitIndicator').style.display = 'none';
-                } else if (pacman.position.distanceTo(fruitMesh.position) < 2.0) {
-                    let pts = fruitMesh.fruitScore;
-                    pts = Math.round(pts * difficultyFactors[selectedDifficulty].scoreMultiplier);
-                    addScore(pts, fruitMesh.position);
+                } else {
+                    // Check local and remote collision with fruit
+                    let hitsFruit = (pacman.position.distanceTo(fruitMesh.position) < 2.0);
                     
-                    // --- Unlocks: Fruit Salad ---
-                    unlockAchievement("ach_fruit_salad");
+                    if (isCoop) {
+                        Object.values(p2pPlayers).forEach(rp => {
+                            if (rp.entity.group.position.distanceTo(fruitMesh.position) < 2.0) {
+                                hitsFruit = true;
+                            }
+                        });
+                    }
 
-                    dashCharge = maxDashCharge;
-                    updateDashBarUI();
-                    
-                    playSfx(523, 0.1, 'sine');
-                    setTimeout(() => playSfx(659, 0.1, 'sine'), 60);
-                    setTimeout(() => playSfx(784, 0.1, 'sine'), 120);
-                    setTimeout(() => playSfx(1046, 0.25, 'sine'), 180);
-                    
-                    spawnParticles(fruitMesh.position, [fruitMesh.material.color.getHex(), 0xffffff], 20, 0.14, 0.2);
+                    if (hitsFruit) {
+                        let pts = fruitMesh.fruitScore;
+                        pts = Math.round(pts * difficultyFactors[selectedDifficulty].scoreMultiplier);
+                        addScore(pts, fruitMesh.position);
+                        
+                        // --- Unlocks: Fruit Salad ---
+                        unlockAchievement("ach_fruit_salad");
 
-                    scene.remove(fruitMesh); fruitMesh = null;
-                    document.getElementById('fruitIndicator').style.display = 'none';
+                        dashCharge = maxDashCharge;
+                        updateDashBarUI();
+                        
+                        playSfx(523, 0.1, 'sine');
+                        setTimeout(() => playSfx(659, 0.1, 'sine'), 60);
+                        setTimeout(() => playSfx(784, 0.1, 'sine'), 120);
+                        setTimeout(() => playSfx(1046, 0.25, 'sine'), 180);
+                        
+                        spawnParticles(fruitMesh.position, [fruitMesh.material.color.getHex(), 0xffffff], 20, 0.14, 0.2);
+
+                        // If co-op client eats fruit, notify host
+                        if (isCoop && !isHost && p2pServerConn) {
+                            p2pServerConn.send({
+                                type: 'EAT_FRUIT_REQUEST'
+                            });
+                        }
+
+                        scene.remove(fruitMesh); fruitMesh = null;
+                        document.getElementById('fruitIndicator').style.display = 'none';
+                        
+                        if (isCoop && isHost) {
+                            broadcastToAll({ type: 'FRUIT_DESPAWN_TRIGGER' });
+                        }
+                    }
                 }
             }
 
@@ -3032,614 +3242,700 @@
             }
 
             // GHOST BRAIN CONTROLLERS (Only active during normal non-boss levels)
+            // IN CO-OP: Only the Host calculates ghost movements, then broadcasts coordinates to Clients.
             if (!isBossStage) {
-                const centerBox = new THREE.Vector3(0, 0.3, -4);
-                const gridCenterBox = worldToGrid(centerBox);
-                const levelAbilityFrequencyMult = Math.min(2.5, 1.0 + (level * 0.15));
+                if (!isCoop || isHost) {
+                    const centerBox = new THREE.Vector3(0, 0.3, -4);
+                    const gridCenterBox = worldToGrid(centerBox);
+                    const levelAbilityFrequencyMult = Math.min(2.5, 1.0 + (level * 0.15));
 
-                ghosts.forEach(g => {
-                    if(g.isDead) {
-                        let toCenter = centerBox.clone().sub(g.position);
-                        if(toCenter.length() < 0.5) {
-                            g.isDead = false;
-                            g.bodyGroup.visible = true;
-                            g.eyesGroup.visible = true;
-                            g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
-                            g.aStarPath = [];
-                            g.isUsingAbility = false;
-                            g.scale.setScalar(1);
-                            
-                            g.isShielded = false;
-                            g.isInvisible = false;
-                            g.invisibilityTimer = 0;
-                            g.shieldMesh.visible = false;
-                            
-                            g.abilityCooldown = 3000 + Math.random() * 4000;
-                        } else {
-                            let gGrid = worldToGrid(g.position);
-                            let targetGrid = { x: 14, z: 15 }; 
-                            
-                            g.pathUpdateTimer -= deltaMs;
-                            if (g.pathUpdateTimer <= 0 || !g.aStarPath || g.aStarPath.length === 0) {
-                                g.pathUpdateTimer = 150; 
-                                g.aStarPath = computeAStarPath(gGrid, targetGrid);
-                            }
-                            
-                            let eyeSpeed = 0.4; 
-                            
-                            if (g.aStarPath && g.aStarPath.length > 1) {
-                                let nextNode = g.aStarPath[1];
-                                let worldNext = gridToWorld(nextNode.x, nextNode.z);
-                                worldNext.y = g.position.y;
-                                
-                                let moveVec = worldNext.clone().sub(g.position);
-                                let stepDist = moveVec.length();
-                                
-                                if (stepDist < eyeSpeed) {
-                                    g.position.copy(worldNext);
-                                    g.aStarPath.shift();
-                                } else {
-                                    moveVec.normalize();
-                                    g.position.add(moveVec.multiplyScalar(eyeSpeed));
-                                    g.dir.copy(moveVec);
-                                }
-                            } else {
-                                let fallbackVec = toCenter.clone();
-                                fallbackVec.y = 0;
-                                if(fallbackVec.length() > 0.1) {
-                                    fallbackVec.normalize();
-                                    g.position.add(fallbackVec.multiplyScalar(eyeSpeed));
-                                    g.dir.copy(fallbackVec);
-                                }
-                            }
-                            g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
-                        }
-                        return;
-                    }
-
-                    if (g.isStunned) {
-                        g.stunTimer -= deltaMs;
-                        if (g.stunTimer <= 0) {
-                            g.isStunned = false;
-                            g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
-                        }
-                        return; 
-                    }
-
-                    if(freezeMode) return;
-
-                    let gSpeed = g.baseSpeed * ghostSpeedMult * ghostSpeedFactor;
-                    if(powerUp) gSpeed *= 0.5;
-
-                    g.abilityCooldown -= deltaMs * levelAbilityFrequencyMult;
-                    let isTriggerable = (g.abilityCooldown <= 0 && !powerUp && gameState === 'playing' && !g.isDead);
-
-                    if (g.isInvisible) {
-                        g.invisibilityTimer -= deltaMs;
-                        
-                        if (Math.random() < 0.15) {
-                            spawnParticles(g.position.clone().add(new THREE.Vector3(0, 0.4, 0)), 0xe0e0e0, 1, 0.02, 0.14, 'electric');
-                        }
-                        
-                        if (g.invisibilityTimer <= 0 || g.isDead) {
-                            g.isInvisible = false;
-                            g.invisibilityTimer = 0;
-                            if (!g.isDead) {
+                    ghosts.forEach(g => {
+                        if(g.isDead) {
+                            let toCenter = centerBox.clone().sub(g.position);
+                            if(toCenter.length() < 0.5) {
+                                g.isDead = false;
                                 g.bodyGroup.visible = true;
                                 g.eyesGroup.visible = true;
-                                spawnParticles(g.position, 0xffffff, 8, 0.05, 0.18);
-                            }
-                        }
-                    }
-
-                    // --- UNIQUE GHOST MECHANICS ---
-                    if (g.ghostName === 'BLINKY') {
-                        const distToPac = g.position.distanceTo(pacman.position);
-                        if (distToPac < 8.0 && !powerUp) {
-                            if (!g.isUsingAbility) {
-                                g.isUsingAbility = true;
-                                showFloatingText("BLINKY RAGES!", g.position);
-                                playSfx(440, 0.3, 'sawtooth');
-                            }
-                            gSpeed *= 1.6; 
-                            g.scale.setScalar(1.35); 
-                            g.bodyGroup.children[0].material.color.setHex(0xffaa00); 
-                            
-                            if (Math.random() < 0.2) {
-                                spawnParticles(g.position, 0xff5500, 2, 0.04, 0.15);
-                            }
-                        } else {
-                            if (g.isUsingAbility) {
+                                g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
+                                g.aStarPath = [];
                                 g.isUsingAbility = false;
                                 g.scale.setScalar(1);
-                                g.bodyGroup.children[0].material.color.setHex(g.baseColor);
-                            }
-                        }
-                    }
-
-                    if (g.ghostName === 'INKY') {
-                        if (g.isUsingAbility) {
-                            g.eyesGroup.position.y += g.abilityDurationLeft * (deltaMs / 16.66); 
-                            g.bodyGroup.position.y += g.abilityDurationLeft * (deltaMs / 16.66);
-                            g.abilityDurationLeft -= 0.015 * (deltaMs / 16.66); 
-                            
-                            if (g.bodyGroup.position.y <= 0) {
-                                g.bodyGroup.position.y = 0;
-                                g.eyesGroup.position.y = 0;
-                                g.isUsingAbility = false;
-                                g.abilityCooldown = 5000 + Math.random() * 4000;
-                            }
-                        } else if (isTriggerable) {
-                            g.isUsingAbility = true;
-                            g.abilityDurationLeft = 0.28; 
-                            g.abilityCooldown = 99999; 
-                            playSfx(600, 0.25, 'triangle');
-                            showFloatingText("WALL HOP!", g.position);
-                            spawnParticles(g.position, 0x00ffff, 10, 0.06, 0.18);
-                        }
-                    }
-
-                    if (g.ghostName === 'PINKY') {
-                        if (g.isUsingAbility) {
-                            g.abilityDurationLeft -= deltaMs;
-                            gSpeed *= 3.0; 
-                            g.bodyGroup.children[0].material.color.setHex(0xff33cc); 
-                            
-                            if (Math.random() < 0.4) {
-                                spawnParticles(g.position, 0xffb8ff, 2, 0.05, 0.12, 'electric');
-                            }
-
-                            if (g.abilityDurationLeft <= 0) {
-                                g.isUsingAbility = false;
-                                g.bodyGroup.children[0].material.color.setHex(g.baseColor);
-                                g.abilityCooldown = 6000 + Math.random() * 4000;
-                            }
-                        } else if (isTriggerable && wasPacmanSeenThisFrame) {
-                            g.isUsingAbility = true;
-                            g.abilityDurationLeft = 1200; 
-                            g.abilityCooldown = 99999;
-                            playSfx(900, 0.3, 'sawtooth');
-                            showFloatingText("PINKY LUNGES!", g.position);
-                        }
-                    }
-
-                    if (g.ghostName === 'CLYDE') {
-                        if (isTriggerable) {
-                            g.abilityCooldown = 12000 + Math.random() * 5000; 
-                            showFloatingText("PHANTOM IMAGES!", g.position);
-                            playSfx(300, 0.5, 'sine');
-                            spawnParticles(g.position, 0xffb852, 15, 0.1, 0.22);
-
-                            for (let k = 0; k < 2; k++) {
-                                const cloneGroup = new THREE.Group();
-                                const cloneMesh = new THREE.Mesh(
-                                    new THREE.CapsuleGeometry(0.5, 0.5, 4, 8),
-                                    new THREE.MeshPhongMaterial({color: 0xffb852, transparent: true, opacity: 0.45, wireframe: true})
-                                );
-                                cloneMesh.position.y = 0.5;
-                                cloneGroup.add(cloneMesh);
-                                cloneGroup.position.copy(g.position).add(new THREE.Vector3((Math.random()-0.5)*5, 0, (Math.random()-0.5)*5));
                                 
-                                scene.add(cloneGroup);
-                                activeIllusions.push({
-                                    mesh: cloneGroup,
-                                    duration: 5000, 
-                                    dir: new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize()
-                                });
-                            }
-                        }
-                    }
-
-                    if (g.ghostName === 'TIM') {
-                        if (isTriggerable && g.position.distanceTo(pacman.position) > 15.0) {
-                            g.abilityCooldown = 10000 + Math.random() * 6000;
-                            
-                            const targetTeleport = g.position.clone().negate();
-                            targetTeleport.y = g.position.y; 
-
-                            targetTeleport.x = Math.max(-50, Math.min(50, targetTeleport.x));
-                            targetTeleport.z = Math.max(-50, Math.min(50, targetTeleport.z));
-
-                            const startGeo = new THREE.SphereGeometry(1.0, 8, 8);
-                            const flashMesh = new THREE.Mesh(startGeo, new THREE.MeshBasicMaterial({color: 0x800080, transparent: true, opacity: 0.8}));
-                            flashMesh.position.copy(g.position);
-                            scene.add(flashMesh);
-                            setTimeout(() => scene.remove(flashMesh), 400);
-
-                            spawnParticles(g.position, 0x800080, 20, 0.15, 0.2);
-
-                            g.position.copy(targetTeleport);
-                            g.aStarPath = [];
-
-                            spawnParticles(g.position, 0x800080, 20, 0.15, 0.2);
-
-                            playSfx(150, 0.4, 'sine', 0.2);
-                            playSfx(1100, 0.2, 'sawtooth', 0.1);
-                            showFloatingText("STALKER WARP!", g.position);
-                        }
-                    }
-
-                    if (g.ghostName === 'SPIKE') {
-                        if (isTriggerable && g.position.distanceTo(pacman.position) < 14.0) {
-                            g.abilityCooldown = 15000 + Math.random() * 5000;
-                            
-                            const companions = ghosts.filter(gh => gh !== g && !gh.isDead && !gh.isStunned);
-                            if (companions.length > 0) {
-                                const chosenOne = companions[Math.floor(Math.random() * companions.length)];
+                                g.isShielded = false;
+                                g.isInvisible = false;
+                                g.invisibilityTimer = 0;
+                                g.shieldMesh.visible = false;
                                 
-                                const spikePos = g.position.clone();
-                                const chosenPos = chosenOne.position.clone();
+                                g.abilityCooldown = 3000 + Math.random() * 4000;
+                            } else {
+                                let gGrid = worldToGrid(g.position);
+                                let targetGrid = { x: 14, z: 15 }; 
                                 
-                                showFloatingText("SWAP!", g.position);
-                                showFloatingText("SWAP!", chosenOne.position);
-
-                                spawnParticles(g.position, 0x00ff00, 16, 0.1, 0.22, 'electric');
-                                spawnParticles(chosenOne.position, 0x00ff00, 16, 0.1, 0.22, 'electric');
-
-                                g.position.copy(chosenPos); g.aStarPath = [];
-                                chosenOne.position.copy(spikePos); chosenOne.aStarPath = [];
+                                g.pathUpdateTimer -= deltaMs;
+                                if (g.pathUpdateTimer <= 0 || !g.aStarPath || g.aStarPath.length === 0) {
+                                    g.pathUpdateTimer = 150; 
+                                    g.aStarPath = computeAStarPath(gGrid, targetGrid);
+                                }
                                 
-                                playSfx(500, 0.3, 'sine');
-                                playSfx(1200, 0.3, 'triangle');
-                            }
-                        }
-                    }
-
-                    if (g.ghostName === 'GOLDY') {
-                        if (isTriggerable) {
-                            g.abilityCooldown = 14000 + Math.random() * 6000;
-                            
-                            const barGeo = new THREE.BoxGeometry(3.6, 3.6, 3.6);
-                            const barMat = new THREE.MeshPhongMaterial({
-                                color: 0xffcc00, 
-                                transparent: true, 
-                                opacity: 0.65, 
-                                shininess: 100
-                            });
-                            const barMesh = new THREE.Mesh(barGeo, barMat);
-                            barMesh.position.copy(g.position);
-                            barMesh.position.y = 1.8; 
-                            
-                            scene.add(barMesh);
-                            goldyWalls.push({
-                                mesh: barMesh,
-                                timeLeft: 4500 
-                            });
-
-                            playSfx(750, 0.25, 'triangle');
-                            showFloatingText("GOLDEN WALL!", g.position);
-                            spawnParticles(g.position, 0xffcc00, 12, 0.08, 0.24);
-                        }
-                    }
-
-                    if (g.ghostName === 'WHITY') {
-                        if (isTriggerable) {
-                            g.abilityCooldown = 13000 + Math.random() * 5000;
-                            
-                            g.isInvisible = true;
-                            g.invisibilityTimer = 4500; 
-                            g.bodyGroup.visible = false;
-                            g.eyesGroup.visible = false; 
-                            
-                            playInvisibilitySfx();
-                            showFloatingText("STEALTH CLOAK!", g.position);
-                            spawnParticles(g.position, [0xffffff, 0xaaaaaa], 22, 0.12, 0.25);
-
-                            let targetCompanion = null;
-                            let closestDist = 15.0;
-                            ghosts.forEach(gh => {
-                                if (gh !== g && !gh.isDead && !gh.isInvisible) {
-                                    let d = g.position.distanceTo(gh.position);
-                                    if (d < closestDist) {
-                                        closestDist = d;
-                                        targetCompanion = gh;
+                                let eyeSpeed = 0.4; 
+                                
+                                if (g.aStarPath && g.aStarPath.length > 1) {
+                                    let nextNode = g.aStarPath[1];
+                                    let worldNext = gridToWorld(nextNode.x, nextNode.z);
+                                    worldNext.y = g.position.y;
+                                    
+                                    let moveVec = worldNext.clone().sub(g.position);
+                                    let stepDist = moveVec.length();
+                                    
+                                    if (stepDist < eyeSpeed) {
+                                        g.position.copy(worldNext);
+                                        g.aStarPath.shift();
+                                    } else {
+                                        moveVec.normalize();
+                                        g.position.add(moveVec.multiplyScalar(eyeSpeed));
+                                        g.dir.copy(moveVec);
+                                    }
+                                } else {
+                                    let fallbackVec = toCenter.clone();
+                                    fallbackVec.y = 0;
+                                    if(fallbackVec.length() > 0.1) {
+                                        fallbackVec.normalize();
+                                        g.position.add(fallbackVec.multiplyScalar(eyeSpeed));
+                                        g.dir.copy(fallbackVec);
                                     }
                                 }
-                            });
-
-                            if (targetCompanion) {
-                                targetCompanion.isInvisible = true;
-                                targetCompanion.invisibilityTimer = 4500;
-                                targetCompanion.bodyGroup.visible = false;
-                                targetCompanion.eyesGroup.visible = false; 
-                                
-                                spawnParticles(targetCompanion.position, [0xffffff, 0xaaaaaa], 16, 0.1, 0.22);
-                                showFloatingText("CLOAKED!", targetCompanion.position);
+                                g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
                             }
-                        }
-                    }
-
-                    // --- GHOST DECISION BRAIN ---
-                    let gGrid = worldToGrid(g.position);
-                    g.pathUpdateTimer -= deltaMs;
-
-                    if (g.pathUpdateTimer <= 0 || g.aStarPath.length === 0) {
-                        g.pathUpdateTimer = 250 + Math.random() * 200; 
-                        
-                        let targetGrid = { x: 14, z: 15 };
-                        let pacCurrentTarget;
-                        if (wasPacmanSeenThisFrame) {
-                            pacCurrentTarget = pacmanGridPos;
-                        } else if (escapeRouteHistory.length > 0) {
-                            const historyOffset = Math.max(0, escapeRouteHistory.length - 1 - Math.floor(level * 0.5));
-                            pacCurrentTarget = escapeRouteHistory[historyOffset];
-                        } else {
-                            pacCurrentTarget = worldToGrid(lastPacmanSeenPos);
+                            return;
                         }
 
-                        let pDir = new THREE.Vector3(0, 0, 1).applyQuaternion(pacman.quaternion).normalize();
-                        let leftFlankVec = pDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2).normalize();
-                        let rightFlankVec = pDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2).normalize();
-
-                        switch (g.ghostName) {
-                            case 'BLINKY':
-                                targetGrid = pacCurrentTarget;
-                                break;
-                            case 'PINKY':
-                                let frontLead = pacman.position.clone().add(pDir.clone().multiplyScalar(16));
-                                targetGrid = worldToGrid(frontLead);
-                                break;
-                            case 'INKY':
-                                let blinkyGhost = ghosts.find(gh => gh.ghostName === 'BLINKY');
-                                if (blinkyGhost) {
-                                    let blinkGrid = worldToGrid(blinkyGhost.position);
-                                    targetGrid = {
-                                        x: Math.max(1, Math.min(26, pacCurrentTarget.x * 2 - blinkGrid.x)),
-                                        z: Math.max(1, Math.min(29, pacCurrentTarget.z * 2 - blinkGrid.z))
-                                    };
-                                } else {
-                                    targetGrid = pacCurrentTarget;
-                                }
-                                break;
-                            case 'CLYDE':
-                                let distToPacman = g.position.distanceTo(pacman.position);
-                                if (distToPacman > 10.0) {
-                                    targetGrid = pacCurrentTarget;
-                                } else {
-                                    targetGrid = { x: 2, z: 28 }; 
-                                }
-                                break;
-                            case 'TIM':
-                                let rearLead = pacman.position.clone().add(pDir.clone().multiplyScalar(-12));
-                                targetGrid = worldToGrid(rearLead);
-                                break;
-                            case 'SPIKE':
-                                let leftShoulder = pacman.position.clone().add(leftFlankVec.multiplyScalar(12));
-                                targetGrid = worldToGrid(leftShoulder);
-                                break;
-                            case 'GOLDY':
-                                let rightShoulder = pacman.position.clone().add(rightFlankVec.multiplyScalar(12));
-                                targetGrid = worldToGrid(rightShoulder);
-                                break;
-                            case 'WHITY':
-                                let diagonalPos = pacman.position.clone().add(new THREE.Vector3(12, 0, -12));
-                                targetGrid = worldToGrid(diagonalPos);
-                                break;
-                            default:
-                                targetGrid = pacCurrentTarget;
-                                break;
-                        }
-                        
-                        g.currentTargetCell = targetGrid;
-                        g.aStarPath = computeAStarPath(gGrid, targetGrid);
-                    }
-
-                    // Move ghosts
-                    if (g.aStarPath.length > 1) {
-                        let nextNode = g.aStarPath[1];
-                        let worldNext = gridToWorld(nextNode.x, nextNode.z);
-                        worldNext.y = g.position.y; 
-                        
-                        let moveVec = worldNext.clone().sub(g.position);
-                        let stepDist = moveVec.length();
-                        
-                        if (stepDist < gSpeed) {
-                            g.position.copy(worldNext);
-                            g.aStarPath.shift(); 
-                        } else {
-                            moveVec.normalize();
-                            g.position.add(moveVec.multiplyScalar(gSpeed));
-                            g.dir.copy(moveVec);
-                        }
-                    } else {
-                        let targetWorld = gridToWorld(g.currentTargetCell.x, g.currentTargetCell.z);
-                        let fallbackVec = targetWorld.sub(g.position);
-                        fallbackVec.y = 0;
-                        if(fallbackVec.length() > 0.1) {
-                            fallbackVec.normalize();
-                            g.position.add(fallbackVec.multiplyScalar(gSpeed));
-                            g.dir.copy(fallbackVec);
-                        }
-                    }
-
-                    if (g.position.x > 56) g.position.x = -56;
-                    else if (g.position.x < -56) g.position.x = 56;
-
-                    g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
-
-                    if(pacman.position.distanceTo(g.position) < 1.6) {
-                        if(powerUp) {
-                            killGhost(g);
-                        } else if(!isJumping && !isDashing) {
-                            if (difficultyFactors[selectedDifficulty].canHarm) {
-                                gameState = 'dying';
-                                deathTimer = 1.0;
-                                playDeathSfx();
-                                spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
-                                saveRecordsToDB(); 
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Dots Collision
-            dots.forEach(d => {
-                if(d.visible && pacman.position.distanceTo(d.position) < 1.8) {
-                    d.visible = false; 
-                    
-                    let basePts = 10;
-                    basePts = Math.round(basePts * difficultyFactors[selectedDifficulty].scoreMultiplier);
-                    addScore(basePts);
-                    
-                    totalDotsEatenSession++;
-                    // --- Unlocks: First Bite ---
-                    if (totalDotsEatenSession >= 1) {
-                        unlockAchievement("ach_first_bite");
-                    }
-
-                    // --- Unlocks: Golden Demolition ---
-                    let isNearGoldyWall = goldyWalls.some(gw => gw.mesh.position.distanceTo(pacman.position) < 2.5);
-                    if (isNearGoldyWall) {
-                        unlockAchievement("ach_golden_demo");
-                    }
-
-                    // Count dot eaten with magnet
-                    if (magnetMode) {
-                        magnetDotsEatenCount++;
-                        if (magnetDotsEatenCount >= 50) {
-                            unlockAchievement("ach_magnetized");
-                        }
-                    }
-
-                    updateMissionProgress("m1_dots", 1);
-
-                    if (dashCharge < maxDashCharge) {
-                        dashCharge++;
-                        updateDashBarUI();
-                    }
-
-                    playDotSfx();
-                    spawnParticles(d.position, d.material.color.getHex(), 5, 0.05, 0.15, 'fading');
-
-                    if(d.type === 0 || d.type === 7) {
-                        remainingDots--;
-                        document.getElementById('remaining').innerText = remainingDots;
-                    }
-
-                    // Power Pill consumable impacts
-                    if (d.type !== 0) {
-                        let baseBonus = 40;
-                        baseBonus = Math.round(baseBonus * difficultyFactors[selectedDifficulty].scoreMultiplier);
-                        addScore(baseBonus);
-                        playPowerPelletSfx();
-
-                        if(d.type === 2) { 
-                            powerUp = true; 
-                            powerTimeLeft = 8000; 
-                            ghostCombo = 0; 
-                            document.getElementById('powerBarContainer').style.display = 'block'; 
-                            ghosts.forEach(g => { 
-                                if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); 
-                            }); 
-                            spawnParticles(d.position, [0xffff00, 0x0055ff, 0xffffff], 20, 0.12, 0.22, 'electric');
-                        }
-                        if(d.type === 4) { 
-                            laserMode = true; 
-                            laserTimeLeft = 10000; 
-                            laserCooldown = 0; 
-                            document.getElementById('laserBarContainer').style.display = 'block'; 
-                            spawnParticles(d.position, [0xff3300, 0xffaa00], 15, 0.1, 0.22);
-                        }
-                        if(d.type === 5) { 
-                            speedMode = true; 
-                            speedTimeLeft = 6000; 
-                            document.getElementById('speedBarContainer').style.display = 'block'; 
-                            spawnParticles(d.position, [0x00ff00, 0x99ff99], 15, 0.1, 0.22);
-                        }
-                        if(d.type === 6) { 
-                            freezeMode = true; 
-                            freezeTimeLeft = 5000; 
-                            document.getElementById('freezeBarContainer').style.display = 'block'; 
-                            spawnParticles(d.position, [0x00ffff, 0xddffff], 15, 0.1, 0.22);
-                            // --- Unlocks: Absolute Zero ---
-                            unlockAchievement("ach_absolute_zero");
-                        }
-                        if(d.type === 7) { 
-                            magnetMode = true;
-                            magnetTimeLeft = 8000;
-                            document.getElementById('magnetBarContainer').style.display = 'block';
-                            spawnParticles(d.position, [0xff00ff, 0xffffff], 25, 0.14, 0.24, 'electric');
-                        }
-                        showFloatingText("+" + baseBonus, d.position);
-                    }
-
-                    // LEVEL CLEARANCE THRESHOLDS
-                    if(remainingDots <= 0) { 
-                        if (isBossStage) {
-                            if (!isMegaPelletSpawned && bossEntity) {
-                                spawnMegaPellet();
+                        if (g.isStunned) {
+                            g.stunTimer -= deltaMs;
+                            if (g.stunTimer <= 0) {
+                                g.isStunned = false;
+                                g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
                             }
                             return; 
                         }
 
-                        // --- Unlocks: Speed Runner & Flawless ---
-                        if (levelTimer < 45) {
-                            unlockAchievement("ach_speed_runner");
+                        if(freezeMode) return;
+
+                        let gSpeed = g.baseSpeed * ghostSpeedMult * ghostSpeedFactor;
+                        if(powerUp) gSpeed *= 0.5;
+
+                        g.abilityCooldown -= deltaMs * levelAbilityFrequencyMult;
+                        let isTriggerable = (g.abilityCooldown <= 0 && !powerUp && gameState === 'playing' && !g.isDead);
+
+                        if (g.isInvisible) {
+                            g.invisibilityTimer -= deltaMs;
+                            
+                            if (Math.random() < 0.15) {
+                                spawnParticles(g.position.clone().add(new THREE.Vector3(0, 0.4, 0)), 0xe0e0e0, 1, 0.02, 0.14, 'electric');
+                            }
+                            
+                            if (g.invisibilityTimer <= 0 || g.isDead) {
+                                g.isInvisible = false;
+                                g.invisibilityTimer = 0;
+                                if (!g.isDead) {
+                                    g.bodyGroup.visible = true;
+                                    g.eyesGroup.visible = true;
+                                    spawnParticles(g.position, 0xffffff, 8, 0.05, 0.18);
+                                }
+                            }
                         }
-                        if (livesLostThisLevel === 0) {
-                            unlockAchievement("ach_flawless");
+
+                        // --- UNIQUE GHOST MECHANICS ---
+                        if (g.ghostName === 'BLINKY') {
+                            const distToPac = g.position.distanceTo(pacman.position);
+                            if (distToPac < 8.0 && !powerUp) {
+                                if (!g.isUsingAbility) {
+                                    g.isUsingAbility = true;
+                                    showFloatingText("BLINKY RAGES!", g.position);
+                                    playSfx(440, 0.3, 'sawtooth');
+                                }
+                                gSpeed *= 1.6; 
+                                g.scale.setScalar(1.35); 
+                                g.bodyGroup.children[0].material.color.setHex(0xffaa00); 
+                                
+                                if (Math.random() < 0.2) {
+                                    spawnParticles(g.position, 0xff5500, 2, 0.04, 0.15);
+                                }
+                            } else {
+                                if (g.isUsingAbility) {
+                                    g.isUsingAbility = false;
+                                    g.scale.setScalar(1);
+                                    g.bodyGroup.children[0].material.color.setHex(g.baseColor);
+                                }
+                            }
                         }
 
-                        if (level >= 256) {
-                            gameState = 'victory256';
-                            document.getElementById('mythical-screen').style.display = 'flex';
-                            document.getElementById('minimap').style.display = 'none';
-                            document.getElementById('sound-toggle-hud').style.display = 'none';
-                            playSfx(100, 2.0, 'sawtooth', 0.2);
-                            generateGlitchMatrix();
-                            saveRecordsToDB();
-                            return;
+                        if (g.ghostName === 'INKY') {
+                            if (g.isUsingAbility) {
+                                g.eyesGroup.position.y += g.abilityDurationLeft * (deltaMs / 16.66); 
+                                g.bodyGroup.position.y += g.abilityDurationLeft * (deltaMs / 16.66);
+                                g.abilityDurationLeft -= 0.015 * (deltaMs / 16.66); 
+                                
+                                if (g.bodyGroup.position.y <= 0) {
+                                    g.bodyGroup.position.y = 0;
+                                    g.eyesGroup.position.y = 0;
+                                    g.isUsingAbility = false;
+                                    g.abilityCooldown = 5000 + Math.random() * 4000;
+                                }
+                            } else if (isTriggerable) {
+                                g.isUsingAbility = true;
+                                g.abilityDurationLeft = 0.28; 
+                                g.abilityCooldown = 99999; 
+                                playSfx(600, 0.25, 'triangle');
+                                showFloatingText("WALL HOP!", g.position);
+                                spawnParticles(g.position, 0x00ffff, 10, 0.06, 0.18);
+                            }
                         }
 
-                        saveRecordsToDB();
+                        if (g.ghostName === 'PINKY') {
+                            if (g.isUsingAbility) {
+                                g.abilityDurationLeft -= deltaMs;
+                                gSpeed *= 3.0; 
+                                g.bodyGroup.children[0].material.color.setHex(0xff33cc); 
+                                
+                                if (Math.random() < 0.4) {
+                                    spawnParticles(g.position, 0xffb8ff, 2, 0.05, 0.12, 'electric');
+                                }
 
-                        // Intermission screens do not display on custom maps
-                        if (level % 3 === 0 && !isCustomMapMode) {
-                            gameState = 'intermission';
-                            document.getElementById('ui').style.display = 'none';
-                            document.getElementById('minimap').style.display = 'none';
-                            
-                            playSfx(880, 0.1, 'sine');
-                            setTimeout(() => playSfx(1100, 0.1, 'sine'), 60);
-                            setTimeout(() => playSfx(1320, 0.15, 'sine'), 120);
-                            setTimeout(() => playSfx(1760, 0.45, 'sine'), 180);
+                                if (g.abilityDurationLeft <= 0) {
+                                    g.isUsingAbility = false;
+                                    g.bodyGroup.children[0].material.color.setHex(g.baseColor);
+                                    g.abilityCooldown = 6000 + Math.random() * 4000;
+                                }
+                            } else if (isTriggerable && wasPacmanSeenThisFrame) {
+                                g.isUsingAbility = true;
+                                g.abilityDurationLeft = 1200; 
+                                g.abilityCooldown = 99999;
+                                playSfx(900, 0.3, 'sawtooth');
+                                showFloatingText("PINKY LUNGES!", g.position);
+                            }
+                        }
 
-                            interTimer = 0; interPhase = 0;
+                        if (g.ghostName === 'CLYDE') {
+                            if (isTriggerable) {
+                                g.abilityCooldown = 12000 + Math.random() * 5000; 
+                                showFloatingText("PHANTOM IMAGES!", g.position);
+                                playSfx(300, 0.5, 'sine');
+                                spawnParticles(g.position, 0xffb852, 15, 0.1, 0.22);
+
+                                for (let k = 0; k < 2; k++) {
+                                    const cloneGroup = new THREE.Group();
+                                    const cloneMesh = new THREE.Mesh(
+                                        new THREE.CapsuleGeometry(0.5, 0.5, 4, 8),
+                                        new THREE.MeshPhongMaterial({color: 0xffb852, transparent: true, opacity: 0.45, wireframe: true})
+                                    );
+                                    cloneMesh.position.y = 0.5;
+                                    cloneGroup.add(cloneMesh);
+                                    cloneGroup.position.copy(g.position).add(new THREE.Vector3((Math.random()-0.5)*5, 0, (Math.random()-0.5)*5));
+                                    
+                                    scene.add(cloneGroup);
+                                    activeIllusions.push({
+                                        mesh: cloneGroup,
+                                        duration: 5000, 
+                                        dir: new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize()
+                                    });
+                                }
+                            }
+                        }
+
+                        if (g.ghostName === 'TIM') {
+                            if (isTriggerable && g.position.distanceTo(pacman.position) > 15.0) {
+                                g.abilityCooldown = 10000 + Math.random() * 6000;
+                                
+                                const targetTeleport = g.position.clone().negate();
+                                targetTeleport.y = g.position.y; 
+
+                                targetTeleport.x = Math.max(-50, Math.min(50, targetTeleport.x));
+                                targetTeleport.z = Math.max(-50, Math.min(50, targetTeleport.z));
+
+                                const startGeo = new THREE.SphereGeometry(1.0, 8, 8);
+                                const flashMesh = new THREE.Mesh(startGeo, new THREE.MeshBasicMaterial({color: 0x800080, transparent: true, opacity: 0.8}));
+                                flashMesh.position.copy(g.position);
+                                scene.add(flashMesh);
+                                setTimeout(() => scene.remove(flashMesh), 400);
+
+                                spawnParticles(g.position, 0x800080, 20, 0.15, 0.2);
+
+                                g.position.copy(targetTeleport);
+                                g.aStarPath = [];
+
+                                spawnParticles(g.position, 0x800080, 20, 0.15, 0.2);
+
+                                playSfx(150, 0.4, 'sine', 0.2);
+                                playSfx(1100, 0.2, 'sawtooth', 0.1);
+                                showFloatingText("STALKER WARP!", g.position);
+                            }
+                        }
+
+                        if (g.ghostName === 'SPIKE') {
+                            if (isTriggerable && g.position.distanceTo(pacman.position) < 14.0) {
+                                g.abilityCooldown = 15000 + Math.random() * 5000;
+                                
+                                const companions = ghosts.filter(gh => gh !== g && !gh.isDead && !gh.isStunned);
+                                if (companions.length > 0) {
+                                    const chosenOne = companions[Math.floor(Math.random() * companions.length)];
+                                    
+                                    const spikePos = g.position.clone();
+                                    const chosenPos = chosenOne.position.clone();
+                                    
+                                    showFloatingText("SWAP!", g.position);
+                                    showFloatingText("SWAP!", chosenOne.position);
+
+                                    spawnParticles(g.position, 0x00ff00, 16, 0.1, 0.22, 'electric');
+                                    spawnParticles(chosenOne.position, 0x00ff00, 16, 0.1, 0.22, 'electric');
+
+                                    g.position.copy(chosenPos); g.aStarPath = [];
+                                    chosenOne.position.copy(spikePos); chosenOne.aStarPath = [];
+                                    
+                                    playSfx(500, 0.3, 'sine');
+                                    playSfx(1200, 0.3, 'triangle');
+                                }
+                            }
+                        }
+
+                        if (g.ghostName === 'GOLDY') {
+                            if (isTriggerable) {
+                                g.abilityCooldown = 14000 + Math.random() * 6000;
+                                
+                                const barGeo = new THREE.BoxGeometry(3.6, 3.6, 3.6);
+                                const barMat = new THREE.MeshPhongMaterial({
+                                    color: 0xffcc00, 
+                                    transparent: true, 
+                                    opacity: 0.65, 
+                                    shininess: 100
+                                });
+                                const barMesh = new THREE.Mesh(barGeo, barMat);
+                                barMesh.position.copy(g.position);
+                                barMesh.position.y = 1.8; 
+                                
+                                scene.add(barMesh);
+                                goldyWalls.push({
+                                    mesh: barMesh,
+                                    timeLeft: 4500 
+                });
+
+                                playSfx(750, 0.25, 'triangle');
+                                showFloatingText("GOLDEN WALL!", g.position);
+                                spawnParticles(g.position, 0xffcc00, 12, 0.08, 0.24);
+                            }
+                        }
+
+                        if (g.ghostName === 'WHITY') {
+                            if (isTriggerable) {
+                                g.abilityCooldown = 13000 + Math.random() * 5000;
+                                
+                                g.isInvisible = true;
+                                g.invisibilityTimer = 4500; 
+                                g.bodyGroup.visible = false;
+                                g.eyesGroup.visible = false; 
+                                
+                                playInvisibilitySfx();
+                                showFloatingText("STEALTH CLOAK!", g.position);
+                                spawnParticles(g.position, [0xffffff, 0xaaaaaa], 22, 0.12, 0.25);
+
+                                let targetCompanion = null;
+                                let closestDist = 15.0;
+                                ghosts.forEach(gh => {
+                                    if (gh !== g && !gh.isDead && !gh.isInvisible) {
+                                        let d = g.position.distanceTo(gh.position);
+                                        if (d < closestDist) {
+                                            closestDist = d;
+                                            targetCompanion = gh;
+                                        }
+                                    }
+                                });
+
+                                if (targetCompanion) {
+                                    targetCompanion.isInvisible = true;
+                                    targetCompanion.invisibilityTimer = 4500;
+                                    targetCompanion.bodyGroup.visible = false;
+                                    targetCompanion.eyesGroup.visible = false; 
+                                    
+                                    spawnParticles(targetCompanion.position, [0xffffff, 0xaaaaaa], 16, 0.1, 0.22);
+                                    showFloatingText("CLOAKED!", targetCompanion.position);
+                                }
+                            }
+                        }
+
+                        // --- GHOST DECISION BRAIN ---
+                        let gGrid = worldToGrid(g.position);
+                        g.pathUpdateTimer -= deltaMs;
+
+                        if (g.pathUpdateTimer <= 0 || g.aStarPath.length === 0) {
+                            g.pathUpdateTimer = 250 + Math.random() * 200; 
                             
-                            csPacman.position.set(20, 0.8, 0);
-                            csPacman.scale.setScalar(1);
-                            csPacman.rotation.y = -Math.PI/2;
+                            let targetGrid = { x: 14, z: 15 };
+                            let pacCurrentTarget;
+                            if (wasPacmanSeenThisFrame) {
+                                pacCurrentTarget = pacmanGridPos;
+                            } else if (escapeRouteHistory.length > 0) {
+                                const historyOffset = Math.max(0, escapeRouteHistory.length - 1 - Math.floor(level * 0.5));
+                                pacCurrentTarget = escapeRouteHistory[historyOffset];
+                            } else {
+                                pacCurrentTarget = worldToGrid(lastPacmanSeenPos);
+                            }
+
+                            let pDir = new THREE.Vector3(0, 0, 1).applyQuaternion(pacman.quaternion).normalize();
+                            let leftFlankVec = pDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2).normalize();
+                            let rightFlankVec = pDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2).normalize();
+
+                            switch (g.ghostName) {
+                                case 'BLINKY':
+                                    targetGrid = pacCurrentTarget;
+                                    break;
+                                case 'PINKY':
+                                    let frontLead = pacman.position.clone().add(pDir.clone().multiplyScalar(16));
+                                    targetGrid = worldToGrid(frontLead);
+                                    break;
+                                case 'INKY':
+                                    let blinkyGhost = ghosts.find(gh => gh.ghostName === 'BLINKY');
+                                    if (blinkyGhost) {
+                                        let blinkGrid = worldToGrid(blinkyGhost.position);
+                                        targetGrid = {
+                                            x: Math.max(1, Math.min(26, pacCurrentTarget.x * 2 - blinkGrid.x)),
+                                            z: Math.max(1, Math.min(29, pacCurrentTarget.z * 2 - blinkGrid.z))
+                                        };
+                                    } else {
+                                        targetGrid = pacCurrentTarget;
+                                    }
+                                    break;
+                                case 'CLYDE':
+                                    let distToPacman = g.position.distanceTo(pacman.position);
+                                    if (distToPacman > 10.0) {
+                                        targetGrid = pacCurrentTarget;
+                                    } else {
+                                        targetGrid = { x: 2, z: 28 }; 
+                                    }
+                                    break;
+                                case 'TIM':
+                                    let rearLead = pacman.position.clone().add(pDir.clone().multiplyScalar(-12));
+                                    targetGrid = worldToGrid(rearLead);
+                                    break;
+                                case 'SPIKE':
+                                    let leftShoulder = pacman.position.clone().add(leftFlankVec.multiplyScalar(12));
+                                    targetGrid = worldToGrid(leftShoulder);
+                                    break;
+                                case 'GOLDY':
+                                    let rightShoulder = pacman.position.clone().add(rightFlankVec.multiplyScalar(12));
+                                    targetGrid = worldToGrid(rightShoulder);
+                                    break;
+                                case 'WHITY':
+                                    let diagonalPos = pacman.position.clone().add(new THREE.Vector3(12, 0, -12));
+                                    targetGrid = worldToGrid(diagonalPos);
+                                    break;
+                                default:
+                                    targetGrid = pacCurrentTarget;
+                                    break;
+                            }
                             
-                            csBlinky.position.set(30, 0, 0);
-                            csBlinky.rotation.y = -Math.PI/2;
-                            csBlinkyMat.color.setHex(0xff0000); 
-                            csBlinkyBody.visible = true; 
+                            g.currentTargetCell = targetGrid;
+                            g.aStarPath = computeAStarPath(gGrid, targetGrid);
+                        }
+
+                        // Move ghosts
+                        if (g.aStarPath.length > 1) {
+                            let nextNode = g.aStarPath[1];
+                            let worldNext = gridToWorld(nextNode.x, nextNode.z);
+                            worldNext.y = g.position.y; 
                             
-                            csPellet.position.set(-15, 0.8, 0);
-                            csPellet.visible = true;
+                            let moveVec = worldNext.clone().sub(g.position);
+                            let stepDist = moveVec.length();
+                            
+                            if (stepDist < gSpeed) {
+                                g.position.copy(worldNext);
+                                g.aStarPath.shift(); 
+                            } else {
+                                moveVec.normalize();
+                                g.position.add(moveVec.multiplyScalar(gSpeed));
+                                g.dir.copy(moveVec);
+                            }
                         } else {
-                            if (isCustomMapMode) {
-                                showFloatingText("🎉 CUSTOM MAP CLEARED!", pacman.position);
-                                playSfx(1000, 1.0, 'square');
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 3000);
-                                gameState = 'lobby';
+                            let targetWorld = gridToWorld(g.currentTargetCell.x, g.currentTargetCell.z);
+                            let fallbackVec = targetWorld.sub(g.position);
+                            fallbackVec.y = 0;
+                            if(fallbackVec.length() > 0.1) {
+                                fallbackVec.normalize();
+                                g.position.add(fallbackVec.multiplyScalar(gSpeed));
+                                g.dir.copy(fallbackVec);
+                            }
+                        }
+
+                        if (g.position.x > 56) g.position.x = -56;
+                        else if (g.position.x < -56) g.position.x = 56;
+
+                        g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
+
+                        // Check collision against all local and remote player entities
+                        let collidesWithPlayer = (pacman.position.distanceTo(g.position) < 1.6);
+                        
+                        if (isCoop) {
+                            Object.values(p2pPlayers).forEach(rp => {
+                                if (rp.entity.group.position.distanceTo(g.position) < 1.6) {
+                                    collidesWithPlayer = true;
+                                }
+                            });
+                        }
+
+                        if(collidesWithPlayer) {
+                            if(powerUp) {
+                                killGhost(g);
+                            } else if(!isJumping && !isDashing) {
+                                if (difficultyFactors[selectedDifficulty].canHarm) {
+                                    gameState = 'dying';
+                                    deathTimer = 1.0;
+                                    playDeathSfx();
+                                    spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
+                                    saveRecordsToDB(); 
+                                    
+                                    if (isCoop && isHost) {
+                                        broadcastToAll({
+                                            type: 'COOP_PLAYER_DYING'
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Sync ghost status back to connected clients
+                    if (isCoop && isHost) {
+                        const ghostPayload = ghosts.map(g => ({
+                            ghostName: g.ghostName,
+                            position: { x: g.position.x, y: g.position.y, z: g.position.z },
+                            rotation: g.rotation.y,
+                            isDead: g.isDead,
+                            isInvisible: g.isInvisible,
+                            isStunned: g.isStunned,
+                            scale: g.scale.x,
+                            bodyY: g.bodyGroup.position.y,
+                            eyesY: g.eyesGroup.position.y
+                        }));
+                        
+                        broadcastToAll({
+                            type: 'SYNC_GHOSTS',
+                            ghosts: ghostPayload
+                        });
+                    }
+                }
+            }
+
+            // Dots Collision
+            dots.forEach((d, dotIndex) => {
+                if(d.visible) {
+                    let collidesWithDot = (pacman.position.distanceTo(d.position) < 1.8);
+
+                    // Allow remote players to trigger dot eating locally
+                    if (isCoop) {
+                        Object.values(p2pPlayers).forEach(rp => {
+                            if (rp.entity.group.position.distanceTo(d.position) < 1.8) {
+                                collidesWithDot = true;
+                            }
+                        });
+                    }
+
+                    if (collidesWithDot) {
+                        d.visible = false; 
+                        
+                        let basePts = 10;
+                        basePts = Math.round(basePts * difficultyFactors[selectedDifficulty].scoreMultiplier);
+                        addScore(basePts);
+                        
+                        totalDotsEatenSession++;
+                        // --- Unlocks: First Bite ---
+                        if (totalDotsEatenSession >= 1) {
+                            unlockAchievement("ach_first_bite");
+                        }
+
+                        // --- Unlocks: Golden Demolition ---
+                        let isNearGoldyWall = goldyWalls.some(gw => gw.mesh.position.distanceTo(pacman.position) < 2.5);
+                        if (isNearGoldyWall) {
+                            unlockAchievement("ach_golden_demo");
+                        }
+
+                        // Count dot eaten with magnet
+                        if (magnetMode) {
+                            magnetDotsEatenCount++;
+                            if (magnetDotsEatenCount >= 50) {
+                                unlockAchievement("ach_magnetized");
+                            }
+                        }
+
+                        updateMissionProgress("m1_dots", 1);
+
+                        if (dashCharge < maxDashCharge) {
+                            dashCharge++;
+                            updateDashBarUI();
+                        }
+
+                        playDotSfx();
+                        spawnParticles(d.position, d.material.color.getHex(), 5, 0.05, 0.15, 'fading');
+
+                        // Synchronise eaten dot details across connections
+                        if (isCoop) {
+                            if (isHost) {
+                                broadcastToAll({
+                                    type: 'SYNC_EAT_DOT',
+                                    index: dotIndex
+                                });
+                            } else if (p2pServerConn) {
+                                p2pServerConn.send({
+                                    type: 'EAT_DOT_REQUEST',
+                                    index: dotIndex
+                                });
+                            }
+                        }
+
+                        if(d.type === 0 || d.type === 7) {
+                            remainingDots--;
+                            document.getElementById('remaining').innerText = remainingDots;
+                        }
+
+                        // Power Pill consumable impacts
+                        if (d.type !== 0) {
+                            let baseBonus = 40;
+                            baseBonus = Math.round(baseBonus * difficultyFactors[selectedDifficulty].scoreMultiplier);
+                            addScore(baseBonus);
+                            playPowerPelletSfx();
+
+                            // Shared Co-op Pill effects applied locally
+                            if(d.type === 2) { 
+                                powerUp = true; 
+                                powerTimeLeft = 8000; 
+                                ghostCombo = 0; 
+                                document.getElementById('powerBarContainer').style.display = 'block'; 
+                                ghosts.forEach(g => { 
+                                    if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); 
+                                }); 
+                                spawnParticles(d.position, [0xffff00, 0x0055ff, 0xffffff], 20, 0.12, 0.22, 'electric');
+                            }
+                            if(d.type === 4) { 
+                                laserMode = true; 
+                                laserTimeLeft = 10000; 
+                                laserCooldown = 0; 
+                                document.getElementById('laserBarContainer').style.display = 'block'; 
+                                spawnParticles(d.position, [0xff3300, 0xffaa00], 15, 0.1, 0.22);
+                            }
+                            if(d.type === 5) { 
+                                speedMode = true; 
+                                speedTimeLeft = 6000; 
+                                document.getElementById('speedBarContainer').style.display = 'block'; 
+                                spawnParticles(d.position, [0x00ff00, 0x99ff99], 15, 0.1, 0.22);
+                            }
+                            if(d.type === 6) { 
+                                freezeMode = true; 
+                                freezeTimeLeft = 5000; 
+                                document.getElementById('freezeBarContainer').style.display = 'block'; 
+                                spawnParticles(d.position, [0x00ffff, 0xddffff], 15, 0.1, 0.22);
+                                // --- Unlocks: Absolute Zero ---
+                                unlockAchievement("ach_absolute_zero");
+                            }
+                            if(d.type === 7) { 
+                                magnetMode = true;
+                                magnetTimeLeft = 8000;
+                                document.getElementById('magnetBarContainer').style.display = 'block';
+                                spawnParticles(d.position, [0xff00ff, 0xffffff], 25, 0.14, 0.24, 'electric');
+                            }
+                            showFloatingText("+" + baseBonus, d.position);
+                        }
+
+                        // LEVEL CLEARANCE THRESHOLDS
+                        if(remainingDots <= 0) { 
+                            if (isBossStage) {
+                                if (!isMegaPelletSpawned && bossEntity) {
+                                    spawnMegaPellet();
+                                }
+                                return; 
+                            }
+
+                            // --- Unlocks: Speed Runner & Flawless ---
+                            if (levelTimer < 45) {
+                                unlockAchievement("ach_speed_runner");
+                            }
+                            if (livesLostThisLevel === 0) {
+                                unlockAchievement("ach_flawless");
+                            }
+
+                            if (level >= 256) {
+                                if (isCoop) {
+                                    if (isHost) {
+                                        broadcastToAll({ type: 'COOP_TRIGGER_VICTORY256' });
+                                        initiateVictory256Local();
+                                    }
+                                } else {
+                                    initiateVictory256Local();
+                                }
                                 return;
                             }
 
-                            level++;
-                            // --- Unlocks: Pioneer ---
-                            if (level >= 5) {
-                                unlockAchievement("ach_pioneer");
-                            }
+                            saveRecordsToDB();
 
-                            ghostSpeedMult += 0.15;
-                            document.getElementById('level').innerText = level;
-                            buildMap();
-                            resetPositions();
-                            playSfx(1000, 1.0, 'square');
+                            // Intermission screens do not display on custom maps
+                            if (level % 3 === 0 && !isCustomMapMode && !isCoop) {
+                                gameState = 'intermission';
+                                document.getElementById('ui').style.display = 'none';
+                                document.getElementById('minimap').style.display = 'none';
+                                
+                                playSfx(880, 0.1, 'sine');
+                                setTimeout(() => playSfx(1100, 0.1, 'sine'), 60);
+                                setTimeout(() => playSfx(1320, 0.15, 'sine'), 120);
+                                setTimeout(() => playSfx(1760, 0.45, 'sine'), 180);
+
+                                interTimer = 0; interPhase = 0;
+                                
+                                csPacman.position.set(20, 0.8, 0);
+                                csPacman.scale.setScalar(1);
+                                csPacman.rotation.y = -Math.PI/2;
+                                
+                                csBlinky.position.set(30, 0, 0);
+                                csBlinky.rotation.y = -Math.PI/2;
+                                csBlinkyMat.color.setHex(0xff0000); 
+                                csBlinkyBody.visible = true; 
+                                
+                                csPellet.position.set(-15, 0.8, 0);
+                                csPellet.visible = true;
+                            } else {
+                                if (isCustomMapMode) {
+                                    showFloatingText("🎉 CUSTOM MAP CLEARED!", pacman.position);
+                                    playSfx(1000, 1.0, 'square');
+                                    setTimeout(() => {
+                                        window.location.reload();
+                                    }, 3000);
+                                    gameState = 'lobby';
+                                    return;
+                                }
+
+                                if (isCoop) {
+                                    if (isHost) {
+                                        level++;
+                                        ghostSpeedMult += 0.15;
+                                        document.getElementById('level').innerText = level;
+                                        broadcastToAll({
+                                            type: 'COOP_NEXT_LEVEL',
+                                            level: level,
+                                            ghostSpeedMult: ghostSpeedMult
+                                        });
+                                        buildMap();
+                                        resetPositions();
+                                        playSfx(1000, 1.0, 'square');
+                                    }
+                                } else {
+                                    level++;
+                                    // --- Unlocks: Pioneer ---
+                                    if (level >= 5) {
+                                        unlockAchievement("ach_pioneer");
+                                    }
+
+                                    ghostSpeedMult += 0.15;
+                                    document.getElementById('level').innerText = level;
+                                    buildMap();
+                                    resetPositions();
+                                    playSfx(1000, 1.0, 'square');
+                                }
+                            }
                         }
                     }
                 }
@@ -3648,6 +3944,478 @@
             renderer.render(scene, camera);
         }
 
+        // Helper to launch Victory 256 screen locally
+        function initiateVictory256Local() {
+            gameState = 'victory256';
+            document.getElementById('mythical-screen').style.display = 'flex';
+            document.getElementById('minimap').style.display = 'none';
+            document.getElementById('sound-toggle-hud').style.display = 'none';
+            playSfx(100, 2.0, 'sawtooth', 0.2);
+            generateGlitchMatrix();
+            saveRecordsToDB();
+        }
+
+        // --- MULTIPLAYER PeerJS NETWORKING IMPLEMENTATION ---
+        function initP2PMatchmaking() {
+            showCoopLobbyStatus("Scanning PeerJS open lobbies...");
+            scanAndConnectLobby(0);
+        }
+
+        function scanAndConnectLobby(slotIndex) {
+            if (slotIndex >= 5) {
+                // No open rooms found, establish new Host lobby
+                createHostLobby(0);
+                return;
+            }
+
+            const scanPeerId = `pacman3d-coop-client-${Math.floor(Math.random() * 999999)}`;
+            peer = new Peer(scanPeerId);
+            const targetHostId = `pacman3d-coop-lobby-slot-${slotIndex}`;
+            
+            let clientConnected = false;
+            let checkTimeout = setTimeout(() => {
+                if (!clientConnected) {
+                    peer.destroy();
+                    scanAndConnectLobby(slotIndex + 1);
+                }
+            }, 1800);
+
+            peer.on('open', () => {
+                const conn = peer.connect(targetHostId);
+                conn.on('open', () => {
+                    clientConnected = true;
+                    clearTimeout(checkTimeout);
+                    
+                    isHost = false;
+                    isCoop = true;
+                    myPeerId = scanPeerId;
+                    p2pServerConn = conn;
+                    
+                    setupClientConnListeners(conn);
+                    showCoopLobbyStatus(`Joined Slot: ${slotIndex}. Syncing...`);
+                });
+                
+                conn.on('error', () => {
+                    if (!clientConnected) {
+                        clearTimeout(checkTimeout);
+                        peer.destroy();
+                        scanAndConnectLobby(slotIndex + 1);
+                    }
+                });
+            });
+
+            peer.on('error', () => {
+                if (!clientConnected) {
+                    clearTimeout(checkTimeout);
+                    peer.destroy();
+                    scanAndConnectLobby(slotIndex + 1);
+                }
+            });
+        }
+
+        function createHostLobby(slotIndex) {
+            if (slotIndex >= 5) {
+                showCoopLobbyStatus("All lobby slots occupied. Try again later!");
+                return;
+            }
+
+            const hostId = `pacman3d-coop-lobby-slot-${slotIndex}`;
+            peer = new Peer(hostId);
+
+            peer.on('open', () => {
+                isHost = true;
+                isCoop = true;
+                myPeerId = hostId;
+                p2pConnections = [];
+                
+                // Add host player entry
+                lobbyPlayers = [{
+                    peerId: hostId,
+                    color: selectedColorHex,
+                    ready: false,
+                    isHost: true
+                }];
+                
+                setupHostConnListeners();
+                showCoopLobbyStatus(`Hosting Lobby on Slot: ${slotIndex}. Waiting for peers...`);
+                renderLobbyPlayerDOM();
+            });
+
+            peer.on('error', (err) => {
+                if (err.type === 'unavailable-id') {
+                    createHostLobby(slotIndex + 1);
+                } else {
+                    showCoopLobbyStatus("Lobby Creation Error: " + err.message);
+                }
+            });
+        }
+
+        function setupHostConnListeners() {
+            peer.on('connection', (conn) => {
+                if (lobbyPlayers.length >= 4) {
+                    conn.on('open', () => {
+                        conn.send({ type: 'LOBBY_FULL' });
+                        setTimeout(() => conn.close(), 500);
+                    });
+                    return;
+                }
+
+                conn.on('open', () => {
+                    p2pConnections.push(conn);
+                    
+                    // Add remote client metadata
+                    lobbyPlayers.push({
+                        peerId: conn.peer,
+                        color: '#ff3333', // Default color, client will sync theirs shortly
+                        ready: false,
+                        isHost: false
+                    });
+
+                    renderLobbyPlayerDOM();
+                    broadcastLobbyState();
+                });
+
+                conn.on('data', (data) => {
+                    handleHostDataPacket(conn, data);
+                });
+
+                conn.on('close', () => {
+                    p2pConnections = p2pConnections.filter(c => c !== conn);
+                    lobbyPlayers = lobbyPlayers.filter(p => p.peerId !== conn.peer);
+                    
+                    // Cleanup remote 3D player mesh if active
+                    if (p2pPlayers[conn.peer]) {
+                        scene.remove(p2pPlayers[conn.peer].entity.group);
+                        delete p2pPlayers[conn.peer];
+                    }
+
+                    renderLobbyPlayerDOM();
+                    broadcastLobbyState();
+                });
+            });
+        }
+
+        function setupClientConnListeners(conn) {
+            conn.on('data', (data) => {
+                handleClientDataPacket(data);
+            });
+
+            conn.on('close', () => {
+                showCoopLobbyStatus("Host disconnected.");
+                cleanupP2P();
+                setTimeout(() => window.location.reload(), 2500);
+            });
+        }
+
+        function handleHostDataPacket(conn, data) {
+            switch(data.type) {
+                case 'CLIENT_JOIN_SYNC':
+                    updatePlayerMetadata(conn.peer, data.color);
+                    break;
+                case 'PLAYER_READY_TOGGLE':
+                    updatePlayerReadyState(conn.peer, data.ready);
+                    break;
+                case 'CLIENT_UPDATE_STATE':
+                    // Relay player updates across clients
+                    broadcastPlayerState(conn.peer, data.state);
+                    break;
+                case 'EAT_DOT_REQUEST':
+                    triggerDotEatLocal(data.index);
+                    break;
+                case 'EAT_FRUIT_REQUEST':
+                    if (fruitMesh) {
+                        addScore(fruitMesh.fruitScore, fruitMesh.position);
+                        scene.remove(fruitMesh); fruitMesh = null;
+                        document.getElementById('fruitIndicator').style.display = 'none';
+                        broadcastToAll({ type: 'FRUIT_DESPAWN_TRIGGER' });
+                    }
+                    break;
+            }
+        }
+
+        function handleClientDataPacket(data) {
+            switch(data.type) {
+                case 'LOBBY_FULL':
+                    showCoopLobbyStatus("Lobby slot is full! Retrying matchmaking...");
+                    cleanupP2P();
+                    setTimeout(() => initP2PMatchmaking(), 1500);
+                    break;
+                case 'SYNC_LOBBY_STATE':
+                    lobbyPlayers = data.players;
+                    renderLobbyPlayerDOM();
+                    break;
+                case 'SYNC_DIFFICULTY':
+                    selectedDifficulty = data.diff;
+                    document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
+                    const btn = document.getElementById(`diff-${data.diff}`);
+                    if (btn) btn.classList.add('active');
+                    break;
+                case 'COOP_START_GAME':
+                    level = data.level;
+                    document.getElementById('level').innerText = level;
+                    selectedDifficulty = data.difficulty;
+                    initiateGameLaunch();
+                    break;
+                case 'COOP_TRIGGER_RESET':
+                    resetPositions();
+                    break;
+                case 'SYNC_PLAYER_STATE':
+                    updateRemotePlayerMesh(data.peerId, data.state);
+                    break;
+                case 'SYNC_GHOSTS':
+                    syncGhostsWithHost(data.ghosts);
+                    break;
+                case 'SYNC_EAT_DOT':
+                    triggerDotEatLocal(data.index);
+                    break;
+                case 'SYNC_LIVES_SCORE':
+                    lives = data.lives;
+                    score = data.score;
+                    nextLifeThreshold = data.nextLifeThreshold;
+                    document.getElementById('score').innerText = score;
+                    updateLivesDisplay();
+                    break;
+                case 'COOP_PLAYER_DYING':
+                    gameState = 'dying';
+                    deathTimer = 1.0;
+                    playDeathSfx();
+                    spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
+                    break;
+                case 'COOP_NEXT_LEVEL':
+                    level = data.level;
+                    ghostSpeedMult = data.ghostSpeedMult;
+                    document.getElementById('level').innerText = level;
+                    buildMap();
+                    resetPositions();
+                    playSfx(1000, 1.0, 'square');
+                    break;
+                case 'SPAWN_FRUIT_TRIGGER':
+                    spawnFruit();
+                    break;
+                case 'FRUIT_DESPAWN_TRIGGER':
+                    if (fruitMesh) {
+                        scene.remove(fruitMesh); fruitMesh = null;
+                        document.getElementById('fruitIndicator').style.display = 'none';
+                    }
+                    break;
+                case 'COOP_GAME_OVER':
+                    gameState = 'gameover';
+                    document.getElementById('gameover').style.display = 'flex';
+                    document.getElementById('minimap').style.display = 'none';
+                    document.getElementById('sound-toggle-hud').style.display = 'none';
+                    document.getElementById('go-reason').innerText = data.reason;
+                    break;
+                case 'COOP_TRIGGER_VICTORY256':
+                    initiateVictory256Local();
+                    break;
+            }
+        }
+
+        // Shared trigger logic to consume dots across screens
+        function triggerDotEatLocal(index) {
+            const d = dots[index];
+            if (d && d.visible) {
+                d.visible = false;
+                
+                let basePts = 10;
+                basePts = Math.round(basePts * difficultyFactors[selectedDifficulty].scoreMultiplier);
+                
+                totalDotsEatenSession++;
+                playDotSfx();
+                spawnParticles(d.position, d.material.color.getHex(), 5, 0.05, 0.15, 'fading');
+
+                if(d.type === 0 || d.type === 7) {
+                    remainingDots--;
+                    document.getElementById('remaining').innerText = remainingDots;
+                }
+                
+                if (d.type !== 0) {
+                    playPowerPelletSfx();
+                    if(d.type === 2) { 
+                        powerUp = true; powerTimeLeft = 8000; ghostCombo = 0; 
+                        document.getElementById('powerBarContainer').style.display = 'block'; 
+                        ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); }); 
+                    }
+                    if(d.type === 4) { laserMode = true; laserTimeLeft = 10000; laserCooldown = 0; document.getElementById('laserBarContainer').style.display = 'block'; }
+                    if(d.type === 5) { speedMode = true; speedTimeLeft = 6000; document.getElementById('speedBarContainer').style.display = 'block'; }
+                    if(d.type === 6) { freezeMode = true; freezeTimeLeft = 5000; document.getElementById('freezeBarContainer').style.display = 'block'; }
+                    if(d.type === 7) { magnetMode = true; magnetTimeLeft = 8000; document.getElementById('magnetBarContainer').style.display = 'block'; }
+                }
+            }
+        }
+
+        // Host authoritative ghost state synchronization
+        function syncGhostsWithHost(ghostDataList) {
+            ghostDataList.forEach(gd => {
+                const g = ghosts.find(gh => gh.ghostName === gd.ghostName);
+                if (g) {
+                    g.position.copy(gd.position);
+                    g.rotation.y = gd.rotation;
+                    g.isDead = gd.isDead;
+                    g.isInvisible = gd.isInvisible;
+                    g.isStunned = gd.isStunned;
+                    g.scale.setScalar(gd.scale);
+                    g.bodyGroup.position.y = gd.bodyY;
+                    g.eyesGroup.position.y = gd.eyesY;
+                    
+                    if (g.isDead) {
+                        g.bodyGroup.visible = false;
+                        g.eyesGroup.visible = true;
+                    } else if (g.isInvisible) {
+                        g.bodyGroup.visible = false;
+                        g.eyesGroup.visible = false;
+                    } else {
+                        g.bodyGroup.visible = true;
+                        g.eyesGroup.visible = true;
+                        g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : (g.isStunned ? 0x3355ff : g.baseColor));
+                    }
+                }
+            });
+        }
+
+        function updateRemotePlayerMesh(peerId, state) {
+            if (peerId === myPeerId) return;
+
+            if (!p2pPlayers[peerId]) {
+                const entity = createRemotePlayerMesh(state.color || '#ff00ff');
+                p2pPlayers[peerId] = {
+                    entity: entity,
+                    color: state.color
+                };
+            }
+
+            const p = p2pPlayers[peerId];
+            p.entity.group.position.copy(state.position);
+            p.entity.group.rotation.y = state.rotation;
+            p.entity.top.rotation.x = state.topRotation;
+            p.entity.bottom.rotation.x = state.botRotation;
+            p.entity.group.scale.setScalar(state.scale);
+        }
+
+        function updatePlayerMetadata(peerId, color) {
+            const player = lobbyPlayers.find(p => p.peerId === peerId);
+            if (player) {
+                player.color = color;
+                renderLobbyPlayerDOM();
+                broadcastLobbyState();
+            }
+        }
+
+        function updatePlayerReadyState(peerId, ready) {
+            const player = lobbyPlayers.find(p => p.peerId === peerId);
+            if (player) {
+                player.ready = ready;
+                renderLobbyPlayerDOM();
+                broadcastLobbyState();
+                
+                // Host checks if all connected players are ready to play
+                const allReady = lobbyPlayers.every(p => p.ready);
+                if (allReady && lobbyPlayers.length > 1) { // Require at least Host + 1 Client to start
+                    initiateCoopStart();
+                }
+            }
+        }
+
+        function initiateCoopStart() {
+            broadcastToAll({
+                type: 'COOP_START_GAME',
+                level: level,
+                difficulty: selectedDifficulty
+            });
+            initiateGameLaunch();
+        }
+
+        function triggerCoopGameOver(reason) {
+            broadcastToAll({
+                type: 'COOP_GAME_OVER',
+                reason: reason
+            });
+            
+            gameState = 'gameover';
+            document.getElementById('gameover').style.display = 'flex';
+            document.getElementById('minimap').style.display = 'none';
+            document.getElementById('sound-toggle-hud').style.display = 'none';
+            document.getElementById('go-reason').innerText = reason;
+        }
+
+        function broadcastPlayerState(peerId, state) {
+            broadcastToAll({
+                type: 'SYNC_PLAYER_STATE',
+                peerId: peerId,
+                state: state
+            });
+        }
+
+        function broadcastLobbyState() {
+            broadcastToAll({
+                type: 'SYNC_LOBBY_STATE',
+                players: lobbyPlayers
+            });
+        }
+
+        function broadcastToAll(packet) {
+            if (isHost) {
+                p2pConnections.forEach(conn => {
+                    if (conn.open) conn.send(packet);
+                });
+            }
+        }
+
+        function showCoopLobbyStatus(msg) {
+            const el = document.getElementById('coop-status-text');
+            if (el) el.innerText = msg;
+        }
+
+        function renderLobbyPlayerDOM() {
+            const list = document.getElementById('lobby-player-list');
+            if (!list) return;
+            list.innerHTML = '';
+
+            lobbyPlayers.forEach((p, idx) => {
+                const label = p.isHost ? "P1 (Host)" : `P${idx + 1}`;
+                const readyText = p.ready ? "READY!" : "PENDING...";
+                const badgeClass = p.ready ? "badge-ready" : "badge-pending";
+                
+                list.innerHTML += `
+                    <div class="player-slot">
+                        <div style="display:flex; align-items:center; gap: 10px;">
+                            <span style="width: 14px; height: 14px; border-radius: 50%; background: ${p.color}; display: inline-block; border: 1px solid #fff;"></span>
+                            <strong>${label}</strong>
+                        </div>
+                        <span class="ready-badge ${badgeClass}">${readyText}</span>
+                    </div>
+                `;
+            });
+
+            // Send initial color sync if client
+            if (isCoop && !isHost && p2pServerConn && p2pServerConn.open) {
+                p2pServerConn.send({
+                    type: 'CLIENT_JOIN_SYNC',
+                    color: selectedColorHex
+                });
+            }
+        }
+
+        function cleanupP2P() {
+            if (p2pSearchTimeout) clearTimeout(p2pSearchTimeout);
+            
+            Object.values(p2pPlayers).forEach(rp => {
+                scene.remove(rp.entity.group);
+            });
+            p2pPlayers = {};
+
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            
+            p2pConnections = [];
+            p2pServerConn = null;
+            isCoop = false;
+            isHost = false;
+        }
+
+
         buildMap();
         initGhosts();
         resetPositions();
@@ -3655,5 +4423,4 @@
     </script>
 </body>
 </html>
-
 
