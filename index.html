@@ -93,7 +93,7 @@
 
         /* Daily Missions Panel */
         #missions-container { background: rgba(0, 255, 0, 0.08); border: 2px solid #00ff00; border-radius: 12px; padding: 10px 15px; margin-bottom: 15px; width: 95%; max-width: 600px; box-sizing: border-box; text-align: left; }
-        .mission-title { font-size: 12px; color: #00ff00; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-bottom: 8px; text-align: center; display: block; position: sticky; top: 0; background: #041029; padding: 4px 0; z-index: 10; }
+        .mission-title { font-size: 12px; color: #00ff00; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-bottom: 8px; text-align: center; display: block; }
         .mission-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #fff; margin-bottom: 5px; border-bottom: 1px dashed rgba(0,255,0,0.2); padding-bottom: 3px; }
         .mission-status { font-weight: bold; color: #00ff00; }
         .mission-status.pending { color: #ffaa00; }
@@ -166,28 +166,7 @@
 
         /* Ready Go Presentation */
         #ready-go-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center; z-index: 200; pointer-events: none; font-size: 60px; font-weight: bold; color: #ffff00; text-shadow: 4px 4px 0 #ff0000; letter-spacing: 5px; }
-
-        /* CO-OP MULTIPLAYER WAITING LOBBY MODAL */
-        #coop-lobby-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 4, 17, 0.98); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; color: #00f2ff; font-family: 'Courier New', monospace; padding: 20px; box-sizing: border-box; text-align: center; }
-        #coop-lobby-modal h2 { color: #ffff00; text-shadow: 0 0 15px #ffff00; margin-bottom: 20px; font-size: 30px; letter-spacing: 2px; }
-        .lobby-status-text { font-size: 14px; margin-bottom: 20px; color: #fff; }
-        .lobby-player-list { width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
-        .lobby-player-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: rgba(0, 242, 255, 0.08); border: 2px solid #00f2ff; border-radius: 8px; color: #fff; font-weight: bold; }
-        .lobby-player-row.ready { border-color: #00ff00; background: rgba(0, 255, 0, 0.08); }
-        .lobby-player-row.empty { border-style: dashed; border-color: rgba(0, 242, 255, 0.3); background: transparent; color: rgba(255,255,255,0.4); }
-        .ready-badge { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .ready-badge.is-ready { background: #00ff00; color: #000; box-shadow: 0 0 10px #00ff00; }
-        .ready-badge.not-ready { background: #ff3333; color: #fff; }
-        .ready-badge.is-host { background: #ffff00; color: #000; margin-right: 5px; }
-        .lobby-btn { min-width: 180px; padding: 12px 24px; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; border-radius: 10px; font-size: 16px; border: 2px solid #00f2ff; background: rgba(0,242,255,0.1); color: #00f2ff; box-shadow: 0 0 10px rgba(0,242,255,0.3); transition: all 0.2s; margin: 5px; }
-        .lobby-btn:hover { background: #00f2ff; color: #000; box-shadow: 0 0 20px #00f2ff; }
-        .lobby-btn.btn-ready { border-color: #00ff00; background: rgba(0,255,0,0.1); color: #00ff00; }
-        .lobby-btn.btn-ready:hover { background: #00ff00; color: #000; box-shadow: 0 0 20px #00ff00; }
-        .lobby-btn.btn-cancel { border-color: #ff3333; background: rgba(255,51,51,0.1); color: #ff3333; }
-        .lobby-btn.btn-cancel:hover { background: #ff3333; color: #fff; box-shadow: 0 0 20px #ff3333; }
     </style>
-    <!-- PeerJS dependency for seamless browser-to-browser connections -->
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
     <!-- Sound Mute HUD button -->
@@ -291,8 +270,6 @@
         </div>
         
         <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY NORMAL</button>
-        <!-- NEW CO-OP MULTIPLAYER BUTTON -->
-        <button id="btnPlayCoop" class="menu-btn" style="border-color:#00ffcc; background:rgba(0,255,204,0.1); color:#00ffcc; box-shadow:0 0 20px rgba(0,255,204,0.4);" onclick="startCoopLobbySearch()">⚡ PLAY CO-OP (2-4P)</button>
         <button id="btnPlayCustom" class="menu-btn" style="display:none; border-color:#00ff00; background:rgba(0,255,0,0.1); color:#00ff00; box-shadow:0 0 15px rgba(0,255,0,0.4);" onclick="startCustomGame()">PLAY CUSTOM MAP</button>
 
         <div id="ghost-cast-container">
@@ -383,36 +360,6 @@
             <button class="editor-btn-classic" onclick="resetEditorToDefault()">Default Map</button>
             <button class="editor-btn-classic" onclick="saveCustomEditorMap()">💾 Save Custom</button>
             <button class="editor-btn-primary" onclick="launchCustomMapDirectly()">⚡ Play This Map!</button>
-        </div>
-    </div>
-
-    <!-- CO-OP MULTIPLAYER LOBBY SCREEN -->
-    <div id="coop-lobby-modal">
-        <h2>⚡ Retro Co-op Room ⚡</h2>
-        <div class="lobby-status-text" id="coop-status-label">Searching for active game rooms...</div>
-        
-        <div class="lobby-player-list">
-            <div class="lobby-player-row empty" id="coop-slot-1">
-                <span>Player 1 (Host)</span>
-                <span class="ready-badge not-ready">Empty</span>
-            </div>
-            <div class="lobby-player-row empty" id="coop-slot-2">
-                <span>Player 2</span>
-                <span class="ready-badge not-ready">Empty</span>
-            </div>
-            <div class="lobby-player-row empty" id="coop-slot-3">
-                <span>Player 3</span>
-                <span class="ready-badge not-ready">Empty</span>
-            </div>
-            <div class="lobby-player-row empty" id="coop-slot-4">
-                <span>Player 4</span>
-                <span class="ready-badge not-ready">Empty</span>
-            </div>
-        </div>
-
-        <div>
-            <button class="lobby-btn btn-ready" id="btn-coop-ready" onclick="toggleCoopReadyState()">I'm Ready!</button>
-            <button class="lobby-btn btn-cancel" onclick="abortCoopSession()">Disconnect</button>
         </div>
     </div>
 
@@ -595,21 +542,6 @@
         let currentStreak = 1;
         let hasStreakBonus = false;
 
-        // --- NEW: CO-OP MULTIPLAYER REAL-TIME SYSTEM VARIABLES ---
-        let isCoopMode = false;
-        let isHost = false;
-        let myPeer = null;
-        let peerConnections = []; 
-        let myClientId = null; 
-        let coopPlayersData = {}; 
-        let coopPlayerMeshes = {}; 
-        let coopReadyStates = {}; 
-        let localPlayerReady = false;
-        let networkUpdateTimer = 0;
-
-        const maxLobbies = 5; 
-        const lobbyPrefix = "pacman3d-coop-lobby-";
-
         // Exposed global helpers for lobby selection
         window.selectPacmanColor = function(color, btn) {
             selectedColorHex = color;
@@ -617,12 +549,6 @@
             btn.classList.add('active');
             if (pmMaterial) {
                 pmMaterial.color.setHex(parseInt(color.replace('#', '0x')));
-            }
-            if (isCoopMode) {
-                broadcastCoopData({
-                    type: "color_update",
-                    color: selectedColorHex
-                });
             }
         };
 
@@ -950,9 +876,6 @@
             document.getElementById(`diff-${diff}`).classList.add('active');
             playSfx(440 + (Object.keys(difficultyFactors).indexOf(diff) * 100), 0.1, 'sine');
             localStorage.setItem("pac3d_difficulty", diff);
-            if (isCoopMode && isHost) {
-                broadcastCoopData({ type: "difficulty_update", difficulty: diff });
-            }
         };
 
         // Load saved difficulty
@@ -1490,33 +1413,6 @@
         let isMoving = false;
         let deathTimer = 1.0; 
 
-        // --- MULTIPLAYER CO-OP AVATAR FACTORY ---
-        function createCoopPlayerMesh(colorHex) {
-            const playerGroup = new THREE.Group();
-            const mat = new THREE.MeshPhongMaterial({ color: parseInt(colorHex.replace('#', '0x')), side: THREE.DoubleSide });
-            
-            const pTop = new THREE.Mesh(topGeo, mat);
-            const pBot = new THREE.Mesh(bottomGeo, mat);
-            
-            const rE = new THREE.Mesh(eyeGeo, eyeMat); rE.position.set(0.35, 0.4, 0.6);
-            const lE = new THREE.Mesh(eyeGeo, eyeMat); lE.position.set(-0.35, 0.4, 0.6);
-            pTop.add(rE); pTop.add(lE);
-            
-            const pAuraMesh = new THREE.Mesh(auraGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, wireframe: true }));
-            pAuraMesh.visible = false;
-            
-            playerGroup.add(pTop);
-            playerGroup.add(pBot);
-            playerGroup.add(pAuraMesh);
-            
-            playerGroup.pTop = pTop;
-            playerGroup.pBot = pBot;
-            playerGroup.pAuraMesh = pAuraMesh;
-            
-            scene.add(playerGroup);
-            return playerGroup;
-        }
-
         // --- START NORMAL GAME ---
         window.startGame = function() {
             isCustomMapMode = false;
@@ -1572,526 +1468,7 @@
             });
         }
 
-        // --- CO-OP MULTIPLAYER MATCHMAKING LOGIC (NO ROOM ID SYSTEM) ---
-        window.startCoopLobbySearch = function() {
-            document.getElementById('menu-screen').style.display = 'none';
-            document.getElementById('coop-lobby-modal').style.display = 'flex';
-            
-            isCoopMode = true;
-            localPlayerReady = false;
-            coopReadyStates = {};
-            coopPlayersData = {};
-            peerConnections = [];
-            
-            updateLobbyUIPanel();
-            
-            const coopStatus = document.getElementById('coop-status-label');
-            coopStatus.innerText = "Searching for active lobbies...";
-            
-            attemptClientJoinSequential(0);
-        };
-
-        function attemptClientJoinSequential(lobbyIndex) {
-            if (lobbyIndex >= maxLobbies) {
-                // If we scanned all lobbies and couldn't find/join any, we must host Room 0
-                document.getElementById('coop-status-label').innerText = "No active lobby found. Spinning up new server...";
-                setupHostSession(0);
-                return;
-            }
-
-            const targetLobbyID = lobbyPrefix + lobbyIndex;
-            const tempClientPeer = new Peer(`pac3d-seeker-${Math.floor(Math.random() * 100000)}`);
-            let checkTimeout = null;
-
-            tempClientPeer.on('open', () => {
-                const conn = tempClientPeer.connect(targetLobbyID);
-                
-                checkTimeout = setTimeout(() => {
-                    tempClientPeer.destroy();
-                    attemptClientJoinSequential(lobbyIndex + 1);
-                }, 1500);
-
-                conn.on('open', () => {
-                    clearTimeout(checkTimeout);
-                    tempClientPeer.destroy(); // Connection was alive, let's connect for real
-                    joinLobbyAsClient(lobbyIndex);
-                });
-
-                conn.on('error', () => {
-                    clearTimeout(checkTimeout);
-                    tempClientPeer.destroy();
-                    attemptClientJoinSequential(lobbyIndex + 1);
-                });
-            });
-
-            tempClientPeer.on('error', () => {
-                clearTimeout(checkTimeout);
-                tempClientPeer.destroy();
-                attemptClientJoinSequential(lobbyIndex + 1);
-            });
-        }
-
-        function joinLobbyAsClient(lobbyIndex) {
-            const lobbyId = lobbyPrefix + lobbyIndex;
-            myClientId = `pac3d-client-${Math.floor(Math.random() * 100000)}`;
-            myPeer = new Peer(myClientId);
-            
-            isHost = false;
-
-            myPeer.on('open', (id) => {
-                document.getElementById('coop-status-label').innerText = `Connecting to Lobby #${lobbyIndex + 1}...`;
-                
-                const hostConn = myPeer.connect(lobbyId);
-                
-                hostConn.on('open', () => {
-                    peerConnections.push(hostConn);
-                    
-                    // Send join request
-                    hostConn.send({
-                        type: "request_join",
-                        id: myClientId,
-                        color: selectedColorHex
-                    });
-                });
-
-                hostConn.on('data', (data) => {
-                    handleCoopNetworkMessage(data, hostConn);
-                });
-
-                hostConn.on('close', () => {
-                    abortCoopSession();
-                });
-            });
-
-            myPeer.on('error', (err) => {
-                console.error("Client Peer Error:", err);
-                abortCoopSession();
-            });
-        }
-
-        function setupHostSession(lobbyIndex) {
-            if (lobbyIndex >= maxLobbies) {
-                document.getElementById('coop-status-label').innerText = "Full grid! Unable to start a lobby.";
-                return;
-            }
-
-            const lobbyId = lobbyPrefix + lobbyIndex;
-            myPeer = new Peer(lobbyId);
-            isHost = true;
-            myClientId = "HOST";
-
-            myPeer.on('open', () => {
-                document.getElementById('coop-status-label').innerText = `LOBBY HOST ACTIVE (Room #${lobbyIndex + 1}). Waiting for other players...`;
-                
-                // Set host player entry
-                coopPlayersData[myClientId] = {
-                    id: myClientId,
-                    color: selectedColorHex,
-                    pos: { x: 0, y: 0.8, z: 32 },
-                    rotY: Math.PI,
-                    mouthAngle: 0,
-                    isJumping: false,
-                    isDashing: false
-                };
-                coopReadyStates[myClientId] = false;
-                
-                updateLobbyUIPanel();
-            });
-
-            myPeer.on('connection', (conn) => {
-                conn.on('data', (data) => {
-                    handleCoopNetworkMessage(data, conn);
-                });
-
-                conn.on('close', () => {
-                    const peerId = conn.peer;
-                    
-                    // Remove disconnected player
-                    let leftPlayerId = null;
-                    for (const cid in coopPlayersData) {
-                        if (cid !== "HOST" && cid === peerId) {
-                            leftPlayerId = cid;
-                            break;
-                        }
-                    }
-
-                    if (leftPlayerId) {
-                        delete coopPlayersData[leftPlayerId];
-                        delete coopReadyStates[leftPlayerId];
-                        
-                        if (coopPlayerMeshes[leftPlayerId]) {
-                            scene.remove(coopPlayerMeshes[leftPlayerId]);
-                            delete coopPlayerMeshes[leftPlayerId];
-                        }
-                    }
-
-                    peerConnections = peerConnections.filter(c => c !== conn);
-                    broadcastCoopLobbyState();
-                    updateLobbyUIPanel();
-                });
-            });
-
-            myPeer.on('error', (err) => {
-                if (err.type === 'unavailable-id') {
-                    // Try next host lobby sequential slot
-                    setupHostSession(lobbyIndex + 1);
-                } else {
-                    console.error("Host Peer Error:", err);
-                    abortCoopSession();
-                }
-            });
-        }
-
-        // --- NETWORK MESSAGING PARSER ---
-        function handleCoopNetworkMessage(data, conn) {
-            if (!isCoopMode) return;
-
-            switch (data.type) {
-                case "request_join":
-                    if (isHost) {
-                        const currentCount = Object.keys(coopPlayersData).length;
-                        if (currentCount >= 4 || gameState !== 'lobby') {
-                            conn.send({ type: "join_denied", reason: currentCount >= 4 ? "Lobby is full!" : "Game already in progress!" });
-                            conn.close();
-                            return;
-                        }
-
-                        coopPlayersData[data.id] = {
-                            id: data.id,
-                            color: data.color,
-                            pos: { x: 0, y: 0.8, z: 32 },
-                            rotY: Math.PI,
-                            mouthAngle: 0,
-                            isJumping: false,
-                            isDashing: false
-                        };
-                        coopReadyStates[data.id] = false;
-                        
-                        peerConnections.push(conn);
-                        
-                        conn.send({ type: "join_accepted", clientId: data.id });
-                        
-                        broadcastCoopLobbyState();
-                        updateLobbyUIPanel();
-                    }
-                    break;
-
-                case "join_accepted":
-                    myClientId = data.clientId;
-                    document.getElementById('coop-status-label').innerText = "Successfully joined room! Get ready...";
-                    break;
-
-                case "join_denied":
-                    document.getElementById('coop-status-label').innerText = `Denied access: ${data.reason}`;
-                    setTimeout(() => abortCoopSession(), 2500);
-                    break;
-
-                case "lobby_sync":
-                    coopPlayersData = data.players;
-                    coopReadyStates = data.readyStates;
-                    updateLobbyUIPanel();
-                    break;
-
-                case "ready_toggle":
-                    if (isHost) {
-                        coopReadyStates[data.id] = data.ready;
-                        broadcastCoopLobbyState();
-                        updateLobbyUIPanel();
-                        checkAllCoopPlayersReady();
-                    }
-                    break;
-
-                case "color_update":
-                    if (isHost) {
-                        if (coopPlayersData[conn.peer]) {
-                            coopPlayersData[conn.peer].color = data.color;
-                            broadcastCoopLobbyState();
-                        }
-                    }
-                    break;
-
-                case "start_coop_game":
-                    level = data.level;
-                    selectedDifficulty = data.difficulty;
-                    isCustomMapMode = false;
-                    document.getElementById('coop-lobby-modal').style.display = 'none';
-                    initiateGameLaunch();
-                    break;
-
-                case "coop_tick_sync":
-                    // Host replicates active world values to all clients
-                    if (!isHost) {
-                        score = data.score;
-                        lives = data.lives;
-                        remainingDots = data.remainingDots;
-                        bossHealth = data.bossHealth;
-                        level = data.level;
-                        
-                        document.getElementById('score').innerText = score;
-                        document.getElementById('remaining').innerText = remainingDots;
-                        document.getElementById('level').innerText = level;
-                        updateLivesDisplay();
-
-                        // Parse coop client position inputs
-                        for (const cid in data.coopPlayers) {
-                            if (cid === myClientId) continue; // Do not overwrite local self
-                            
-                            const pState = data.coopPlayers[cid];
-                            let mesh = coopPlayerMeshes[cid];
-                            if (!mesh) {
-                                mesh = createCoopPlayerMesh(pState.color);
-                                coopPlayerMeshes[cid] = mesh;
-                            }
-                            
-                            mesh.position.set(pState.pos.x, pState.pos.y, pState.pos.z);
-                            mesh.rotation.y = pState.rotY;
-                            mesh.pTop.rotation.x = -pState.mouthAngle;
-                            mesh.pBot.rotation.x = pState.mouthAngle;
-                            mesh.pAuraMesh.visible = (pState.isDashing || powerUp);
-                        }
-
-                        // Remove left clients
-                        for (const cid in coopPlayerMeshes) {
-                            if (!data.coopPlayers[cid]) {
-                                scene.remove(coopPlayerMeshes[cid]);
-                                delete coopPlayerMeshes[cid];
-                            }
-                        }
-
-                        // Parse local and power timers
-                        powerUp = data.powerUp;
-                        laserMode = data.laserMode;
-                        speedMode = data.speedMode;
-                        freezeMode = data.freezeMode;
-                        magnetMode = data.magnetMode;
-
-                        // Sync dynamic dots mapping values
-                        dots.forEach((d, idx) => {
-                            if (data.dotsVisible[idx] !== undefined) {
-                                d.visible = data.dotsVisible[idx];
-                            }
-                        });
-
-                        // Sync authoritative ghost layouts
-                        data.ghosts.forEach((gState, idx) => {
-                            const g = ghosts[idx];
-                            if (g) {
-                                g.position.set(gState.pos.x, gState.pos.y, gState.pos.z);
-                                g.rotation.y = gState.rotY;
-                                g.isDead = gState.isDead;
-                                g.isInvisible = gState.isInvisible;
-                                g.isStunned = gState.isStunned;
-                                g.scale.setScalar(gState.scale);
-                                
-                                g.bodyGroup.visible = !gState.isDead && !gState.isInvisible;
-                                g.eyesGroup.visible = !gState.isDead;
-                                g.shieldMesh.visible = gState.isShielded;
-                            }
-                        });
-
-                        // Sync boss layout
-                        if (data.boss) {
-                            if (!bossEntity) {
-                                spawnGiantBoss();
-                            }
-                            bossEntity.position.set(data.boss.pos.x, data.boss.pos.y, data.boss.pos.z);
-                            bossHealth = data.boss.hp;
-                        } else if (bossEntity) {
-                            scene.remove(bossEntity);
-                            bossEntity = null;
-                        }
-
-                        // Sync fruit
-                        if (data.fruit) {
-                            if (!fruitMesh) {
-                                spawnFruit();
-                            }
-                            fruitMesh.position.set(data.fruit.pos.x, data.fruit.pos.y, data.fruit.pos.z);
-                        } else if (fruitMesh) {
-                            scene.remove(fruitMesh);
-                            fruitMesh = null;
-                            document.getElementById('fruitIndicator').style.display = 'none';
-                        }
-                    }
-                    break;
-
-                case "client_state":
-                    // Host parsing raw updates from clients
-                    if (isHost) {
-                        if (coopPlayersData[data.id]) {
-                            coopPlayersData[data.id].pos = data.pos;
-                            coopPlayersData[data.id].rotY = data.rotY;
-                            coopPlayersData[data.id].mouthAngle = data.mouthAngle;
-                            coopPlayersData[data.id].isJumping = data.isJumping;
-                            coopPlayersData[data.id].isDashing = data.isDashing;
-                        }
-                    }
-                    break;
-
-                case "eat_dot_request":
-                    if (isHost) {
-                        handleDotEatingAUTHORITATIVE(data.index, data.id);
-                    }
-                    break;
-
-                case "kill_ghost_request":
-                    if (isHost) {
-                        const targetGhost = ghosts[data.ghostIndex];
-                        if (targetGhost && !targetGhost.isDead) {
-                            killGhost(targetGhost, data.fromLaser);
-                        }
-                    }
-                    break;
-
-                case "client_dash_effect":
-                    // Relay dash trigger particle burst
-                    if (isHost) {
-                        broadcastCoopData({
-                            type: "relay_dash_effect",
-                            pos: data.pos
-                        });
-                    }
-                    break;
-
-                case "relay_dash_effect":
-                    if (!isHost) {
-                        spawnParticles(new THREE.Vector3(data.pos.x, data.pos.y, data.pos.z), [0x00f2ff, 0xffffff, 0x0088ff], 30, 0.2, 0.22, 'electric');
-                    }
-                    break;
-
-                case "broadcast_particles":
-                    if (!isHost) {
-                        spawnParticles(new THREE.Vector3(data.pos.x, data.pos.y, data.pos.z), data.colors, data.count, data.speed, data.size, data.type);
-                    }
-                    break;
-
-                case "broadcast_sfx":
-                    if (!isHost) {
-                        playSfx(data.f, data.d, data.t, data.vol);
-                    }
-                    break;
-            }
-        }
-
-        function broadcastCoopData(payload) {
-            peerConnections.forEach(conn => {
-                if (conn.open) {
-                    conn.send(payload);
-                }
-            });
-        }
-
-        function broadcastCoopLobbyState() {
-            broadcastCoopData({
-                type: "lobby_sync",
-                players: coopPlayersData,
-                readyStates: coopReadyStates
-            });
-        }
-
-        function checkAllCoopPlayersReady() {
-            const keys = Object.keys(coopReadyStates);
-            if (keys.length < 2) return; // Need at least 2 players in coop mode
-            
-            const allReady = keys.every(id => coopReadyStates[id] === true);
-            if (allReady) {
-                // Launch the match automatically
-                coopReadyStates = {};
-                broadcastCoopData({
-                    type: "start_coop_game",
-                    level: level,
-                    difficulty: selectedDifficulty
-                });
-
-                document.getElementById('coop-lobby-modal').style.display = 'none';
-                initiateGameLaunch();
-            }
-        }
-
-        window.toggleCoopReadyState = function() {
-            localPlayerReady = !localPlayerReady;
-            
-            const readyBtn = document.getElementById('btn-coop-ready');
-            if (localPlayerReady) {
-                readyBtn.innerText = "Ready!";
-                readyBtn.style.backgroundColor = "#00ff00";
-                readyBtn.style.color = "#000";
-            } else {
-                readyBtn.innerText = "I'm Ready!";
-                readyBtn.style.backgroundColor = "rgba(0,255,204,0.1)";
-                readyBtn.style.color = "#00f2ff";
-            }
-
-            if (isHost) {
-                coopReadyStates[myClientId] = localPlayerReady;
-                broadcastCoopLobbyState();
-                updateLobbyUIPanel();
-                checkAllCoopPlayersReady();
-            } else {
-                broadcastCoopData({
-                    type: "ready_toggle",
-                    id: myClientId,
-                    ready: localPlayerReady
-                });
-            }
-        };
-
-        window.abortCoopSession = function() {
-            isCoopMode = false;
-            isHost = false;
-            
-            if (myPeer) {
-                myPeer.destroy();
-                myPeer = null;
-            }
-
-            peerConnections.forEach(c => c.close());
-            peerConnections = [];
-
-            for (const cid in coopPlayerMeshes) {
-                scene.remove(coopPlayerMeshes[cid]);
-            }
-            coopPlayerMeshes = {};
-
-            document.getElementById('coop-lobby-modal').style.display = 'none';
-            document.getElementById('menu-screen').style.display = 'flex';
-        };
-
-        function updateLobbyUIPanel() {
-            const playerIds = Object.keys(coopPlayersData);
-            
-            for (let i = 1; i <= 4; i++) {
-                const slot = document.getElementById(`coop-slot-${i}`);
-                if (!slot) continue;
-
-                if (i <= playerIds.length) {
-                    const pid = playerIds[i - 1];
-                    const player = coopPlayersData[pid];
-                    const isPlayerHost = (pid === "HOST" || playerIds.indexOf(pid) === 0);
-                    const isReady = coopReadyStates[pid];
-
-                    slot.className = `lobby-player-row ${isReady ? 'ready' : ''}`;
-                    slot.innerHTML = `
-                        <span>
-                            <span class="color-btn" style="background:${player.color}; width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 8px;"></span>
-                            Player ${i} ${pid === myClientId ? '(You)' : ''}
-                        </span>
-                        <div>
-                            ${isPlayerHost ? '<span class="ready-badge is-host">HOST</span>' : ''}
-                            <span class="ready-badge ${isReady ? 'is-ready' : 'not-ready'}">${isReady ? 'READY' : 'WAITING'}</span>
-                        </div>
-                    `;
-                } else {
-                    slot.className = "lobby-player-row empty";
-                    slot.innerHTML = `
-                        <span>Player ${i}</span>
-                        <span class="ready-badge not-ready">Empty</span>
-                    `;
-                }
-            }
-        }
-
-
+        // --- MAP TEMPLATE ---
         const mapTemplate = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -2108,7 +1485,7 @@
             [1,1,1,1,1,1,0,1,1,3,1,1,1,8,8,1,1,1,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1],
             [3,3,3,3,3,3,0,3,3,3,1,9,9,9,9,9,9,1,3,3,3,0,3,3,3,3,3,3],
-            [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,3,3,0,3,3,3,3,3,3], // Rectified symmetrical portal indexing error safely
+            [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1], 
             [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,3,3,3,3,3,3,3,3,3,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
@@ -2501,12 +1878,6 @@
             lastPacmanSeenPos.set(0, 0.8, 32);
 
             saveRecordsToDB();
-
-            // Clear coop remote meshes
-            for (const cid in coopPlayerMeshes) {
-                scene.remove(coopPlayerMeshes[cid]);
-            }
-            coopPlayerMeshes = {};
         }
 
         // --- LASER LOGIC ---
@@ -2536,20 +1907,12 @@
                 }
             }
 
-            ghosts.forEach((g, index) => {
+            ghosts.forEach(g => {
                 if(!g.isDead) {
                     const distToPoint = raycaster.ray.distanceToPoint(g.position);
                     const projectedDist = raycaster.ray.origin.distanceTo(g.position);
                     if (distToPoint < 2.0 && projectedDist <= maxLaserRange) {
-                        if (isCoopMode && !isHost) {
-                            broadcastCoopData({
-                                type: "kill_ghost_request",
-                                ghostIndex: index,
-                                fromLaser: true
-                            });
-                        } else {
-                            killGhost(g, true);
-                        }
+                        killGhost(g, true);
                     }
                 }
             });
@@ -2687,13 +2050,6 @@
                 ctx.beginPath(); ctx.arc(mapX(ill.mesh.position.x), mapY(ill.mesh.position.z), 1.5, 0, Math.PI*2); ctx.fill();
             });
 
-            // Draw other cooperative client blips
-            for (const cid in coopPlayerMeshes) {
-                const coopMesh = coopPlayerMeshes[cid];
-                ctx.fillStyle = coopPlayersData[cid] ? coopPlayersData[cid].color : '#ffff00';
-                ctx.beginPath(); ctx.arc(mapX(coopMesh.position.x), mapY(coopMesh.position.z), 2.2, 0, Math.PI*2); ctx.fill();
-            }
-
             const px = mapX(pacman.position.x);
             const py = mapY(pacman.position.z);
             ctx.fillStyle = selectedColorHex;
@@ -2810,13 +2166,6 @@
 
             spawnParticles(pacman.position, [0x00f2ff, 0xffffff, 0x0088ff], 30, 0.2, 0.22, 'electric');
 
-            if (isCoopMode) {
-                broadcastCoopData({
-                    type: "client_dash_effect",
-                    pos: { x: pacman.position.x, y: pacman.position.y, z: pacman.position.z }
-                });
-            }
-
             // Collect count of stunned ghosts for achievement
             let stuntCount = 0;
             ghosts.forEach(g => {
@@ -2874,7 +2223,7 @@
         
         const handleDragStart = (clientX, clientY, targetElement) => {
             if (gameState !== 'playing' && gameState !== 'boss_cinematic') return;
-            if (targetElement.closest('.btn') || targetElement.closest('#joystick-container') || targetElement.closest('#level-editor-modal') || targetElement.closest('#coop-lobby-modal')) return;
+            if (targetElement.closest('.btn') || targetElement.closest('#joystick-container') || targetElement.closest('#level-editor-modal')) return;
             isDraggingCamera = true;
             touchStartX = clientX;
             touchStartY = clientY;
@@ -2907,7 +2256,7 @@
 
         window.addEventListener('touchmove', (e) => {
             if(gameState !== 'playing' && gameState !== 'boss_cinematic') return;
-            if (e.target.closest('#level-editor-modal') || e.target.closest('#coop-lobby-modal')) return; // Avoid breaking overlay touches
+            if (e.target.closest('#level-editor-modal')) return; // Avoid breaking level editor touches
             e.preventDefault();
             for(let i=0; i<e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
@@ -3397,95 +2746,6 @@
             camera.lookAt(pacman.position);
             light.position.copy(pacman.position).add(new THREE.Vector3(0, 3, 0));
 
-            // --- HIGH FREQUENCY LOBBY CO-OP UPDATE EMISSION ---
-            if (isCoopMode) {
-                networkUpdateTimer += deltaMs;
-                if (networkUpdateTimer > 33) { // Send packets ~30 times a second
-                    networkUpdateTimer = 0;
-
-                    if (isHost) {
-                        // Gather Host specific tick state payload
-                        const tickData = {
-                            type: "coop_tick_sync",
-                            score: score,
-                            lives: lives,
-                            level: level,
-                            remainingDots: remainingDots,
-                            bossHealth: bossHealth,
-                            powerUp: powerUp,
-                            laserMode: laserMode,
-                            speedMode: speedMode,
-                            freezeMode: freezeMode,
-                            magnetMode: magnetMode,
-                            dotsVisible: dots.map(d => d.visible),
-                            coopPlayers: coopPlayersData,
-                            ghosts: ghosts.map(g => ({
-                                pos: { x: g.position.x, y: g.position.y, z: g.position.z },
-                                rotY: g.rotation.y,
-                                isDead: g.isDead,
-                                isInvisible: g.isInvisible,
-                                isStunned: g.isStunned,
-                                scale: g.scale.x,
-                                isShielded: g.isShielded
-                            }))
-                        };
-
-                        if (bossEntity) {
-                            tickData.boss = {
-                                pos: { x: bossEntity.position.x, y: bossEntity.position.y, z: bossEntity.position.z },
-                                hp: bossHealth
-                            };
-                        }
-
-                        if (fruitMesh) {
-                            tickData.fruit = {
-                                pos: { x: fruitMesh.position.x, y: fruitMesh.position.y, z: fruitMesh.position.z }
-                            };
-                        }
-
-                        // Local update host pos in dataset
-                        coopPlayersData[myClientId] = {
-                            id: myClientId,
-                            color: selectedColorHex,
-                            pos: { x: pacman.position.x, y: pacman.position.y, z: pacman.position.z },
-                            rotY: pacman.rotation.y,
-                            mouthAngle: topHalf.rotation.x,
-                            isJumping: isJumping,
-                            isDashing: isDashing
-                        };
-
-                        broadcastCoopData(tickData);
-
-                        // Also render client players inside Host viewport
-                        for (const cid in coopPlayersData) {
-                            if (cid === myClientId) continue;
-                            const pState = coopPlayersData[cid];
-                            let mesh = coopPlayerMeshes[cid];
-                            if (!mesh) {
-                                mesh = createCoopPlayerMesh(pState.color);
-                                coopPlayerMeshes[cid] = mesh;
-                            }
-                            mesh.position.set(pState.pos.x, pState.pos.y, pState.pos.z);
-                            mesh.rotation.y = pState.rotY;
-                            mesh.pTop.rotation.x = pState.mouthAngle;
-                            mesh.pBot.rotation.x = -pState.mouthAngle;
-                            mesh.pAuraMesh.visible = pState.isDashing;
-                        }
-                    } else {
-                        // Client emits position update payload to Host
-                        broadcastCoopData({
-                            type: "client_state",
-                            id: myClientId,
-                            pos: { x: pacman.position.x, y: pacman.position.y, z: pacman.position.z },
-                            rotY: pacman.rotation.y,
-                            mouthAngle: Math.abs(topHalf.rotation.x),
-                            isJumping: isJumping,
-                            isDashing: isDashing
-                        });
-                    }
-                }
-            }
-
             escapeRouteTimer += deltaMs;
             if (escapeRouteTimer > 150) { 
                 escapeRouteTimer = 0;
@@ -3610,27 +2870,18 @@
             }
 
             // Fruits logic
-            if (!isCoopMode || isHost) {
-                fruitTimer += deltaMs;
-                if (fruitTimer > 15000 && !fruitMesh) {
-                    spawnFruit();
-                    fruitTimer = 0;
-                }
+            fruitTimer += deltaMs;
+            if (fruitTimer > 15000 && !fruitMesh) {
+                spawnFruit();
+                fruitTimer = 0;
             }
-
             if (fruitMesh) {
                 fruitMesh.rotation.y += 0.05 * (deltaMs / 16.66);
-                
-                // Authoritative countdown on Host only
-                if (!isCoopMode || isHost) {
-                    fruitActiveTime -= deltaMs;
-                    if(fruitActiveTime <= 0) {
-                        scene.remove(fruitMesh); fruitMesh = null;
-                        document.getElementById('fruitIndicator').style.display = 'none';
-                    }
-                }
-
-                if (fruitMesh && pacman.position.distanceTo(fruitMesh.position) < 2.0) {
+                fruitActiveTime -= deltaMs;
+                if(fruitActiveTime <= 0) {
+                    scene.remove(fruitMesh); fruitMesh = null;
+                    document.getElementById('fruitIndicator').style.display = 'none';
+                } else if (pacman.position.distanceTo(fruitMesh.position) < 2.0) {
                     let pts = fruitMesh.fruitScore;
                     pts = Math.round(pts * difficultyFactors[selectedDifficulty].scoreMultiplier);
                     addScore(pts, fruitMesh.position);
@@ -3664,7 +2915,7 @@
                 const bDist = bDir.length();
                 bDir.normalize();
 
-                if (bDist > 1.0 && (!isCoopMode || isHost)) {
+                if (bDist > 1.0) {
                     bossEntity.position.addScaledVector(bDir, bossSpeed * (deltaMs / 16.66));
                 }
 
@@ -3673,7 +2924,7 @@
                     bossEntity.energyRing.material.color.setHSL((rainbowHue + 0.5) % 1.0, 1.0, 0.5);
                 }
 
-                if (Math.random() < 0.02 * (deltaMs / 16.66) && (!isCoopMode || isHost)) {
+                if (Math.random() < 0.02 * (deltaMs / 16.66)) {
                     playSfx(300, 0.1, 'sawtooth', 0.08);
                     const projGeo = new THREE.SphereGeometry(0.8, 8, 8);
                     const projMat = new THREE.MeshBasicMaterial({ color: 0xff3300 });
@@ -3781,7 +3032,7 @@
             }
 
             // GHOST BRAIN CONTROLLERS (Only active during normal non-boss levels)
-            if (!isBossStage && (!isCoopMode || isHost)) {
+            if (!isBossStage) {
                 const centerBox = new THREE.Vector3(0, 0.3, -4);
                 const gridCenterBox = worldToGrid(centerBox);
                 const levelAbilityFrequencyMult = Math.min(2.5, 1.0 + (level * 0.15));
@@ -4223,214 +3474,178 @@
             }
 
             // Dots Collision
-            dots.forEach((d, idx) => {
+            dots.forEach(d => {
                 if(d.visible && pacman.position.distanceTo(d.position) < 1.8) {
-                    if (isCoopMode && !isHost) {
-                        broadcastCoopData({
-                            type: "eat_dot_request",
-                            index: idx,
-                            id: myClientId
-                        });
-                    } else {
-                        handleDotEatingAUTHORITATIVE(idx, "HOST");
+                    d.visible = false; 
+                    
+                    let basePts = 10;
+                    basePts = Math.round(basePts * difficultyFactors[selectedDifficulty].scoreMultiplier);
+                    addScore(basePts);
+                    
+                    totalDotsEatenSession++;
+                    // --- Unlocks: First Bite ---
+                    if (totalDotsEatenSession >= 1) {
+                        unlockAchievement("ach_first_bite");
+                    }
+
+                    // --- Unlocks: Golden Demolition ---
+                    let isNearGoldyWall = goldyWalls.some(gw => gw.mesh.position.distanceTo(pacman.position) < 2.5);
+                    if (isNearGoldyWall) {
+                        unlockAchievement("ach_golden_demo");
+                    }
+
+                    // Count dot eaten with magnet
+                    if (magnetMode) {
+                        magnetDotsEatenCount++;
+                        if (magnetDotsEatenCount >= 50) {
+                            unlockAchievement("ach_magnetized");
+                        }
+                    }
+
+                    updateMissionProgress("m1_dots", 1);
+
+                    if (dashCharge < maxDashCharge) {
+                        dashCharge++;
+                        updateDashBarUI();
+                    }
+
+                    playDotSfx();
+                    spawnParticles(d.position, d.material.color.getHex(), 5, 0.05, 0.15, 'fading');
+
+                    if(d.type === 0 || d.type === 7) {
+                        remainingDots--;
+                        document.getElementById('remaining').innerText = remainingDots;
+                    }
+
+                    // Power Pill consumable impacts
+                    if (d.type !== 0) {
+                        let baseBonus = 40;
+                        baseBonus = Math.round(baseBonus * difficultyFactors[selectedDifficulty].scoreMultiplier);
+                        addScore(baseBonus);
+                        playPowerPelletSfx();
+
+                        if(d.type === 2) { 
+                            powerUp = true; 
+                            powerTimeLeft = 8000; 
+                            ghostCombo = 0; 
+                            document.getElementById('powerBarContainer').style.display = 'block'; 
+                            ghosts.forEach(g => { 
+                                if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); 
+                            }); 
+                            spawnParticles(d.position, [0xffff00, 0x0055ff, 0xffffff], 20, 0.12, 0.22, 'electric');
+                        }
+                        if(d.type === 4) { 
+                            laserMode = true; 
+                            laserTimeLeft = 10000; 
+                            laserCooldown = 0; 
+                            document.getElementById('laserBarContainer').style.display = 'block'; 
+                            spawnParticles(d.position, [0xff3300, 0xffaa00], 15, 0.1, 0.22);
+                        }
+                        if(d.type === 5) { 
+                            speedMode = true; 
+                            speedTimeLeft = 6000; 
+                            document.getElementById('speedBarContainer').style.display = 'block'; 
+                            spawnParticles(d.position, [0x00ff00, 0x99ff99], 15, 0.1, 0.22);
+                        }
+                        if(d.type === 6) { 
+                            freezeMode = true; 
+                            freezeTimeLeft = 5000; 
+                            document.getElementById('freezeBarContainer').style.display = 'block'; 
+                            spawnParticles(d.position, [0x00ffff, 0xddffff], 15, 0.1, 0.22);
+                            // --- Unlocks: Absolute Zero ---
+                            unlockAchievement("ach_absolute_zero");
+                        }
+                        if(d.type === 7) { 
+                            magnetMode = true;
+                            magnetTimeLeft = 8000;
+                            document.getElementById('magnetBarContainer').style.display = 'block';
+                            spawnParticles(d.position, [0xff00ff, 0xffffff], 25, 0.14, 0.24, 'electric');
+                        }
+                        showFloatingText("+" + baseBonus, d.position);
+                    }
+
+                    // LEVEL CLEARANCE THRESHOLDS
+                    if(remainingDots <= 0) { 
+                        if (isBossStage) {
+                            if (!isMegaPelletSpawned && bossEntity) {
+                                spawnMegaPellet();
+                            }
+                            return; 
+                        }
+
+                        // --- Unlocks: Speed Runner & Flawless ---
+                        if (levelTimer < 45) {
+                            unlockAchievement("ach_speed_runner");
+                        }
+                        if (livesLostThisLevel === 0) {
+                            unlockAchievement("ach_flawless");
+                        }
+
+                        if (level >= 256) {
+                            gameState = 'victory256';
+                            document.getElementById('mythical-screen').style.display = 'flex';
+                            document.getElementById('minimap').style.display = 'none';
+                            document.getElementById('sound-toggle-hud').style.display = 'none';
+                            playSfx(100, 2.0, 'sawtooth', 0.2);
+                            generateGlitchMatrix();
+                            saveRecordsToDB();
+                            return;
+                        }
+
+                        saveRecordsToDB();
+
+                        // Intermission screens do not display on custom maps
+                        if (level % 3 === 0 && !isCustomMapMode) {
+                            gameState = 'intermission';
+                            document.getElementById('ui').style.display = 'none';
+                            document.getElementById('minimap').style.display = 'none';
+                            
+                            playSfx(880, 0.1, 'sine');
+                            setTimeout(() => playSfx(1100, 0.1, 'sine'), 60);
+                            setTimeout(() => playSfx(1320, 0.15, 'sine'), 120);
+                            setTimeout(() => playSfx(1760, 0.45, 'sine'), 180);
+
+                            interTimer = 0; interPhase = 0;
+                            
+                            csPacman.position.set(20, 0.8, 0);
+                            csPacman.scale.setScalar(1);
+                            csPacman.rotation.y = -Math.PI/2;
+                            
+                            csBlinky.position.set(30, 0, 0);
+                            csBlinky.rotation.y = -Math.PI/2;
+                            csBlinkyMat.color.setHex(0xff0000); 
+                            csBlinkyBody.visible = true; 
+                            
+                            csPellet.position.set(-15, 0.8, 0);
+                            csPellet.visible = true;
+                        } else {
+                            if (isCustomMapMode) {
+                                showFloatingText("🎉 CUSTOM MAP CLEARED!", pacman.position);
+                                playSfx(1000, 1.0, 'square');
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 3000);
+                                gameState = 'lobby';
+                                return;
+                            }
+
+                            level++;
+                            // --- Unlocks: Pioneer ---
+                            if (level >= 5) {
+                                unlockAchievement("ach_pioneer");
+                            }
+
+                            ghostSpeedMult += 0.15;
+                            document.getElementById('level').innerText = level;
+                            buildMap();
+                            resetPositions();
+                            playSfx(1000, 1.0, 'square');
+                        }
                     }
                 }
             });
 
             renderer.render(scene, camera);
-        }
-
-        // --- AUTHORITATIVE DOT REPLICATION CONTROLLER ---
-        function handleDotEatingAUTHORITATIVE(index, originId) {
-            const d = dots[index];
-            if (!d || !d.visible) return;
-
-            d.visible = false;
-            
-            let basePts = 10;
-            basePts = Math.round(basePts * difficultyFactors[selectedDifficulty].scoreMultiplier);
-            addScore(basePts);
-            
-            totalDotsEatenSession++;
-            // --- Unlocks: First Bite ---
-            if (totalDotsEatenSession >= 1) {
-                unlockAchievement("ach_first_bite");
-            }
-
-            // --- Unlocks: Golden Demolition ---
-            let isNearGoldyWall = goldyWalls.some(gw => gw.mesh.position.distanceTo(pacman.position) < 2.5);
-            if (isNearGoldyWall) {
-                unlockAchievement("ach_golden_demo");
-            }
-
-            // Count dot eaten with magnet
-            if (magnetMode) {
-                magnetDotsEatenCount++;
-                if (magnetDotsEatenCount >= 50) {
-                    unlockAchievement("ach_magnetized");
-                }
-            }
-
-            updateMissionProgress("m1_dots", 1);
-
-            if (dashCharge < maxDashCharge) {
-                dashCharge++;
-                updateDashBarUI();
-            }
-
-            playDotSfx();
-            spawnParticles(d.position, d.material.color.getHex(), 5, 0.05, 0.15, 'fading');
-
-            if (isHost) {
-                // Host relays particle burst triggers to clients
-                broadcastCoopData({
-                    type: "broadcast_particles",
-                    pos: { x: d.position.x, y: d.position.y, z: d.position.z },
-                    colors: [d.material.color.getHex()],
-                    count: 5,
-                    speed: 0.05,
-                    size: 0.15,
-                    type: "fading"
-                });
-                broadcastCoopData({
-                    type: "broadcast_sfx",
-                    f: wakaToggle ? 380 : 460,
-                    d: 0.06,
-                    t: "triangle",
-                    vol: 0.04
-                });
-            }
-
-            if(d.type === 0 || d.type === 7) {
-                remainingDots--;
-                document.getElementById('remaining').innerText = remainingDots;
-            }
-
-            // Power Pill consumable impacts
-            if (d.type !== 0) {
-                let baseBonus = 40;
-                baseBonus = Math.round(baseBonus * difficultyFactors[selectedDifficulty].scoreMultiplier);
-                addScore(baseBonus);
-                playPowerPelletSfx();
-
-                if(d.type === 2) { 
-                    powerUp = true; 
-                    powerTimeLeft = 8000; 
-                    ghostCombo = 0; 
-                    document.getElementById('powerBarContainer').style.display = 'block'; 
-                    ghosts.forEach(g => { 
-                        if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); 
-                    }); 
-                    spawnParticles(d.position, [0xffff00, 0x0055ff, 0xffffff], 20, 0.12, 0.22, 'electric');
-                }
-                if(d.type === 4) { 
-                    laserMode = true; 
-                    laserTimeLeft = 10000; 
-                    laserCooldown = 0; 
-                    document.getElementById('laserBarContainer').style.display = 'block'; 
-                    spawnParticles(d.position, [0xff3300, 0xffaa00], 15, 0.1, 0.22);
-                }
-                if(d.type === 5) { 
-                    speedMode = true; 
-                    speedTimeLeft = 6000; 
-                    document.getElementById('speedBarContainer').style.display = 'block'; 
-                    spawnParticles(d.position, [0x00ff00, 0x99ff99], 15, 0.1, 0.22);
-                }
-                if(d.type === 6) { 
-                    freezeMode = true; 
-                    freezeTimeLeft = 5000; 
-                    document.getElementById('freezeBarContainer').style.display = 'block'; 
-                    spawnParticles(d.position, [0x00ffff, 0xddffff], 15, 0.1, 0.22);
-                    // --- Unlocks: Absolute Zero ---
-                    unlockAchievement("ach_absolute_zero");
-                }
-                if(d.type === 7) { 
-                    magnetMode = true;
-                    magnetTimeLeft = 8000;
-                    document.getElementById('magnetBarContainer').style.display = 'block';
-                    spawnParticles(d.position, [0xff00ff, 0xffffff], 25, 0.14, 0.24, 'electric');
-                }
-                showFloatingText("+" + baseBonus, d.position);
-            }
-
-            // LEVEL CLEARANCE THRESHOLDS
-            if(remainingDots <= 0) { 
-                if (isBossStage) {
-                    if (!isMegaPelletSpawned && bossEntity) {
-                        spawnMegaPellet();
-                    }
-                    return; 
-                }
-
-                // --- Unlocks: Speed Runner & Flawless ---
-                if (levelTimer < 45) {
-                    unlockAchievement("ach_speed_runner");
-                }
-                if (livesLostThisLevel === 0) {
-                    unlockAchievement("ach_flawless");
-                }
-
-                if (level >= 256) {
-                    gameState = 'victory256';
-                    document.getElementById('mythical-screen').style.display = 'flex';
-                    document.getElementById('minimap').style.display = 'none';
-                    document.getElementById('sound-toggle-hud').style.display = 'none';
-                    playSfx(100, 2.0, 'sawtooth', 0.2);
-                    generateGlitchMatrix();
-                    saveRecordsToDB();
-                    return;
-                }
-
-                saveRecordsToDB();
-
-                // Intermission screens do not display on custom maps or during coop mode
-                if (level % 3 === 0 && !isCustomMapMode && !isCoopMode) {
-                    gameState = 'intermission';
-                    document.getElementById('ui').style.display = 'none';
-                    document.getElementById('minimap').style.display = 'none';
-                    
-                    playSfx(880, 0.1, 'sine');
-                    setTimeout(() => playSfx(1100, 0.1, 'sine'), 60);
-                    setTimeout(() => playSfx(1320, 0.15, 'sine'), 120);
-                    setTimeout(() => playSfx(1760, 0.45, 'sine'), 180);
-
-                    interTimer = 0; interPhase = 0;
-                    
-                    csPacman.position.set(20, 0.8, 0);
-                    csPacman.scale.setScalar(1);
-                    csPacman.rotation.y = -Math.PI/2;
-                    
-                    csBlinky.position.set(30, 0, 0);
-                    csBlinky.rotation.y = -Math.PI/2;
-                    csBlinkyMat.color.setHex(0xff0000); 
-                    csBlinkyBody.visible = true; 
-                    
-                    csPellet.position.set(-15, 0.8, 0);
-                    csPellet.visible = true;
-                } else {
-                    if (isCustomMapMode) {
-                        showFloatingText("🎉 CUSTOM MAP CLEARED!", pacman.position);
-                        playSfx(1000, 1.0, 'square');
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 3000);
-                        gameState = 'lobby';
-                        return;
-                    }
-
-                    level++;
-                    // --- Unlocks: Pioneer ---
-                    if (level >= 5) {
-                        unlockAchievement("ach_pioneer");
-                    }
-
-                    ghostSpeedMult += 0.15;
-                    document.getElementById('level').innerText = level;
-                    buildMap();
-                    resetPositions();
-                    playSfx(1000, 1.0, 'square');
-                }
-            }
         }
 
         buildMap();
