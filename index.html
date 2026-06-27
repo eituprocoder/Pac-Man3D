@@ -40,7 +40,7 @@
         /* High Records Display Board */
         #record-board { background: rgba(255, 242, 0, 0.08); border: 2px solid #ffff00; border-radius: 12px; padding: 10px 15px; margin-bottom: 15px; font-size: 14px; color: #fff; width: 95%; max-width: 600px; display: flex; justify-content: space-around; text-shadow: 1px 1px 2px #000; box-sizing: border-box; box-shadow: 0 0 15px rgba(255,242,0,0.15); }
         .record-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-        .record-label { font-size: 11px; color: #00f2ff; text-transform: uppercase; letter-spacing: 1px; }
+        .record-label { font-size: 11px; color: #00f2ff; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-top: 5px; }
         .record-val { font-size: 18px; color: #ffff00; font-weight: bold; }
 
         /* Streak & Daily Mission Styling */
@@ -275,7 +275,7 @@
         <div id="ghost-cast-container">
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ff0000;"></span>
-                <div class="ghost-info"><strong style="color:#ff0000;">BLINKY</strong><br>Shadow | <span style="color:#ff5555;">RAGE</span> when close (grows &amp; speeds up)</div>
+                <div class="ghost-info"><strong style="color:#ff0000;">BLINKY</strong><br>Shadow | <span style="color:#ff5555;">RAGE</span> when close (grows, speeds up, and <span style="font-weight:bold; color:#ff0000;">steals 2 LIVES!</span>)</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffb8ff;"></span>
@@ -428,6 +428,7 @@
         let levelTimer = 0; // Tracks speedrunner speed in seconds
         let livesLostThisLevel = 0;
         let magnetDotsEatenCount = 0;
+        let livesToLoseThisDeath = 1; // Determines variable life-loss penalty (e.g. 2 for raging Blinky)
         
         // Custom color selection
         let selectedColorHex = '#ffff00';
@@ -1504,7 +1505,7 @@
         ];
 
         let walls = []; let dots = [];
-        const floorMat = new THREE.MeshPhongMaterial({ color: 0x00a22 });
+        const floorMat = new THREE.MeshPhongMaterial({ color: 0x000a22 });
         const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), floorMat);
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
@@ -1820,9 +1821,7 @@
 
             if (isBossStage) {
                 spawnGiantBoss();
-                ghosts.forEach(g => {
-                    scene.remove(g); 
-                });
+                // Normal ghosts stay active during boss battles too! 
             } else {
                 if (bossEntity) {
                     scene.remove(bossEntity);
@@ -1830,30 +1829,31 @@
                 }
                 bossProjectiles.forEach(p => scene.remove(p.mesh));
                 bossProjectiles = [];
-
-                initGhosts();
-                ghosts.forEach((g, i) => {
-                    g.position.set((Math.random()-0.5)*4, 0.3, -4 + (Math.random()-0.5)*2);
-                    g.isDead = false;
-                    g.bodyGroup.visible = true;
-                    g.eyesGroup.visible = true;
-                    g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
-                    g.aStarPath = [];
-                    g.currentAIState = 'walk';
-                    g.isStunned = false;
-                    g.stunTimer = 0;
-                    g.isUsingAbility = false;
-                    
-                    g.isShielded = false;
-                    g.isInvisible = false;
-                    g.invisibilityTimer = 0;
-                    
-                    g.shieldMesh.visible = false;
-                    g.abilityCooldown = 3000 + Math.random() * 5000;
-                    g.scale.setScalar(1);
-                    g.eyesGroup.position.set(0,0,0);
-                });
             }
+
+            // Always reset normal ghosts, making them present even in boss stages!
+            initGhosts();
+            ghosts.forEach((g, i) => {
+                g.position.set((Math.random()-0.5)*4, 0.3, -4 + (Math.random()-0.5)*2);
+                g.isDead = false;
+                g.bodyGroup.visible = true;
+                g.eyesGroup.visible = true;
+                g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
+                g.aStarPath = [];
+                g.currentAIState = 'walk';
+                g.isStunned = false;
+                g.stunTimer = 0;
+                g.isUsingAbility = false;
+                
+                g.isShielded = false;
+                g.isInvisible = false;
+                g.invisibilityTimer = 0;
+                
+                g.shieldMesh.visible = false;
+                g.abilityCooldown = 3000 + Math.random() * 5000;
+                g.scale.setScalar(1);
+                g.eyesGroup.position.set(0,0,0);
+            });
             
             powerUp = laserMode = speedMode = freezeMode = magnetMode = false;
             auraMesh.visible = false;
@@ -2533,8 +2533,8 @@
                 topHalf.rotation.x = -0.6;
                 bottomHalf.rotation.x = 0.6;
 
-                camera.position.grid = new THREE.Vector3(0, 10, 25);
-                camera.position.lerp(camera.position.grid, 0.05);
+                camera.position.copy(new THREE.Vector3(0, 10, 25));
+                camera.position.lerp(new THREE.Vector3(0, 10, 25), 0.05);
                 camera.lookAt(new THREE.Vector3(0, 2, 0));
 
                 if (cinematicTimer < 1500) {
@@ -2633,7 +2633,9 @@
                 }
 
                 if (deathTimer <= 0) {
-                    lives--; livesLostThisLevel++; updateLivesDisplay();
+                    lives -= livesToLoseThisDeath; 
+                    livesLostThisLevel += livesToLoseThisDeath; 
+                    updateLivesDisplay();
                     if (lives <= 0) {
                         gameState = 'gameover';
                         document.getElementById('gameover').style.display = 'flex';
@@ -2715,14 +2717,22 @@
                     }
                 }
 
-                const v = new THREE.Vector3(finalMoveS, 0, finalMoveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize().multiplyScalar(curSpeed);
+                const v = new THREE.Vector3(finalMoveS, 0, finalMoveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize().multiplyScalar(v => {
+                    // Avoid creating an unused mapping wrapper
+                });
+                
+                // Let's properly calculate movement velocity vector
+                const mvVec = new THREE.Vector3(finalMoveS, 0, finalMoveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY);
+                if (mvVec.lengthSq() > 0) mvVec.normalize();
+                mvVec.multiplyScalar(curSpeed);
+                
                 isMoving = (finalMoveS !== 0 || finalMoveF !== 0);
 
                 if(isMoving) {
-                    const npX = pacman.position.clone(); npX.x += v.x; if(!checkCol(npX)) pacman.position.x = npX.x;
-                    const npZ = pacman.position.clone(); npZ.z += v.z; if(!checkCol(npZ)) pacman.position.z = npZ.z;
+                    const npX = pacman.position.clone(); npX.x += mvVec.x; if(!checkCol(npX)) pacman.position.x = npX.x;
+                    const npZ = pacman.position.clone(); npZ.z += mvVec.z; if(!checkCol(npZ)) pacman.position.z = npZ.z;
                     
-                    pacman.rotation.y = Math.atan2(v.x, v.z);
+                    pacman.rotation.y = Math.atan2(mvVec.x, mvVec.z);
                     
                     mouthTimer += 0.25 * (speedMode ? 1.5 : 1) * (deltaMs / 16.66);
                     const mouthAngle = (Math.sin(mouthTimer) + 1) * 0.3;
@@ -2909,7 +2919,7 @@
                 const rainbowHue = (now % 3000) / 3000;
                 bossEntity.children[0].material.color.setHSL(rainbowHue, 1.0, 0.5);
                 
-                const bossSpeed = 0.045 * ghostSpeedMult * (freezeMode ? 0.2 : 1.0);
+                const bossSpeed = (0.045 + Math.min(0.04, level * 0.002)) * ghostSpeedMult * (freezeMode ? 0.2 : 1.0);
                 const bDir = pacman.position.clone().sub(bossEntity.position);
                 bDir.y = 0;
                 const bDist = bDir.length();
@@ -2924,14 +2934,15 @@
                     bossEntity.energyRing.material.color.setHSL((rainbowHue + 0.5) % 1.0, 1.0, 0.5);
                 }
 
-                if (Math.random() < 0.02 * (deltaMs / 16.66)) {
+                if (Math.random() < (0.02 + Math.min(0.03, level * 0.001)) * (deltaMs / 16.66)) {
                     playSfx(300, 0.1, 'sawtooth', 0.08);
                     const projGeo = new THREE.SphereGeometry(0.8, 8, 8);
                     const projMat = new THREE.MeshBasicMaterial({ color: 0xff3300 });
                     const projMesh = new THREE.Mesh(projGeo, projMat);
                     projMesh.position.copy(bossEntity.position).add(new THREE.Vector3(0, 2, 0));
                     
-                    const projVelocity = pacman.position.clone().add(new THREE.Vector3(0,0.8,0)).sub(projMesh.position).normalize().multiplyScalar(0.25);
+                    const pVelScalar = 0.25 + Math.min(0.2, level * 0.01);
+                    const projVelocity = pacman.position.clone().add(new THREE.Vector3(0,0.8,0)).sub(projMesh.position).normalize().multiplyScalar(pVelScalar);
                     scene.add(projMesh);
                     bossProjectiles.push({ mesh: projMesh, velocity: projVelocity, life: 5000 });
                 }
@@ -2939,6 +2950,7 @@
                 if (pacman.position.distanceTo(bossEntity.position) < 3.2 && !isJumping && !isDashing) {
                     if (difficultyFactors[selectedDifficulty].canHarm) {
                         gameState = 'dying';
+                        livesToLoseThisDeath = 1; // standard boss impact penalty
                         deathTimer = 1.0;
                         playDeathSfx();
                         spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
@@ -2956,6 +2968,7 @@
                 if (b.mesh.position.distanceTo(pacman.position) < 1.6 && !isJumping && !isDashing) {
                     if (difficultyFactors[selectedDifficulty].canHarm) {
                         gameState = 'dying';
+                        livesToLoseThisDeath = 1;
                         deathTimer = 1.0;
                         playDeathSfx();
                         spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
@@ -3031,447 +3044,478 @@
                 }
             }
 
-            // GHOST BRAIN CONTROLLERS (Only active during normal non-boss levels)
-            if (!isBossStage) {
-                const centerBox = new THREE.Vector3(0, 0.3, -4);
-                const gridCenterBox = worldToGrid(centerBox);
-                const levelAbilityFrequencyMult = Math.min(2.5, 1.0 + (level * 0.15));
+            // GHOST BRAIN CONTROLLERS (Now always active, including during Boss stages!)
+            const centerBox = new THREE.Vector3(0, 0.3, -4);
+            const gridCenterBox = worldToGrid(centerBox);
+            const levelAbilityFrequencyMult = Math.min(2.5, 1.0 + (level * 0.15));
 
-                ghosts.forEach(g => {
-                    if(g.isDead) {
-                        let toCenter = centerBox.clone().sub(g.position);
-                        if(toCenter.length() < 0.5) {
-                            g.isDead = false;
+            ghosts.forEach(g => {
+                if(g.isDead) {
+                    let toCenter = centerBox.clone().sub(g.position);
+                    if(toCenter.length() < 0.5) {
+                        g.isDead = false;
+                        g.bodyGroup.visible = true;
+                        g.eyesGroup.visible = true;
+                        g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
+                        g.aStarPath = [];
+                        g.isUsingAbility = false;
+                        g.scale.setScalar(1);
+                        
+                        g.isShielded = false;
+                        g.isInvisible = false;
+                        g.invisibilityTimer = 0;
+                        g.shieldMesh.visible = false;
+                        
+                        g.abilityCooldown = 3000 + Math.random() * 4000;
+                    } else {
+                        let gGrid = worldToGrid(g.position);
+                        let targetGrid = { x: 14, z: 15 }; 
+                        
+                        g.pathUpdateTimer -= deltaMs;
+                        if (g.pathUpdateTimer <= 0 || !g.aStarPath || g.aStarPath.length === 0) {
+                            g.pathUpdateTimer = 150; 
+                            g.aStarPath = computeAStarPath(gGrid, targetGrid);
+                        }
+                        
+                        let eyeSpeed = 0.4; 
+                        
+                        if (g.aStarPath && g.aStarPath.length > 1) {
+                            let nextNode = g.aStarPath[1];
+                            let worldNext = gridToWorld(nextNode.x, nextNode.z);
+                            worldNext.y = g.position.y;
+                            
+                            let moveVec = worldNext.clone().sub(g.position);
+                            let stepDist = moveVec.length();
+                            
+                            if (stepDist < eyeSpeed) {
+                                g.position.copy(worldNext);
+                                g.aStarPath.shift();
+                            } else {
+                                moveVec.normalize();
+                                g.position.add(moveVec.multiplyScalar(eyeSpeed));
+                                g.dir.copy(moveVec);
+                            }
+                        } else {
+                            let fallbackVec = toCenter.clone();
+                            fallbackVec.y = 0;
+                            if(fallbackVec.length() > 0.1) {
+                                fallbackVec.normalize();
+                                g.position.add(fallbackVec.multiplyScalar(eyeSpeed));
+                                g.dir.copy(fallbackVec);
+                            }
+                        }
+                        g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
+                    }
+                    return;
+                }
+
+                if (g.isStunned) {
+                    g.stunTimer -= deltaMs;
+                    if (g.stunTimer <= 0) {
+                        g.isStunned = false;
+                        g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
+                    }
+                    return; 
+                }
+
+                if(freezeMode) return;
+
+                let gSpeed = g.baseSpeed * ghostSpeedMult * ghostSpeedFactor;
+                if(powerUp) gSpeed *= 0.5;
+
+                g.abilityCooldown -= deltaMs * levelAbilityFrequencyMult;
+                let isTriggerable = (g.abilityCooldown <= 0 && !powerUp && gameState === 'playing' && !g.isDead);
+
+                if (g.isInvisible) {
+                    g.invisibilityTimer -= deltaMs;
+                    
+                    if (Math.random() < 0.15) {
+                        spawnParticles(g.position.clone().add(new THREE.Vector3(0, 0.4, 0)), 0xe0e0e0, 1, 0.02, 0.14, 'electric');
+                    }
+                    
+                    if (g.invisibilityTimer <= 0 || g.isDead) {
+                        g.isInvisible = false;
+                        g.invisibilityTimer = 0;
+                        if (!g.isDead) {
                             g.bodyGroup.visible = true;
                             g.eyesGroup.visible = true;
-                            g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
-                            g.aStarPath = [];
-                            g.isUsingAbility = false;
-                            g.scale.setScalar(1);
-                            
-                            g.isShielded = false;
-                            g.isInvisible = false;
-                            g.invisibilityTimer = 0;
-                            g.shieldMesh.visible = false;
-                            
-                            g.abilityCooldown = 3000 + Math.random() * 4000;
-                        } else {
-                            let gGrid = worldToGrid(g.position);
-                            let targetGrid = { x: 14, z: 15 }; 
-                            
-                            g.pathUpdateTimer -= deltaMs;
-                            if (g.pathUpdateTimer <= 0 || !g.aStarPath || g.aStarPath.length === 0) {
-                                g.pathUpdateTimer = 150; 
-                                g.aStarPath = computeAStarPath(gGrid, targetGrid);
-                            }
-                            
-                            let eyeSpeed = 0.4; 
-                            
-                            if (g.aStarPath && g.aStarPath.length > 1) {
-                                let nextNode = g.aStarPath[1];
-                                let worldNext = gridToWorld(nextNode.x, nextNode.z);
-                                worldNext.y = g.position.y;
-                                
-                                let moveVec = worldNext.clone().sub(g.position);
-                                let stepDist = moveVec.length();
-                                
-                                if (stepDist < eyeSpeed) {
-                                    g.position.copy(worldNext);
-                                    g.aStarPath.shift();
-                                } else {
-                                    moveVec.normalize();
-                                    g.position.add(moveVec.multiplyScalar(eyeSpeed));
-                                    g.dir.copy(moveVec);
-                                }
-                            } else {
-                                let fallbackVec = toCenter.clone();
-                                fallbackVec.y = 0;
-                                if(fallbackVec.length() > 0.1) {
-                                    fallbackVec.normalize();
-                                    g.position.add(fallbackVec.multiplyScalar(eyeSpeed));
-                                    g.dir.copy(fallbackVec);
-                                }
-                            }
-                            g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
-                        }
-                        return;
-                    }
-
-                    if (g.isStunned) {
-                        g.stunTimer -= deltaMs;
-                        if (g.stunTimer <= 0) {
-                            g.isStunned = false;
-                            g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
-                        }
-                        return; 
-                    }
-
-                    if(freezeMode) return;
-
-                    let gSpeed = g.baseSpeed * ghostSpeedMult * ghostSpeedFactor;
-                    if(powerUp) gSpeed *= 0.5;
-
-                    g.abilityCooldown -= deltaMs * levelAbilityFrequencyMult;
-                    let isTriggerable = (g.abilityCooldown <= 0 && !powerUp && gameState === 'playing' && !g.isDead);
-
-                    if (g.isInvisible) {
-                        g.invisibilityTimer -= deltaMs;
-                        
-                        if (Math.random() < 0.15) {
-                            spawnParticles(g.position.clone().add(new THREE.Vector3(0, 0.4, 0)), 0xe0e0e0, 1, 0.02, 0.14, 'electric');
-                        }
-                        
-                        if (g.invisibilityTimer <= 0 || g.isDead) {
-                            g.isInvisible = false;
-                            g.invisibilityTimer = 0;
-                            if (!g.isDead) {
-                                g.bodyGroup.visible = true;
-                                g.eyesGroup.visible = true;
-                                spawnParticles(g.position, 0xffffff, 8, 0.05, 0.18);
-                            }
+                            spawnParticles(g.position, 0xffffff, 8, 0.05, 0.18);
                         }
                     }
+                }
 
-                    // --- UNIQUE GHOST MECHANICS ---
-                    if (g.ghostName === 'BLINKY') {
-                        const distToPac = g.position.distanceTo(pacman.position);
-                        if (distToPac < 8.0 && !powerUp) {
-                            if (!g.isUsingAbility) {
-                                g.isUsingAbility = true;
-                                showFloatingText("BLINKY RAGES!", g.position);
-                                playSfx(440, 0.3, 'sawtooth');
-                            }
-                            gSpeed *= 1.6; 
-                            g.scale.setScalar(1.35); 
-                            g.bodyGroup.children[0].material.color.setHex(0xffaa00); 
-                            
-                            if (Math.random() < 0.2) {
-                                spawnParticles(g.position, 0xff5500, 2, 0.04, 0.15);
-                            }
-                        } else {
-                            if (g.isUsingAbility) {
-                                g.isUsingAbility = false;
-                                g.scale.setScalar(1);
-                                g.bodyGroup.children[0].material.color.setHex(g.baseColor);
-                            }
-                        }
-                    }
-
-                    if (g.ghostName === 'INKY') {
-                        if (g.isUsingAbility) {
-                            g.eyesGroup.position.y += g.abilityDurationLeft * (deltaMs / 16.66); 
-                            g.bodyGroup.position.y += g.abilityDurationLeft * (deltaMs / 16.66);
-                            g.abilityDurationLeft -= 0.015 * (deltaMs / 16.66); 
-                            
-                            if (g.bodyGroup.position.y <= 0) {
-                                g.bodyGroup.position.y = 0;
-                                g.eyesGroup.position.y = 0;
-                                g.isUsingAbility = false;
-                                g.abilityCooldown = 5000 + Math.random() * 4000;
-                            }
-                        } else if (isTriggerable) {
+                // --- PROGRESSIVE GHOST MECHANICS EVOLUTION ---
+                if (g.ghostName === 'BLINKY') {
+                    const distToPac = g.position.distanceTo(pacman.position);
+                    if (distToPac < 8.0 && !powerUp) {
+                        if (!g.isUsingAbility) {
                             g.isUsingAbility = true;
-                            g.abilityDurationLeft = 0.28; 
-                            g.abilityCooldown = 99999; 
-                            playSfx(600, 0.25, 'triangle');
-                            showFloatingText("WALL HOP!", g.position);
-                            spawnParticles(g.position, 0x00ffff, 10, 0.06, 0.18);
+                            showFloatingText("BLINKY RAGES! (2X DAMAGE!)", g.position);
+                            playSfx(440, 0.3, 'sawtooth');
                         }
-                    }
+                        // Progressive evolution: Blinky speed multiplier & scale grows with level
+                        const blinkyRageSpeedMult = 1.6 + Math.min(1.4, level * 0.06);
+                        gSpeed *= blinkyRageSpeedMult; 
 
-                    if (g.ghostName === 'PINKY') {
-                        if (g.isUsingAbility) {
-                            g.abilityDurationLeft -= deltaMs;
-                            gSpeed *= 3.0; 
-                            g.bodyGroup.children[0].material.color.setHex(0xff33cc); 
-                            
-                            if (Math.random() < 0.4) {
-                                spawnParticles(g.position, 0xffb8ff, 2, 0.05, 0.12, 'electric');
-                            }
-
-                            if (g.abilityDurationLeft <= 0) {
-                                g.isUsingAbility = false;
-                                g.bodyGroup.children[0].material.color.setHex(g.baseColor);
-                                g.abilityCooldown = 6000 + Math.random() * 4000;
-                            }
-                        } else if (isTriggerable && wasPacmanSeenThisFrame) {
-                            g.isUsingAbility = true;
-                            g.abilityDurationLeft = 1200; 
-                            g.abilityCooldown = 99999;
-                            playSfx(900, 0.3, 'sawtooth');
-                            showFloatingText("PINKY LUNGES!", g.position);
-                        }
-                    }
-
-                    if (g.ghostName === 'CLYDE') {
-                        if (isTriggerable) {
-                            g.abilityCooldown = 12000 + Math.random() * 5000; 
-                            showFloatingText("PHANTOM IMAGES!", g.position);
-                            playSfx(300, 0.5, 'sine');
-                            spawnParticles(g.position, 0xffb852, 15, 0.1, 0.22);
-
-                            for (let k = 0; k < 2; k++) {
-                                const cloneGroup = new THREE.Group();
-                                const cloneMesh = new THREE.Mesh(
-                                    new THREE.CapsuleGeometry(0.5, 0.5, 4, 8),
-                                    new THREE.MeshPhongMaterial({color: 0xffb852, transparent: true, opacity: 0.45, wireframe: true})
-                                );
-                                cloneMesh.position.y = 0.5;
-                                cloneGroup.add(cloneMesh);
-                                cloneGroup.position.copy(g.position).add(new THREE.Vector3((Math.random()-0.5)*5, 0, (Math.random()-0.5)*5));
-                                
-                                scene.add(cloneGroup);
-                                activeIllusions.push({
-                                    mesh: cloneGroup,
-                                    duration: 5000, 
-                                    dir: new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize()
-                                });
-                            }
-                        }
-                    }
-
-                    if (g.ghostName === 'TIM') {
-                        if (isTriggerable && g.position.distanceTo(pacman.position) > 15.0) {
-                            g.abilityCooldown = 10000 + Math.random() * 6000;
-                            
-                            const targetTeleport = g.position.clone().negate();
-                            targetTeleport.y = g.position.y; 
-
-                            targetTeleport.x = Math.max(-50, Math.min(50, targetTeleport.x));
-                            targetTeleport.z = Math.max(-50, Math.min(50, targetTeleport.z));
-
-                            const startGeo = new THREE.SphereGeometry(1.0, 8, 8);
-                            const flashMesh = new THREE.Mesh(startGeo, new THREE.MeshBasicMaterial({color: 0x800080, transparent: true, opacity: 0.8}));
-                            flashMesh.position.copy(g.position);
-                            scene.add(flashMesh);
-                            setTimeout(() => scene.remove(flashMesh), 400);
-
-                            spawnParticles(g.position, 0x800080, 20, 0.15, 0.2);
-
-                            g.position.copy(targetTeleport);
-                            g.aStarPath = [];
-
-                            spawnParticles(g.position, 0x800080, 20, 0.15, 0.2);
-
-                            playSfx(150, 0.4, 'sine', 0.2);
-                            playSfx(1100, 0.2, 'sawtooth', 0.1);
-                            showFloatingText("STALKER WARP!", g.position);
-                        }
-                    }
-
-                    if (g.ghostName === 'SPIKE') {
-                        if (isTriggerable && g.position.distanceTo(pacman.position) < 14.0) {
-                            g.abilityCooldown = 15000 + Math.random() * 5000;
-                            
-                            const companions = ghosts.filter(gh => gh !== g && !gh.isDead && !gh.isStunned);
-                            if (companions.length > 0) {
-                                const chosenOne = companions[Math.floor(Math.random() * companions.length)];
-                                
-                                const spikePos = g.position.clone();
-                                const chosenPos = chosenOne.position.clone();
-                                
-                                showFloatingText("SWAP!", g.position);
-                                showFloatingText("SWAP!", chosenOne.position);
-
-                                spawnParticles(g.position, 0x00ff00, 16, 0.1, 0.22, 'electric');
-                                spawnParticles(chosenOne.position, 0x00ff00, 16, 0.1, 0.22, 'electric');
-
-                                g.position.copy(chosenPos); g.aStarPath = [];
-                                chosenOne.position.copy(spikePos); chosenOne.aStarPath = [];
-                                
-                                playSfx(500, 0.3, 'sine');
-                                playSfx(1200, 0.3, 'triangle');
-                            }
-                        }
-                    }
-
-                    if (g.ghostName === 'GOLDY') {
-                        if (isTriggerable) {
-                            g.abilityCooldown = 14000 + Math.random() * 6000;
-                            
-                            const barGeo = new THREE.BoxGeometry(3.6, 3.6, 3.6);
-                            const barMat = new THREE.MeshPhongMaterial({
-                                color: 0xffcc00, 
-                                transparent: true, 
-                                opacity: 0.65, 
-                                shininess: 100
-                            });
-                            const barMesh = new THREE.Mesh(barGeo, barMat);
-                            barMesh.position.copy(g.position);
-                            barMesh.position.y = 1.8; 
-                            
-                            scene.add(barMesh);
-                            goldyWalls.push({
-                                mesh: barMesh,
-                                timeLeft: 4500 
-                            });
-
-                            playSfx(750, 0.25, 'triangle');
-                            showFloatingText("GOLDEN WALL!", g.position);
-                            spawnParticles(g.position, 0xffcc00, 12, 0.08, 0.24);
-                        }
-                    }
-
-                    if (g.ghostName === 'WHITY') {
-                        if (isTriggerable) {
-                            g.abilityCooldown = 13000 + Math.random() * 5000;
-                            
-                            g.isInvisible = true;
-                            g.invisibilityTimer = 4500; 
-                            g.bodyGroup.visible = false;
-                            g.eyesGroup.visible = false; 
-                            
-                            playInvisibilitySfx();
-                            showFloatingText("STEALTH CLOAK!", g.position);
-                            spawnParticles(g.position, [0xffffff, 0xaaaaaa], 22, 0.12, 0.25);
-
-                            let targetCompanion = null;
-                            let closestDist = 15.0;
-                            ghosts.forEach(gh => {
-                                if (gh !== g && !gh.isDead && !gh.isInvisible) {
-                                    let d = g.position.distanceTo(gh.position);
-                                    if (d < closestDist) {
-                                        closestDist = d;
-                                        targetCompanion = gh;
-                                    }
-                                }
-                            });
-
-                            if (targetCompanion) {
-                                targetCompanion.isInvisible = true;
-                                targetCompanion.invisibilityTimer = 4500;
-                                targetCompanion.bodyGroup.visible = false;
-                                targetCompanion.eyesGroup.visible = false; 
-                                
-                                spawnParticles(targetCompanion.position, [0xffffff, 0xaaaaaa], 16, 0.1, 0.22);
-                                showFloatingText("CLOAKED!", targetCompanion.position);
-                            }
-                        }
-                    }
-
-                    // --- GHOST DECISION BRAIN ---
-                    let gGrid = worldToGrid(g.position);
-                    g.pathUpdateTimer -= deltaMs;
-
-                    if (g.pathUpdateTimer <= 0 || g.aStarPath.length === 0) {
-                        g.pathUpdateTimer = 250 + Math.random() * 200; 
+                        const blinkyScaleScalar = 1.35 + Math.min(1.15, level * 0.035);
+                        g.scale.setScalar(blinkyScaleScalar); 
+                        g.bodyGroup.children[0].material.color.setHex(0xffaa00); 
                         
-                        let targetGrid = { x: 14, z: 15 };
-                        let pacCurrentTarget;
-                        if (wasPacmanSeenThisFrame) {
-                            pacCurrentTarget = pacmanGridPos;
-                        } else if (escapeRouteHistory.length > 0) {
-                            const historyOffset = Math.max(0, escapeRouteHistory.length - 1 - Math.floor(level * 0.5));
-                            pacCurrentTarget = escapeRouteHistory[historyOffset];
-                        } else {
-                            pacCurrentTarget = worldToGrid(lastPacmanSeenPos);
-                        }
-
-                        let pDir = new THREE.Vector3(0, 0, 1).applyQuaternion(pacman.quaternion).normalize();
-                        let leftFlankVec = pDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2).normalize();
-                        let rightFlankVec = pDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2).normalize();
-
-                        switch (g.ghostName) {
-                            case 'BLINKY':
-                                targetGrid = pacCurrentTarget;
-                                break;
-                            case 'PINKY':
-                                let frontLead = pacman.position.clone().add(pDir.clone().multiplyScalar(16));
-                                targetGrid = worldToGrid(frontLead);
-                                break;
-                            case 'INKY':
-                                let blinkyGhost = ghosts.find(gh => gh.ghostName === 'BLINKY');
-                                if (blinkyGhost) {
-                                    let blinkGrid = worldToGrid(blinkyGhost.position);
-                                    targetGrid = {
-                                        x: Math.max(1, Math.min(26, pacCurrentTarget.x * 2 - blinkGrid.x)),
-                                        z: Math.max(1, Math.min(29, pacCurrentTarget.z * 2 - blinkGrid.z))
-                                    };
-                                } else {
-                                    targetGrid = pacCurrentTarget;
-                                }
-                                break;
-                            case 'CLYDE':
-                                let distToPacman = g.position.distanceTo(pacman.position);
-                                if (distToPacman > 10.0) {
-                                    targetGrid = pacCurrentTarget;
-                                } else {
-                                    targetGrid = { x: 2, z: 28 }; 
-                                }
-                                break;
-                            case 'TIM':
-                                let rearLead = pacman.position.clone().add(pDir.clone().multiplyScalar(-12));
-                                targetGrid = worldToGrid(rearLead);
-                                break;
-                            case 'SPIKE':
-                                let leftShoulder = pacman.position.clone().add(leftFlankVec.multiplyScalar(12));
-                                targetGrid = worldToGrid(leftShoulder);
-                                break;
-                            case 'GOLDY':
-                                let rightShoulder = pacman.position.clone().add(rightFlankVec.multiplyScalar(12));
-                                targetGrid = worldToGrid(rightShoulder);
-                                break;
-                            case 'WHITY':
-                                let diagonalPos = pacman.position.clone().add(new THREE.Vector3(12, 0, -12));
-                                targetGrid = worldToGrid(diagonalPos);
-                                break;
-                            default:
-                                targetGrid = pacCurrentTarget;
-                                break;
-                        }
-                        
-                        g.currentTargetCell = targetGrid;
-                        g.aStarPath = computeAStarPath(gGrid, targetGrid);
-                    }
-
-                    // Move ghosts
-                    if (g.aStarPath.length > 1) {
-                        let nextNode = g.aStarPath[1];
-                        let worldNext = gridToWorld(nextNode.x, nextNode.z);
-                        worldNext.y = g.position.y; 
-                        
-                        let moveVec = worldNext.clone().sub(g.position);
-                        let stepDist = moveVec.length();
-                        
-                        if (stepDist < gSpeed) {
-                            g.position.copy(worldNext);
-                            g.aStarPath.shift(); 
-                        } else {
-                            moveVec.normalize();
-                            g.position.add(moveVec.multiplyScalar(gSpeed));
-                            g.dir.copy(moveVec);
+                        if (Math.random() < 0.2) {
+                            spawnParticles(g.position, 0xff5500, 2, 0.04, 0.15);
                         }
                     } else {
-                        let targetWorld = gridToWorld(g.currentTargetCell.x, g.currentTargetCell.z);
-                        let fallbackVec = targetWorld.sub(g.position);
-                        fallbackVec.y = 0;
-                        if(fallbackVec.length() > 0.1) {
-                            fallbackVec.normalize();
-                            g.position.add(fallbackVec.multiplyScalar(gSpeed));
-                            g.dir.copy(fallbackVec);
+                        if (g.isUsingAbility) {
+                            g.isUsingAbility = false;
+                            g.scale.setScalar(1);
+                            g.bodyGroup.children[0].material.color.setHex(g.baseColor);
                         }
                     }
+                }
 
-                    if (g.position.x > 56) g.position.x = -56;
-                    else if (g.position.x < -56) g.position.x = 56;
+                if (g.ghostName === 'INKY') {
+                    if (g.isUsingAbility) {
+                        g.eyesGroup.position.y += g.abilityDurationLeft * (deltaMs / 16.66); 
+                        g.bodyGroup.position.y += g.abilityDurationLeft * (deltaMs / 16.66);
+                        g.abilityDurationLeft -= 0.015 * (deltaMs / 16.66); 
+                        
+                        if (g.bodyGroup.position.y <= 0) {
+                            g.bodyGroup.position.y = 0;
+                            g.eyesGroup.position.y = 0;
+                            g.isUsingAbility = false;
+                            g.abilityCooldown = (5000 + Math.random() * 4000) / (1 + level * 0.05); // Cooldown evolves
+                        }
+                    } else if (isTriggerable) {
+                        g.isUsingAbility = true;
+                        // Progressive evolution: Wall jump height increases with level
+                        g.abilityDurationLeft = 0.28 + Math.min(0.3, level * 0.015); 
+                        g.abilityCooldown = 99999; 
+                        playSfx(600, 0.25, 'triangle');
+                        showFloatingText("WALL HOP!", g.position);
+                        spawnParticles(g.position, 0x00ffff, 10, 0.06, 0.18);
+                    }
+                }
 
-                    g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
+                if (g.ghostName === 'PINKY') {
+                    if (g.isUsingAbility) {
+                        g.abilityDurationLeft -= deltaMs;
+                        // Progressive evolution: Dash velocity multiplier scales up with level
+                        const pinkyDashMult = 3.0 + Math.min(4.0, level * 0.12);
+                        gSpeed *= pinkyDashMult; 
+                        g.bodyGroup.children[0].material.color.setHex(0xff33cc); 
+                        
+                        if (Math.random() < 0.4) {
+                            spawnParticles(g.position, 0xffb8ff, 2, 0.05, 0.12, 'electric');
+                        }
 
-                    if(pacman.position.distanceTo(g.position) < 1.6) {
-                        if(powerUp) {
-                            killGhost(g);
-                        } else if(!isJumping && !isDashing) {
-                            if (difficultyFactors[selectedDifficulty].canHarm) {
-                                gameState = 'dying';
-                                deathTimer = 1.0;
-                                playDeathSfx();
-                                spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
-                                saveRecordsToDB(); 
+                        if (g.abilityDurationLeft <= 0) {
+                            g.isUsingAbility = false;
+                            g.bodyGroup.children[0].material.color.setHex(g.baseColor);
+                            g.abilityCooldown = (6000 + Math.random() * 4000) / (1 + level * 0.05); // Dash cooldown evolves
+                        }
+                    } else if (isTriggerable && wasPacmanSeenThisFrame) {
+                        g.isUsingAbility = true;
+                        // Progressive evolution: Dash duration window expands with level
+                        g.abilityDurationLeft = 1200 + Math.min(1800, level * 80); 
+                        g.abilityCooldown = 99999; 
+                        playSfx(900, 0.3, 'sawtooth');
+                        showFloatingText("PINKY LUNGES!", g.position);
+                    }
+                }
+
+                if (g.ghostName === 'CLYDE') {
+                    if (isTriggerable) {
+                        g.abilityCooldown = (12000 + Math.random() * 5000) / (1 + level * 0.05); // Illusion frequency evolves
+                        showFloatingText("PHANTOM IMAGES!", g.position);
+                        playSfx(300, 0.5, 'sine');
+                        spawnParticles(g.position, 0xffb852, 15, 0.1, 0.22);
+
+                        // Progressive evolution: Number of phantom clones increases based on level
+                        const cloneCount = 2 + Math.floor(Math.min(6, level / 4));
+                        for (let k = 0; k < cloneCount; k++) {
+                            const cloneGroup = new THREE.Group();
+                            const cloneMesh = new THREE.Mesh(
+                                new THREE.CapsuleGeometry(0.5, 0.5, 4, 8),
+                                new THREE.MeshPhongMaterial({color: 0xffb852, transparent: true, opacity: 0.45, wireframe: true})
+                            );
+                            cloneMesh.position.y = 0.5;
+                            cloneGroup.add(cloneMesh);
+                            cloneGroup.position.copy(g.position).add(new THREE.Vector3((Math.random()-0.5)*5, 0, (Math.random()-0.5)*5));
+                            
+                            scene.add(cloneGroup);
+                            activeIllusions.push({
+                                mesh: cloneGroup,
+                                duration: 5000 + Math.min(10000, level * 500), // Progressive phantom longevity
+                                dir: new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize()
+                            });
+                        }
+                    }
+                }
+
+                if (g.ghostName === 'TIM') {
+                    if (isTriggerable && g.position.distanceTo(pacman.position) > 15.0) {
+                        g.abilityCooldown = (10000 + Math.random() * 6000) / (1 + level * 0.05); // Warp cooldown evolves
+                        
+                        const targetTeleport = g.position.clone().negate();
+                        targetTeleport.y = g.position.y; 
+
+                        targetTeleport.x = Math.max(-50, Math.min(50, targetTeleport.x));
+                        targetTeleport.z = Math.max(-50, Math.min(50, targetTeleport.z));
+
+                        const startGeo = new THREE.SphereGeometry(1.0 + Math.min(1.5, level * 0.05), 8, 8); // Progressive burst effect
+                        const flashMesh = new THREE.Mesh(startGeo, new THREE.MeshBasicMaterial({color: 0x800080, transparent: true, opacity: 0.8}));
+                        flashMesh.position.copy(g.position);
+                        scene.add(flashMesh);
+                        setTimeout(() => scene.remove(flashMesh), 400);
+
+                        spawnParticles(g.position, 0x800080, 20, 0.15, 0.2);
+
+                        g.position.copy(targetTeleport);
+                        g.aStarPath = [];
+
+                        spawnParticles(g.position, 0x800080, 20, 0.15, 0.2);
+
+                        playSfx(150, 0.4, 'sine', 0.2);
+                        playSfx(1100, 0.2, 'sawtooth', 0.1);
+                        showFloatingText("STALKER WARP!", g.position);
+                    }
+                }
+
+                if (g.ghostName === 'SPIKE') {
+                    if (isTriggerable && g.position.distanceTo(pacman.position) < 14.0) {
+                        g.abilityCooldown = (15000 + Math.random() * 5000) / (1 + level * 0.05); // Swap cooldown evolves
+                        
+                        const companions = ghosts.filter(gh => gh !== g && !gh.isDead && !gh.isStunned);
+                        if (companions.length > 0) {
+                            const chosenOne = companions[Math.floor(Math.random() * companions.length)];
+                            
+                            const spikePos = g.position.clone();
+                            const chosenPos = chosenOne.position.clone();
+                            
+                            showFloatingText("SWAP!", g.position);
+                            showFloatingText("SWAP!", chosenOne.position);
+
+                            spawnParticles(g.position, 0x00ff00, 16, 0.1, 0.22, 'electric');
+                            spawnParticles(chosenOne.position, 0x00ff00, 16, 0.1, 0.22, 'electric');
+
+                            g.position.copy(chosenPos); g.aStarPath = [];
+                            chosenOne.position.copy(spikePos); chosenOne.aStarPath = [];
+                            
+                            // Progressive effect: Spike gains immediate temporary shields upon position swaps!
+                            g.isShielded = true;
+                            g.shieldMesh.visible = true;
+                            g.shieldMesh.material.color.setHex(0x00ff00);
+                            setTimeout(() => {
+                                g.isShielded = false;
+                                if (!g.isDead) g.shieldMesh.visible = false;
+                            }, 2000 + Math.min(3000, level * 200));
+
+                            playSfx(500, 0.3, 'sine');
+                            playSfx(1200, 0.3, 'triangle');
+                        }
+                    }
+                }
+
+                if (g.ghostName === 'GOLDY') {
+                    if (isTriggerable) {
+                        g.abilityCooldown = (14000 + Math.random() * 6000) / (1 + level * 0.05); // Barrier cooldown evolves
+                        
+                        // Progressive evolution: Goldy's barriers scale physically in size over higher levels
+                        const barrierScaleSize = 3.6 + Math.min(3.0, level * 0.15);
+                        const barGeo = new THREE.BoxGeometry(barrierScaleSize, 3.6, barrierScaleSize);
+                        const barMat = new THREE.MeshPhongMaterial({
+                            color: 0xffcc00, 
+                            transparent: true, 
+                            opacity: 0.65, 
+                            shininess: 100
+                        });
+                        const barMesh = new THREE.Mesh(barGeo, barMat);
+                        barMesh.position.copy(g.position);
+                        barMesh.position.y = 1.8; 
+                        
+                        scene.add(barMesh);
+                        
+                        // Progressive evolution: Goldy's barriers last longer over levels
+                        const barrierDuration = 4500 + Math.min(10000, level * 500);
+                        goldyWalls.push({
+                            mesh: barMesh,
+                            timeLeft: barrierDuration 
+                        });
+
+                        playSfx(750, 0.25, 'triangle');
+                        showFloatingText("GOLDEN WALL!", g.position);
+                        spawnParticles(g.position, 0xffcc00, 12, 0.08, 0.24);
+                    }
+                }
+
+                if (g.ghostName === 'WHITY') {
+                    if (isTriggerable) {
+                        g.abilityCooldown = (13000 + Math.random() * 5000) / (1 + level * 0.05); // Cloak cooldown evolves
+                        
+                        g.isInvisible = true;
+                        // Progressive evolution: Stealth longevity expands over levels
+                        const whityCloakDuration = 4500 + Math.min(8000, level * 400);
+                        g.invisibilityTimer = whityCloakDuration; 
+                        g.bodyGroup.visible = false;
+                        g.eyesGroup.visible = false; 
+                        
+                        playInvisibilitySfx();
+                        showFloatingText("STEALTH CLOAK!", g.position);
+                        spawnParticles(g.position, [0xffffff, 0xaaaaaa], 22, 0.12, 0.25);
+
+                        // Progressive evolution: Turns more active nearby companions invisible at once as level increases
+                        const maxCompanionsToCloak = 1 + Math.floor(Math.min(4, level / 5));
+                        let cloakedCount = 0;
+
+                        ghosts.forEach(gh => {
+                            if (gh !== g && !gh.isDead && !gh.isInvisible && cloakedCount < maxCompanionsToCloak) {
+                                let d = g.position.distanceTo(gh.position);
+                                if (d < 15.0 + Math.min(15.0, level * 0.5)) { // Radiating range expands
+                                    gh.isInvisible = true;
+                                    gh.invisibilityTimer = whityCloakDuration;
+                                    gh.bodyGroup.visible = false;
+                                    gh.eyesGroup.visible = false; 
+                                    
+                                    spawnParticles(gh.position, [0xffffff, 0xaaaaaa], 16, 0.1, 0.22);
+                                    showFloatingText("CLOAKED!", gh.position);
+                                    cloakedCount++;
+                                }
                             }
+                        });
+                    }
+                }
+
+                // --- GHOST DECISION BRAIN ---
+                let gGrid = worldToGrid(g.position);
+                g.pathUpdateTimer -= deltaMs;
+
+                if (g.pathUpdateTimer <= 0 || g.aStarPath.length === 0) {
+                    g.pathUpdateTimer = 250 + Math.random() * 200; 
+                    
+                    let targetGrid = { x: 14, z: 15 };
+                    let pacCurrentTarget;
+                    if (wasPacmanSeenThisFrame) {
+                        pacCurrentTarget = pacmanGridPos;
+                    } else if (escapeRouteHistory.length > 0) {
+                        const historyOffset = Math.max(0, escapeRouteHistory.length - 1 - Math.floor(level * 0.5));
+                        pacCurrentTarget = escapeRouteHistory[historyOffset];
+                    } else {
+                        pacCurrentTarget = worldToGrid(lastPacmanSeenPos);
+                    }
+
+                    let pDir = new THREE.Vector3(0, 0, 1).applyQuaternion(pacman.quaternion).normalize();
+                    let leftFlankVec = pDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2).normalize();
+                    let rightFlankVec = pDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2).normalize();
+
+                    switch (g.ghostName) {
+                        case 'BLINKY':
+                            targetGrid = pacCurrentTarget;
+                            break;
+                        case 'PINKY':
+                            let frontLead = pacman.position.clone().add(pDir.clone().multiplyScalar(16));
+                            targetGrid = worldToGrid(frontLead);
+                            break;
+                        case 'INKY':
+                            let blinkyGhost = ghosts.find(gh => gh.ghostName === 'BLINKY');
+                            if (blinkyGhost) {
+                                let blinkGrid = worldToGrid(blinkyGhost.position);
+                                targetGrid = {
+                                    x: Math.max(1, Math.min(26, pacCurrentTarget.x * 2 - blinkGrid.x)),
+                                    z: Math.max(1, Math.min(29, pacCurrentTarget.z * 2 - blinkGrid.z))
+                                };
+                            } else {
+                                targetGrid = pacCurrentTarget;
+                            }
+                            break;
+                        case 'CLYDE':
+                            let distToPacman = g.position.distanceTo(pacman.position);
+                            if (distToPacman > 10.0) {
+                                targetGrid = pacCurrentTarget;
+                            } else {
+                                targetGrid = { x: 2, z: 28 }; 
+                            }
+                            break;
+                        case 'TIM':
+                            let rearLead = pacman.position.clone().add(pDir.clone().multiplyScalar(-12));
+                            targetGrid = worldToGrid(rearLead);
+                            break;
+                        case 'SPIKE':
+                            let leftShoulder = pacman.position.clone().add(leftFlankVec.multiplyScalar(12));
+                            targetGrid = worldToGrid(leftShoulder);
+                            break;
+                        case 'GOLDY':
+                            let rightShoulder = pacman.position.clone().add(rightFlankVec.multiplyScalar(12));
+                            targetGrid = worldToGrid(rightShoulder);
+                            break;
+                        case 'WHITY':
+                            let diagonalPos = pacman.position.clone().add(new THREE.Vector3(12, 0, -12));
+                            targetGrid = worldToGrid(diagonalPos);
+                            break;
+                        default:
+                            targetGrid = pacCurrentTarget;
+                            break;
+                    }
+                    
+                    g.currentTargetCell = targetGrid;
+                    g.aStarPath = computeAStarPath(gGrid, targetGrid);
+                }
+
+                // Move ghosts
+                if (g.aStarPath.length > 1) {
+                    let nextNode = g.aStarPath[1];
+                    let worldNext = gridToWorld(nextNode.x, nextNode.z);
+                    worldNext.y = g.position.y; 
+                    
+                    let moveVec = worldNext.clone().sub(g.position);
+                    let stepDist = moveVec.length();
+                    
+                    if (stepDist < gSpeed) {
+                        g.position.copy(worldNext);
+                        g.aStarPath.shift(); 
+                    } else {
+                        moveVec.normalize();
+                        g.position.add(moveVec.multiplyScalar(gSpeed));
+                        g.dir.copy(moveVec);
+                    }
+                } else {
+                    let targetWorld = gridToWorld(g.currentTargetCell.x, g.currentTargetCell.z);
+                    let fallbackVec = targetWorld.sub(g.position);
+                    fallbackVec.y = 0;
+                    if(fallbackVec.length() > 0.1) {
+                        fallbackVec.normalize();
+                        g.position.add(fallbackVec.multiplyScalar(gSpeed));
+                        g.dir.copy(fallbackVec);
+                    }
+                }
+
+                if (g.position.x > 56) g.position.x = -56;
+                else if (g.position.x < -56) g.position.x = 56;
+
+                g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
+
+                if(pacman.position.distanceTo(g.position) < 1.6) {
+                    if(powerUp) {
+                        killGhost(g);
+                    } else if(!isJumping && !isDashing) {
+                        if (difficultyFactors[selectedDifficulty].canHarm) {
+                            gameState = 'dying';
+                            
+                            // Blinky raging double-damage logic
+                            if (g.ghostName === 'BLINKY' && g.isUsingAbility) {
+                                livesToLoseThisDeath = 2;
+                                showFloatingText("💀 CRITICAL DAMAGE: -2 LIVES! 💀", pacman.position);
+                            } else {
+                                livesToLoseThisDeath = 1;
+                            }
+
+                            deathTimer = 1.0;
+                            playDeathSfx();
+                            spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
+                            saveRecordsToDB(); 
                         }
                     }
-                });
-            }
+                }
+            });
 
             // Dots Collision
             dots.forEach(d => {
