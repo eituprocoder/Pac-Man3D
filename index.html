@@ -208,7 +208,7 @@
             </div>
         </div>
 
-        <!-- NEW: Difficulty Selector Container -->
+        <!-- DIFFICULTY SELECTOR -->
         <div id="difficulty-container">
             <span class="difficulty-title">💀 Choose Game Difficulty</span>
             <div class="difficulty-options">
@@ -221,7 +221,7 @@
             </div>
         </div>
 
-        <!-- NEW: Web Notification Request Button -->
+        <!-- Web Notification Request Button -->
         <div id="notification-perm-container">
             <button class="perm-btn" onclick="requestNotificationPermission()">🔔 ENABLE DEVICE NOTIFICATIONS</button>
         </div>
@@ -239,7 +239,7 @@
             </div>
         </div>
 
-        <!-- NEW: Interactive 2D Level Editor Launcher and Toggle buttons -->
+        <!-- Interactive 2D Level Editor Launcher and Toggle buttons -->
         <div id="editor-action-container">
             <button id="editor-toggle-btn" class="menu-btn" style="border-color:#ffaa00; background:rgba(255,170,0,0.1); color:#ffaa00; box-shadow:0 0 15px rgba(255,170,0,0.2); font-size:16px;" onclick="openLevelEditor()">🛠️ BUILD CUSTOM MAP</button>
         </div>
@@ -269,7 +269,7 @@
             👾 <strong>Boss stage every 10 levels!</strong> Clear all dots to spawn the Mega Pellet and charge to victory!
         </div>
         
-        <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY NORMAL</button>
+        <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY</button>
         <button id="btnPlayCustom" class="menu-btn" style="display:none; border-color:#00ff00; background:rgba(0,255,0,0.1); color:#00ff00; box-shadow:0 0 15px rgba(0,255,0,0.4);" onclick="startCustomGame()">PLAY CUSTOM MAP</button>
 
         <div id="ghost-cast-container">
@@ -308,7 +308,7 @@
         </div>
     </div>
 
-    <!-- NEW: FULL LEVEL EDITOR MODAL -->
+    <!-- FULL LEVEL EDITOR MODAL -->
     <div id="level-editor-modal">
         <div class="editor-header">
             <h3>🛠️ Interactive Level Editor (2D Grid)</h3>
@@ -367,6 +367,13 @@
     
     <div id="ui">
         <span id="boss-alert-banner" style="display:none; color:#ff003c; text-shadow:0 0 10px #ff0000; font-size:20px; font-weight:bold;">⚠️ BOSS FIGHT: GIANT RAINBOW GHOST! ⚠️<br></span>
+        
+        <!-- Interactive Boss Health Bar UI Container -->
+        <div id="boss-health-container" style="display:none; width: 300px; height: 18px; border: 2px solid #ff003c; border-radius: 9px; margin: 5px auto; overflow: hidden; background: #000; position: relative; pointer-events: none;">
+            <div style="font-size: 11px; position: absolute; width: 300px; text-align: center; margin-top: 1px; color: #fff; text-shadow: 1px 1px 0 #000; z-index: 5; font-weight: bold;" id="boss-health-label">BOSS HP: 200/200</div>
+            <div id="boss-health-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ff0055, #ff0000);"></div>
+        </div>
+
         LEVEL: <span id="level">1</span> | SCORE: <span id="score">0</span> | LIVES: <span id="lives-container"></span><br>
         DOTS LEFT: <span id="remaining">0</span>
         <div id="powerBarContainer" class="bar-container"><div class="bar-label">POWER PELLET</div><div id="powerBar"></div></div>
@@ -466,7 +473,8 @@
         // BOSS FIGHT VARIABLES
         let isBossStage = false;
         let bossEntity = null;
-        let bossHealth = 100;
+        let maxBossHealth = 200; // Progressive base health
+        let bossHealth = 200;
         let megaPelletEntity = null;
         let isMegaPelletSpawned = false;
         let cinematicTimer = 0;
@@ -834,7 +842,7 @@
             }
         }
 
-        // --- NEW: REAL PWA WEB NOTIFICATION SERVICE ---
+        // --- REAL PWA WEB NOTIFICATION SERVICE ---
         window.requestNotificationPermission = function() {
             if (!("Notification" in window)) {
                 console.log("This browser does not support desktop notification");
@@ -870,7 +878,7 @@
             }
         }
 
-        // --- NEW: DIFFICULTY CONTROLLER ---
+        // --- DIFFICULTY CONTROLLER ---
         window.setDifficulty = function(diff) {
             selectedDifficulty = diff;
             document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
@@ -1123,7 +1131,7 @@
             }
         }
 
-        // --- NEW: DYNAMIC LEVEL EDITOR MODULE (2D Grid Drawing) ---
+        // --- DYNAMIC LEVEL EDITOR MODULE (2D Grid Drawing) ---
         const rows = 31;
         const cols = 28;
 
@@ -1534,12 +1542,17 @@
             
             if (isBossStage) {
                 document.getElementById('boss-alert-banner').style.display = 'block';
+                document.getElementById('boss-health-container').style.display = 'block';
+                maxBossHealth = 200 + (level - 10) * 50; // Progressively scale Boss max HP
+                bossHealth = maxBossHealth;
+                updateBossHealthUI();
                 if (isOstPlaying) {
                     stopProceduralOST();
                     startProceduralOST();
                 }
             } else {
                 document.getElementById('boss-alert-banner').style.display = 'none';
+                document.getElementById('boss-health-container').style.display = 'none';
                 if (isOstPlaying) {
                     stopProceduralOST();
                     startProceduralOST();
@@ -1597,6 +1610,68 @@
                 });
             });
             document.getElementById('remaining').innerText = remainingDots;
+        }
+
+        // --- REGENERATE DOTS ON ACTIVE BOARD ---
+        function regenerateDots() {
+            dots.forEach(d => scene.remove(d));
+            dots = [];
+            remainingDots = 0;
+
+            let activeGridTemplate = mapTemplate;
+            if (isCustomMapMode) {
+                const savedGrid = localStorage.getItem('pac3d_custom_grid');
+                if (savedGrid) {
+                    activeGridTemplate = JSON.parse(savedGrid);
+                }
+            }
+
+            activeGridTemplate.forEach((row, z) => {
+                row.forEach((cell, x) => {
+                    const pos = [(x - 13.5) * 4, 0, (z - 15) * 4];
+                    if (cell !== 1 && cell !== 8 && cell !== 3 && cell !== 9) {
+                        let color, scale = 0.2;
+                        if(cell === 0) color = 0xffffff;
+                        else if(cell === 2) { color = 0xffff00; scale = 0.6; } 
+                        else if(cell === 4) { color = 0xff6400; scale = 0.6; } 
+                        else if(cell === 5) { color = 0x00ff00; scale = 0.6; } 
+                        else if(cell === 6) { color = 0x00ffff; scale = 0.6; } 
+                        else if(cell === 7) { color = 0xff00ff; scale = 0.7; }
+
+                        const dot = new THREE.Mesh(new THREE.SphereGeometry(scale), new THREE.MeshBasicMaterial({ color }));
+                        dot.position.set(...pos); 
+                        dot.type = cell;
+                        
+                        if (cell === 7) {
+                            const ringGeo = new THREE.RingGeometry(0.8, 1.0, 8);
+                            const ringMat = new THREE.MeshBasicMaterial({ color: 0xff00ff, side: THREE.DoubleSide, wireframe: true });
+                            const magnetRing = new THREE.Mesh(ringGeo, ringMat);
+                            magnetRing.rotation.x = Math.PI / 2;
+                            dot.add(magnetRing);
+                        }
+
+                        scene.add(dot); dots.push(dot); 
+                        if(cell === 0 || cell === 7) remainingDots++; 
+                    }
+                });
+            });
+            document.getElementById('remaining').innerText = remainingDots;
+            isMegaPelletSpawned = false;
+            if (megaPelletEntity) {
+                scene.remove(megaPelletEntity);
+                megaPelletEntity = null;
+            }
+        }
+
+        // --- UPDATE BOSS HEALTH HUD ---
+        function updateBossHealthUI() {
+            const bar = document.getElementById('boss-health-bar');
+            const label = document.getElementById('boss-health-label');
+            if (bar && label) {
+                const pct = Math.max(0, (bossHealth / maxBossHealth) * 100);
+                bar.style.width = pct + '%';
+                label.innerText = `BOSS HP: ${Math.max(0, bossHealth)}/${maxBossHealth}`;
+            }
         }
 
         scene.add(new THREE.AmbientLight(0x404040));
@@ -1719,8 +1794,10 @@
 
             bossEntity.position.set(0, 0.5, 0);
             scene.add(bossEntity);
-            bossHealth = 100;
-            isMegaPelletSpawned = false;
+            maxBossHealth = 200 + (level - 10) * 50; 
+            bossHealth = maxBossHealth;
+            bossEntity.alreadyStruck = false;
+            updateBossHealthUI();
             
             playSfx(150, 1.0, 'sawtooth', 0.2);
             spawnParticles(bossEntity.position, [0xff0000, 0x00ff00, 0x0000ff], 50, 0.2, 0.5);
@@ -1821,7 +1898,6 @@
 
             if (isBossStage) {
                 spawnGiantBoss();
-                // Normal ghosts stay active during boss battles too! 
             } else {
                 if (bossEntity) {
                     scene.remove(bossEntity);
@@ -1880,6 +1956,73 @@
             saveRecordsToDB();
         }
 
+        // --- RESET POSITIONS BUT RETAIN ACTIVE BOSS HEALTH ---
+        function resetPositionsButKeepBoss() {
+            pacman.position.set(0, 0.8, 32);
+            pacman.rotation.set(0, Math.PI, 0);
+            topHalf.rotation.x = 0;
+            bottomHalf.rotation.x = 0;
+            pacman.scale.setScalar(1);
+
+            goldyWalls.forEach(gw => scene.remove(gw.mesh));
+            goldyWalls = [];
+
+            activeIllusions.forEach(ill => scene.remove(ill.mesh));
+            activeIllusions = [];
+
+            activeParticles.forEach(p => {
+                scene.remove(p.mesh);
+                p.mesh.geometry.dispose();
+                p.mesh.material.dispose();
+            });
+            activeParticles = [];
+
+            initGhosts();
+            ghosts.forEach((g, i) => {
+                g.position.set((Math.random()-0.5)*4, 0.3, -4 + (Math.random()-0.5)*2);
+                g.isDead = false;
+                g.bodyGroup.visible = true;
+                g.eyesGroup.visible = true;
+                g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
+                g.aStarPath = [];
+                g.currentAIState = 'walk';
+                g.isStunned = false;
+                g.stunTimer = 0;
+                g.isUsingAbility = false;
+                
+                g.isShielded = false;
+                g.isInvisible = false;
+                g.invisibilityTimer = 0;
+                
+                g.shieldMesh.visible = false;
+                g.abilityCooldown = 3000 + Math.random() * 5000;
+                g.scale.setScalar(1);
+                g.eyesGroup.position.set(0,0,0);
+            });
+
+            powerUp = laserMode = speedMode = freezeMode = magnetMode = false;
+            auraMesh.visible = false;
+            auraLight.intensity = 0;
+            
+            isDashing = false;
+            dashTimeRemaining = 0;
+            dashCharge = maxDashCharge;
+            updateDashBarUI();
+
+            escapeRouteHistory = [];
+            escapeRouteTimer = 0;
+
+            document.querySelectorAll('.bar-container').forEach(el => {
+                if (el.id !== 'dashBarContainer') el.style.display = 'none';
+            });
+            
+            camAngleY = Math.PI/2;
+            camAngleX = 0.4;
+            updateLivesDisplay();
+            
+            lastPacmanSeenPos.set(0, 0.8, 32);
+        }
+
         // --- LASER LOGIC ---
         function fireLaser() {
             playSfx(1100, 0.08, 'sawtooth');
@@ -1896,16 +2039,7 @@
             const laserTerminal = pacman.position.clone().add(laserDir.clone().multiplyScalar(maxLaserRange));
             spawnParticles(laserTerminal, 0xff6400, 8, 0.15, 0.15, 'electric');
 
-            if (isBossStage && bossEntity) {
-                const distToBoss = raycaster.ray.distanceToPoint(bossEntity.position);
-                const projectedDist = raycaster.ray.origin.distanceTo(bossEntity.position);
-                if (distToBoss < 3.5 && projectedDist <= maxLaserRange) {
-                    bossHealth -= 5;
-                    playSfx(300, 0.15, 'sawtooth');
-                    showFloatingText("-5 HP", bossEntity.position);
-                    spawnParticles(bossEntity.position, 0xff00ff, 15, 0.1, 0.3);
-                }
-            }
+            // NOTE: Laser pill does NOT inflict damage to the giant boss anymore!
 
             ghosts.forEach(g => {
                 if(!g.isDead) {
@@ -2549,26 +2683,47 @@
                     pacman.position.lerp(new THREE.Vector3(0, 3, -10), 0.22);
                     
                     const distToBoss = bossEntity ? pacman.position.distanceTo(bossEntity.position) : 999;
-                    if (distToBoss < 3.5 && bossEntity) {
-                        playEpicBossExplosionSfx();
-                        spawnParticles(bossEntity.position, [0xff00ff, 0x00ffff, 0xffff00, 0xff0000], 120, 0.25, 0.6, 'fading');
-                        
-                        scene.remove(bossEntity);
-                        bossEntity = null;
-                        
-                        showFloatingText("💥 BOSS OBLITERATED! 💥", new THREE.Vector3(0, 3, -10));
-                        addScore(10000); 
+                    if (distToBoss < 3.5 && bossEntity && !bossEntity.alreadyStruck) {
+                        bossEntity.alreadyStruck = true; // prevent multi-hits
+                        bossHealth -= 20;
+                        updateBossHealthUI();
 
-                        // --- Unlocks: Titan Slayer ---
-                        unlockAchievement("ach_titan_slayer");
+                        if (bossHealth <= 0) {
+                            playEpicBossExplosionSfx();
+                            spawnParticles(bossEntity.position, [0xff00ff, 0x00ffff, 0xffff00, 0xff0000], 120, 0.25, 0.6, 'fading');
+                            
+                            scene.remove(bossEntity);
+                            bossEntity = null;
+                            
+                            showFloatingText("💥 BOSS OBLITERATED! 💥", new THREE.Vector3(0, 3, -10));
+                            addScore(10000); 
+
+                            // --- Unlocks: Titan Slayer ---
+                            unlockAchievement("ach_titan_slayer");
+                        } else {
+                            // Inflict partial boss strike damage
+                            playSfx(300, 0.3, 'sawtooth', 0.15);
+                            spawnParticles(bossEntity.position, [0xff00ff, 0x00ffff, 0xffff00], 60, 0.2, 0.4, 'fading');
+                            showFloatingText("-20 HP 💥", bossEntity.position);
+                        }
                     }
                 } else {
-                    gameState = 'playing';
-                    level++;
-                    ghostSpeedMult += 0.15;
-                    document.getElementById('level').innerText = level;
-                    buildMap();
-                    resetPositions();
+                    if (bossHealth <= 0) {
+                        gameState = 'playing';
+                        level++;
+                        ghostSpeedMult += 0.15;
+                        document.getElementById('level').innerText = level;
+                        buildMap();
+                        resetPositions();
+                    } else {
+                        // Reset player/ghost states but keep active boss HP & regenerate dots for next charge
+                        if (bossEntity) {
+                            bossEntity.alreadyStruck = false;
+                        }
+                        gameState = 'playing';
+                        regenerateDots();
+                        resetPositionsButKeepBoss();
+                    }
                 }
 
                 renderer.render(scene, camera);
@@ -2643,7 +2798,11 @@
                         document.getElementById('sound-toggle-hud').style.display = 'none';
                         document.getElementById('go-reason').innerText = "NO LIVES LEFT!";
                     } else {
-                        resetPositions();
+                        if (isBossStage && bossEntity) {
+                            resetPositionsButKeepBoss();
+                        } else {
+                            resetPositions();
+                        }
                         gameState = 'playing';
                     }
                 }
@@ -2717,11 +2876,8 @@
                     }
                 }
 
-                const v = new THREE.Vector3(finalMoveS, 0, finalMoveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize().multiplyScalar(v => {
-                    // Avoid creating an unused mapping wrapper
-                });
+                const v = new THREE.Vector3(finalMoveS, 0, finalMoveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize().multiplyScalar(v => {});
                 
-                // Let's properly calculate movement velocity vector
                 const mvVec = new THREE.Vector3(finalMoveS, 0, finalMoveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY);
                 if (mvVec.lengthSq() > 0) mvVec.normalize();
                 mvVec.multiplyScalar(curSpeed);
@@ -2950,7 +3106,7 @@
                 if (pacman.position.distanceTo(bossEntity.position) < 3.2 && !isJumping && !isDashing) {
                     if (difficultyFactors[selectedDifficulty].canHarm) {
                         gameState = 'dying';
-                        livesToLoseThisDeath = 1; // standard boss impact penalty
+                        livesToLoseThisDeath = 1; 
                         deathTimer = 1.0;
                         playDeathSfx();
                         spawnParticles(pacman.position, [0xffff00, 0xff7700, 0xffffff], 50, 0.22, 0.32, 'fading');
@@ -3153,7 +3309,6 @@
                             showFloatingText("BLINKY RAGES! (2X DAMAGE!)", g.position);
                             playSfx(440, 0.3, 'sawtooth');
                         }
-                        // Progressive evolution: Blinky speed multiplier & scale grows with level
                         const blinkyRageSpeedMult = 1.6 + Math.min(1.4, level * 0.06);
                         gSpeed *= blinkyRageSpeedMult; 
 
@@ -3183,11 +3338,10 @@
                             g.bodyGroup.position.y = 0;
                             g.eyesGroup.position.y = 0;
                             g.isUsingAbility = false;
-                            g.abilityCooldown = (5000 + Math.random() * 4000) / (1 + level * 0.05); // Cooldown evolves
+                            g.abilityCooldown = (5000 + Math.random() * 4000) / (1 + level * 0.05);
                         }
                     } else if (isTriggerable) {
                         g.isUsingAbility = true;
-                        // Progressive evolution: Wall jump height increases with level
                         g.abilityDurationLeft = 0.28 + Math.min(0.3, level * 0.015); 
                         g.abilityCooldown = 99999; 
                         playSfx(600, 0.25, 'triangle');
@@ -3199,7 +3353,6 @@
                 if (g.ghostName === 'PINKY') {
                     if (g.isUsingAbility) {
                         g.abilityDurationLeft -= deltaMs;
-                        // Progressive evolution: Dash velocity multiplier scales up with level
                         const pinkyDashMult = 3.0 + Math.min(4.0, level * 0.12);
                         gSpeed *= pinkyDashMult; 
                         g.bodyGroup.children[0].material.color.setHex(0xff33cc); 
@@ -3211,11 +3364,10 @@
                         if (g.abilityDurationLeft <= 0) {
                             g.isUsingAbility = false;
                             g.bodyGroup.children[0].material.color.setHex(g.baseColor);
-                            g.abilityCooldown = (6000 + Math.random() * 4000) / (1 + level * 0.05); // Dash cooldown evolves
+                            g.abilityCooldown = (6000 + Math.random() * 4000) / (1 + level * 0.05);
                         }
                     } else if (isTriggerable && wasPacmanSeenThisFrame) {
                         g.isUsingAbility = true;
-                        // Progressive evolution: Dash duration window expands with level
                         g.abilityDurationLeft = 1200 + Math.min(1800, level * 80); 
                         g.abilityCooldown = 99999; 
                         playSfx(900, 0.3, 'sawtooth');
@@ -3225,12 +3377,11 @@
 
                 if (g.ghostName === 'CLYDE') {
                     if (isTriggerable) {
-                        g.abilityCooldown = (12000 + Math.random() * 5000) / (1 + level * 0.05); // Illusion frequency evolves
+                        g.abilityCooldown = (12000 + Math.random() * 5000) / (1 + level * 0.05);
                         showFloatingText("PHANTOM IMAGES!", g.position);
                         playSfx(300, 0.5, 'sine');
                         spawnParticles(g.position, 0xffb852, 15, 0.1, 0.22);
 
-                        // Progressive evolution: Number of phantom clones increases based on level
                         const cloneCount = 2 + Math.floor(Math.min(6, level / 4));
                         for (let k = 0; k < cloneCount; k++) {
                             const cloneGroup = new THREE.Group();
@@ -3245,7 +3396,7 @@
                             scene.add(cloneGroup);
                             activeIllusions.push({
                                 mesh: cloneGroup,
-                                duration: 5000 + Math.min(10000, level * 500), // Progressive phantom longevity
+                                duration: 5000 + Math.min(10000, level * 500),
                                 dir: new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize()
                             });
                         }
@@ -3254,7 +3405,7 @@
 
                 if (g.ghostName === 'TIM') {
                     if (isTriggerable && g.position.distanceTo(pacman.position) > 15.0) {
-                        g.abilityCooldown = (10000 + Math.random() * 6000) / (1 + level * 0.05); // Warp cooldown evolves
+                        g.abilityCooldown = (10000 + Math.random() * 6000) / (1 + level * 0.05);
                         
                         const targetTeleport = g.position.clone().negate();
                         targetTeleport.y = g.position.y; 
@@ -3262,7 +3413,7 @@
                         targetTeleport.x = Math.max(-50, Math.min(50, targetTeleport.x));
                         targetTeleport.z = Math.max(-50, Math.min(50, targetTeleport.z));
 
-                        const startGeo = new THREE.SphereGeometry(1.0 + Math.min(1.5, level * 0.05), 8, 8); // Progressive burst effect
+                        const startGeo = new THREE.SphereGeometry(1.0 + Math.min(1.5, level * 0.05), 8, 8);
                         const flashMesh = new THREE.Mesh(startGeo, new THREE.MeshBasicMaterial({color: 0x800080, transparent: true, opacity: 0.8}));
                         flashMesh.position.copy(g.position);
                         scene.add(flashMesh);
@@ -3283,7 +3434,7 @@
 
                 if (g.ghostName === 'SPIKE') {
                     if (isTriggerable && g.position.distanceTo(pacman.position) < 14.0) {
-                        g.abilityCooldown = (15000 + Math.random() * 5000) / (1 + level * 0.05); // Swap cooldown evolves
+                        g.abilityCooldown = (15000 + Math.random() * 5000) / (1 + level * 0.05);
                         
                         const companions = ghosts.filter(gh => gh !== g && !gh.isDead && !gh.isStunned);
                         if (companions.length > 0) {
@@ -3301,7 +3452,6 @@
                             g.position.copy(chosenPos); g.aStarPath = [];
                             chosenOne.position.copy(spikePos); chosenOne.aStarPath = [];
                             
-                            // Progressive effect: Spike gains immediate temporary shields upon position swaps!
                             g.isShielded = true;
                             g.shieldMesh.visible = true;
                             g.shieldMesh.material.color.setHex(0x00ff00);
@@ -3318,9 +3468,8 @@
 
                 if (g.ghostName === 'GOLDY') {
                     if (isTriggerable) {
-                        g.abilityCooldown = (14000 + Math.random() * 6000) / (1 + level * 0.05); // Barrier cooldown evolves
+                        g.abilityCooldown = (14000 + Math.random() * 6000) / (1 + level * 0.05);
                         
-                        // Progressive evolution: Goldy's barriers scale physically in size over higher levels
                         const barrierScaleSize = 3.6 + Math.min(3.0, level * 0.15);
                         const barGeo = new THREE.BoxGeometry(barrierScaleSize, 3.6, barrierScaleSize);
                         const barMat = new THREE.MeshPhongMaterial({
@@ -3335,7 +3484,6 @@
                         
                         scene.add(barMesh);
                         
-                        // Progressive evolution: Goldy's barriers last longer over levels
                         const barrierDuration = 4500 + Math.min(10000, level * 500);
                         goldyWalls.push({
                             mesh: barMesh,
@@ -3350,10 +3498,9 @@
 
                 if (g.ghostName === 'WHITY') {
                     if (isTriggerable) {
-                        g.abilityCooldown = (13000 + Math.random() * 5000) / (1 + level * 0.05); // Cloak cooldown evolves
+                        g.abilityCooldown = (13000 + Math.random() * 5000) / (1 + level * 0.05);
                         
                         g.isInvisible = true;
-                        // Progressive evolution: Stealth longevity expands over levels
                         const whityCloakDuration = 4500 + Math.min(8000, level * 400);
                         g.invisibilityTimer = whityCloakDuration; 
                         g.bodyGroup.visible = false;
@@ -3363,14 +3510,13 @@
                         showFloatingText("STEALTH CLOAK!", g.position);
                         spawnParticles(g.position, [0xffffff, 0xaaaaaa], 22, 0.12, 0.25);
 
-                        // Progressive evolution: Turns more active nearby companions invisible at once as level increases
                         const maxCompanionsToCloak = 1 + Math.floor(Math.min(4, level / 5));
                         let cloakedCount = 0;
 
                         ghosts.forEach(gh => {
                             if (gh !== g && !gh.isDead && !gh.isInvisible && cloakedCount < maxCompanionsToCloak) {
                                 let d = g.position.distanceTo(gh.position);
-                                if (d < 15.0 + Math.min(15.0, level * 0.5)) { // Radiating range expands
+                                if (d < 15.0 + Math.min(15.0, level * 0.5)) {
                                     gh.isInvisible = true;
                                     gh.invisibilityTimer = whityCloakDuration;
                                     gh.bodyGroup.visible = false;
