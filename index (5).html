@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pac-Man 3D</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000411; font-family: 'Courier New', monospace; touch-action: none; user-select: none; -webkit-user-select: none; }
+        
+        /* Game UI Overlay */
+        #ui { display: none; position: absolute; top: 10px; width: 100%; text-align: center; color: #00f2ff; font-size: 16px; pointer-events: none; z-index: 10; font-weight: bold; text-shadow: 2px 2px 0 #000; }
+        
+        #joystick-container { display: none; position: absolute; bottom: 30px; left: 30px; width: 100px; height: 100px; background: rgba(0, 242, 255, 0.1); border: 2px solid #00f2ff; border-radius: 50%; align-items: center; justify-content: center; z-index: 30; }
+        #joystick-knob { width: 40px; height: 40px; background: #00f2ff; border-radius: 50%; box-shadow: 0 0 10px #00f2ff; }
+        
+        #controls-right { display: none; position: absolute; bottom: 30px; right: 30px; flex-direction: column; gap: 10px; align-items: center; z-index: 30; }
+        .btn { width: 80px; height: 80px; background: rgba(0, 255, 0, 0.3); border: 2px solid #00ff00; border-radius: 50%; color: #00ff00; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; -webkit-tap-highlight-color: transparent; box-shadow: 0 0 15px #00ff00; cursor: pointer; }
+        
+        /* Minimap */
+        #minimap { display: none; position: absolute; top: 10px; right: 10px; border: 2px solid rgba(0, 242, 255, 0.5); background: rgba(0,0,0,0.7); z-index: 20; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
+
+        /* State Modals */
+        #menu-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #000411 0%, #001133 100%); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 1000; text-align: center; color: #ffff00; overflow-y: auto; padding: 20px 10px; box-sizing: border-box; }
+        #menu-screen h1 { font-size: 42px; text-shadow: 0 0 20px #ffff00; margin: 10px 0 5px 0; letter-spacing: 4px; }
+        #menu-screen h2 { font-size: 18px; color: #00f2ff; margin-bottom: 15px; text-shadow: 0 0 10px #00f2ff; }
+        
+        /* Ghost Character Cast Grid */
+        #ghost-cast-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-width: 600px; width: 95%; margin-bottom: 20px; background: rgba(0, 0, 0, 0.5); padding: 10px; border: 2px solid #0033ff; border-radius: 10px; text-align: left; box-sizing: border-box; }
+        @media(max-width: 480px) { #ghost-cast-container { grid-template-columns: 1fr; font-size: 11px; } }
+        .ghost-card { display: flex; align-items: center; gap: 8px; border-bottom: 1px dashed rgba(0, 242, 255, 0.2); padding-bottom: 5px; }
+        .ghost-avatar { width: 14px; height: 14px; display: inline-block; border-radius: 50% 50% 0 0; }
+        .ghost-info { font-size: 11px; color: #fff; line-height: 1.2; }
+        .ghost-info strong { font-size: 12px; }
+        
+        .menu-btn { padding: 12px 35px; font-weight: bold; cursor: pointer; border: 3px solid #00f2ff; background: rgba(0,242,255,0.1); color: #00f2ff; font-size: 22px; border-radius: 12px; font-family: 'Courier New', monospace; box-shadow: 0 0 15px rgba(0,242,255,0.4); transition: all 0.3s ease; flex-shrink: 0; margin-bottom: 10px; }
+        .menu-btn:hover { background: #00f2ff; color: #000; box-shadow: 0 0 30px #00f2ff; }
+        
+        #victory, #gameover, #mythical-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
+        #victory { background: rgba(0,0,0,0.9); color: #00ff00; }
+        #gameover { background: rgba(200,0,0,0.95); color: white; }
+        
+        /* Mythical 256 Screen styling - Updated to allow 3D background */
+        #mythical-screen { background: rgba(0, 0, 0, 0.75); color: #00ff00; overflow: hidden; font-family: monospace; }
+        .glitch-split { width: 100%; height: 100%; display: flex; }
+        .glitch-left { width: 50%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-right: 2px dashed #00ff00; }
+        .glitch-right { width: 50%; height: 100%; padding: 10px; background: rgba(5, 5, 5, 0.7); color: #ff00ff; word-break: break-all; font-size: 10px; overflow: hidden; opacity: 0.9; text-align: left; line-height: 1.1; }
+        
+        .bar-container { display: none; width: 250px; height: 12px; border: 2px solid white; border-radius: 6px; margin: 5px auto; overflow: hidden; background: #000; }
+        .bar-label { font-size: 10px; position: absolute; width: 250px; text-align: center; margin-top: -1px; color: #fff; text-shadow: 1px 1px 0 #000; }
+        #powerBar { width: 100%; height: 100%; background: #ffff00; }
+        #laserBar { width: 100%; height: 100%; background: #ff6400; }
+        #speedBar { width: 100%; height: 100%; background: #00ff00; }
+        #freezeBar { width: 100%; height: 100%; background: #00ffff; }
+        
+        .retry-btn { padding: 15px 40px; margin-top: 20px; font-weight: bold; cursor: pointer; border: none; font-size: 20px; border-radius: 10px; }
+        #camera-hint { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); color: rgba(255,255,255,0.4); font-size: 12px; pointer-events: none; text-align: center; }
+        
+        .floating-text { position: absolute; color: yellow; font-weight: bold; font-size: 20px; pointer-events: none; animation: floatUp 1s ease-out forwards; text-shadow: 2px 2px 0 #000; z-index: 50; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0; } }
+        
+        /* Stylized Inline Container for Arcaded Retro Lives Display */
+        #lives-container { display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; }
+
+        /* Ready Go Presentation */
+        #ready-go-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center; z-index: 200; pointer-events: none; font-size: 60px; font-weight: bold; color: #ffff00; text-shadow: 4px 4px 0 #ff0000; letter-spacing: 5px; }
+    </style>
+</head>
+<body>
+    <!-- Audio Elements bound to repo assets -->
+    <audio id="bgm-gameplay" loop src="Pac-Man 3D ost.mp3"></audio>
+    <audio id="bgm-coffeebreak" loop src="Pac-man 3D Coffee Break ost.mp3"></audio>
+
+    <div id="menu-screen">
+        <h1>PAC-MAN 3D</h1>
+        <h2>3D LABYRINTH</h2>
+        
+        <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY</button>
+
+        <div id="ghost-cast-container">
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#ff0000;"></span>
+                <div class="ghost-info"><strong style="color:#ff0000;">BLINKY</strong><br>Shadow - Relentless Direct Tracker</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#ffb8ff;"></span>
+                <div class="ghost-info"><strong style="color:#ffb8ff;">PINKY</strong><br>Speedy - Tactical Ambush Forecaster</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#00ffff;"></span>
+                <div class="ghost-info"><strong style="color:#00ffff;">INKY</strong><br>Bashful - Complex Flank Guard</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#ffb852;"></span>
+                <div class="ghost-info"><strong style="color:#ffb852;">CLYDE</strong><br>Pokey - Proximity Shift Wanderer</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#800080;"></span>
+                <div class="ghost-info"><strong style="color:#800080;">TIM</strong><br>Stalker - Pure Intercept Seeker</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#00ff00;"></span>
+                <div class="ghost-info"><strong style="color:#00ff00;">SPIKE</strong><br>Cruiser - Lane Cut-Off Grid Guard</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#ffff00;"></span>
+                <div class="ghost-info"><strong style="color:#ffff00;">GOLDY</strong><br>Glance - Perimeter Flank Sweeper</div>
+            </div>
+            <div class="ghost-card">
+                <span class="ghost-avatar" style="background:#ffffff;"></span>
+                <div class="ghost-info"><strong style="color:#ffffff;">WHITY</strong><br>Ghost - Adaptive Dynamic Supporter</div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="minimap" width="150" height="150"></canvas>
+    
+    <div id="ui">
+        LEVEL: <span id="level">1</span> | SCORE: <span id="score">0</span> | LIVES: <span id="lives-container"></span><br>
+        DOTS LEFT: <span id="remaining">0</span>
+        <div id="powerBarContainer" class="bar-container"><div class="bar-label">POWER PELLET</div><div id="powerBar"></div></div>
+        <div id="laserBarContainer" class="bar-container"><div class="bar-label">LASER</div><div id="laserBar"></div></div>
+        <div id="speedBarContainer" class="bar-container"><div class="bar-label">SPEED BOOST</div><div id="speedBar"></div></div>
+        <div id="freezeBarContainer" class="bar-container"><div class="bar-label">GHOST FREEZE</div><div id="freezeBar"></div></div>
+        <div id="fruitIndicator" style="display:none; color: #ff00ff; margin-top: 10px; font-size: 18px; animation: pulse 1s infinite;">FRUIT APPEARED!</div>
+    </div>
+    
+    <div id="victory">
+        <h1 id="vic-title">LEVEL CLEARED!</h1>
+        <p>Prepare for the next stage...</p>
+    </div>
+    
+    <div id="gameover">
+        <h1>GAME OVER</h1>
+        <p id="go-reason"></p>
+        <button class="retry-btn" style="background:white; color:red;" onclick="window.location.reload()">PLAY AGAIN</button>
+    </div>
+
+    <div id="mythical-screen">
+        <div class="glitch-split">
+            <div class="glitch-left">
+                <p style="color:#00ff00; font-size:16px; font-weight:bold; margin-top:20px;">VICTORY!</p>
+                <button class="retry-btn" style="background:#ffff00; color:#000;" onclick="window.location.reload()">REPLAY ADVENTURE</button>
+            </div>
+            <div id="glitch-matrix" class="glitch-right"></div>
+        </div>
+    </div>
+
+    <div id="ready-go-screen"><span id="ready-go-text">READY?</span></div>
+    
+    <div id="joystick-container"><div id="joystick-knob"></div></div>
+    
+    <div id="camera-hint">↕ Drag here ↔<br>to rotate</div>
+
+    <div id="controls-right">
+        <div id="btnJump" class="btn">JUMP</div>
+    </div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // Set audio references up early
+        const bgmGameplay = document.getElementById('bgm-gameplay');
+        const bgmCoffeeBreak = document.getElementById('bgm-coffeebreak');
+        bgmGameplay.volume = 0.5;
+        bgmCoffeeBreak.volume = 0.5;
+
+        // --- GAME STATE ---
+        let level = 1;
+        let score = 0, lives = 3, remainingDots = 0;
+        let nextLifeThreshold = 10000;
+        let gameState = 'lobby'; // lobby, ready, playing, dying, intermission, victory256
+        let ghostCombo = 0;
+        
+        // Powerups
+        let powerUp = false, laserMode = false, speedMode = false, freezeMode = false;
+        let powerTimeLeft = 0, laserTimeLeft = 0, speedTimeLeft = 0, freezeTimeLeft = 0;
+        let laserCooldown = 0;
+        
+        // Physics / Movement Speed Buffed
+        let velocityY = 0, isJumping = false;
+        let pacBaseSpeed = 0.22;       // Scaled up from 0.15
+        let ghostSpeedMult = 1.0;
+        let ghostSpeedFactor = 0.11;   // Scaled up from 0.08
+        
+        // --- COOPERATIVE INTEL & COMPASS SHARED SYSTEM ---
+        let lastPacmanSeenPos = new THREE.Vector3(0, 0.8, 32);
+        let wasPacmanSeenThisFrame = false;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSfx(f, d=0.1, t='sine', vol=0.05) {
+            try {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
+                g.gain.setValueAtTime(vol, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + d);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(); o.stop(audioCtx.currentTime + d);
+            } catch(e){}
+        }
+
+        // --- DYNAMIC LEVEL WALL COLOR PALETTE GENERATOR ---
+        function getWallColorForLevel(lvl) {
+            const palette = [
+                0x0033ff, // Level 1: Classic Blue
+                0xff0055, // Level 2: Neon Red/Pink
+                0x00ffcc, // Level 3: Cyan/Turquoise
+                0xff9900, // Level 4: Amber/Orange
+                0x9900ff, // Level 5: Purple/Violet
+                0x00ff00, // Level 6: Lime Green
+                0xffff00, // Level 7: Gold/Yellow
+                0xff00ff, // Level 8: Magenta
+                0x0099ff, // Level 9: Azure Blue
+                0xff3300  // Level 10: Crimson Red
+            ];
+            if (lvl <= palette.length) {
+                return palette[lvl - 1];
+            }
+            // Dynamic colorful hue distribution for level > 10
+            const hue = ((lvl * 47) % 360) / 360;
+            const c = new THREE.Color();
+            c.setHSL(hue, 0.9, 0.5);
+            return c.getHex();
+        }
+
+        // --- SYNTHESIZED CLASSIC THEME ADDITION ---
+        function playPacmanTheme(onComplete) {
+            try {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                const ctx = audioCtx;
+
+                const notes = {
+                    'B4': 493.88, 'B5': 987.77,
+                    'F#5': 739.99, 'D#5': 622.25,
+                    'C5': 523.25, 'C6': 1046.50,
+                    'G5': 783.99, 'E5': 659.25,
+                    'G#5': 830.61, 'F5': 698.46,
+                    'A5': 880.00
+                };
+
+                const melody = [
+                    'B4', 'B5', 'F#5', 'D#5', 'B5', 'F#5', 'D#5', 
+                    'C5', 'C6', 'G5', 'E5', 'C6', 'G5', 'E5',
+                    'B4', 'B5', 'F#5', 'D#5', 'B5', 'F#5', 'D#5',
+                    'D#5', 'E5', 'F5', 'F#5', 'G5', 'G#5', 'A5', 'B5'
+                ];
+
+                const steps = [
+                    1, 1, 1, 1, 2, 1, 1,
+                    1, 1, 1, 1, 2, 1, 1,
+                    1, 1, 1, 1, 2, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 2
+                ];
+
+                const masterGain = ctx.createGain();
+                masterGain.gain.setValueAtTime(0.15, ctx.currentTime);
+                masterGain.connect(ctx.destination);
+
+                let startTime = ctx.currentTime + 0.1;
+                const tempo = 120;
+                const stepDuration = 60 / tempo / 4; 
+
+                melody.forEach((note, index) => {
+                    const duration = steps[index] * stepDuration;
+                    
+                    const osc = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(notes[note], startTime);
+
+                    gainNode.gain.setValueAtTime(1, startTime);
+                    gainNode.gain.setValueAtTime(1, startTime + duration - 0.01);
+                    gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+
+                    osc.connect(gainNode);
+                    gainNode.connect(masterGain);
+
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+
+                    startTime += duration;
+                });
+
+                setTimeout(() => {
+                    if(onComplete) onComplete();
+                }, (startTime - ctx.currentTime) * 1000);
+            } catch(e) {
+                if(onComplete) onComplete(); // Fallback on immediate execute if AudioContext fails
+            }
+        }
+
+        function showFloatingText(text, pos3D) {
+            const div = document.createElement('div');
+            div.className = 'floating-text';
+            div.innerText = text;
+            
+            const p = pos3D.clone();
+            p.project(camera);
+            const x = (p.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (p.y * -0.5 + 0.5) * window.innerHeight;
+            
+            div.style.left = `${x}px`;
+            div.style.top = `${y}px`;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 1000);
+        }
+
+        // --- RETRO PACMAN LIVES UI FUNCTION ---
+        function updateLivesDisplay() {
+            const container = document.getElementById('lives-container');
+            if (!container) return;
+            container.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                // Classic arcade styled vector Pac-Man icon facing left
+                container.innerHTML += `
+                    <svg width="18" height="18" viewBox="0 0 20 20" style="display:inline-block;">
+                        <path d="M 10 10 L 2 6 A 8 8 0 1 1 2 14 Z" fill="#ffff00"/>
+                    </svg>
+                `;
+            }
+        }
+
+        // --- PAC-MAN CREATION ---
+        const pacman = new THREE.Group();
+        const pmMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00, side: THREE.DoubleSide });
+        
+        const topGeo = new THREE.SphereGeometry(0.8, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+        const topHalf = new THREE.Mesh(topGeo, pmMaterial);
+        const bottomGeo = new THREE.SphereGeometry(0.8, 32, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+        const bottomHalf = new THREE.Mesh(bottomGeo, pmMaterial);
+
+        const eyeGeo = new THREE.SphereGeometry(0.12, 16, 16);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.35, 0.4, 0.6);
+        const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(-0.35, 0.4, 0.6);
+        
+        // Dynamic Matrix Aura Mesh & Light additions across all actions
+        const auraGeo = new THREE.SphereGeometry(1.2, 16, 16);
+        const auraMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, wireframe: true });
+        const auraMesh = new THREE.Mesh(auraGeo, auraMat);
+        auraMesh.visible = false;
+        
+        const auraLight = new THREE.PointLight(0xffffff, 0, 15);
+
+        topHalf.add(rightEye); topHalf.add(leftEye);
+        pacman.add(topHalf); pacman.add(bottomHalf);
+        pacman.add(auraMesh); pacman.add(auraLight);
+        scene.add(pacman);
+
+        let mouthTimer = 0;
+        let isMoving = false;
+        let deathTimer = 1.0; 
+
+        // --- START GAME ---
+        window.startGame = function() {
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('ui').style.display = 'block';
+            document.getElementById('joystick-container').style.display = 'flex';
+            document.getElementById('controls-right').style.display = 'flex';
+            document.getElementById('minimap').style.display = 'block';
+            
+            gameState = 'ready'; // Setup ready phase to prevent movement
+            updateLivesDisplay();
+            
+            // Present Ready/Go Theme System Modals
+            const readyGoScreen = document.getElementById('ready-go-screen');
+            const readyGoText = document.getElementById('ready-go-text');
+            readyGoScreen.style.display = 'flex';
+            readyGoText.innerText = "READY?";
+            readyGoText.style.color = "#ffff00";
+
+            playPacmanTheme(() => {
+                readyGoText.innerText = "GO!";
+                readyGoText.style.color = "#00ff00";
+                
+                setTimeout(() => {
+                    readyGoScreen.style.display = 'none';
+                    gameState = 'playing';
+                    bgmGameplay.play().catch(e=>e); // Launch Gameplay OST
+                }, 1000);
+            });
+        };
+
+        // --- MAP GENERATION (Accurate Classic Arcade Map) ---
+        const mapTemplate = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,2,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,2,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+            [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+            [1,4,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,4,0,1],
+            [1,1,1,1,1,1,0,1,1,1,1,1,3,1,1,3,1,1,1,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,1,1,1,3,1,1,3,1,1,1,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,3,3,3,3,3,3,3,3,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,1,1,1,8,8,1,1,1,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1],
+            [3,3,3,3,3,3,0,3,3,3,1,9,9,9,9,9,9,1,3,3,3,0,3,3,3,3,3,3],
+            [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1], 
+            [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,3,3,3,3,3,3,3,3,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
+            [1,5,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,5,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,2,0,0,1,1,0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,0,1,1,0,0,2,1],
+            [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
+            [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
+            [1,6,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,6,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let walls = []; let dots = [];
+        const floorMat = new THREE.MeshPhongMaterial({ color: 0x000a22 });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        const ghostBoxWalls = [];
+        const boxMat = new THREE.MeshPhongMaterial({ color: 0xff00ff, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
+
+        function buildMap() {
+            walls.forEach(w => scene.remove(w.mesh));
+            ghostBoxWalls.forEach(gW => scene.remove(gW.mesh));
+            dots.forEach(d => scene.remove(d));
+            
+            walls = []; 
+            ghostBoxWalls.length = 0;
+            dots = []; 
+            remainingDots = 0;
+
+            // Fetch dynamic wall color based on current level
+            const currentWallColor = getWallColorForLevel(level);
+
+            mapTemplate.forEach((row, z) => {
+                row.forEach((cell, x) => {
+                    const pos = [(x - 13.5) * 4, 0, (z - 15) * 4];
+                    
+                    if (cell === 1) {
+                        const wall = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), new THREE.MeshPhongMaterial({ color: currentWallColor }));
+                        wall.position.set(...pos); scene.add(wall);
+                        walls.push({ box: new THREE.Box3().setFromObject(wall), mesh: wall });
+                    } else if (cell === 8) {
+                        const gWall = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 4), boxMat);
+                        gWall.position.set(...pos); scene.add(gWall);
+                        ghostBoxWalls.push({ box: new THREE.Box3().setFromObject(gWall), mesh: gWall });
+                    } else if (cell !== 3 && cell !== 9) {
+                        let color, scale = 0.2;
+                        if(cell === 0) color = 0xffffff;
+                        else if(cell === 2) { color = 0xffff00; scale = 0.6; } 
+                        else if(cell === 4) { color = 0xff6400; scale = 0.6; } 
+                        else if(cell === 5) { color = 0x00ff00; scale = 0.6; } 
+                        else if(cell === 6) { color = 0x00ffff; scale = 0.6; } 
+
+                        const dot = new THREE.Mesh(new THREE.SphereGeometry(scale), new THREE.MeshBasicMaterial({ color }));
+                        dot.position.set(...pos); 
+                        dot.type = cell;
+                        scene.add(dot); dots.push(dot); 
+                        if(cell === 0) remainingDots++; 
+                    }
+                });
+            });
+            document.getElementById('remaining').innerText = remainingDots;
+        }
+
+        scene.add(new THREE.AmbientLight(0x404040));
+        const light = new THREE.PointLight(0xffffff, 50, 60); scene.add(light);
+
+        // --- GHOSTS (8 Unique Named Personalities) ---
+        const ghostTypes = [
+            { name: 'BLINKY', c: 0xff0000, t: 'chase', s: 1.05 },   
+            { name: 'PINKY',  c: 0xffb8ff, t: 'ambush', s: 0.95 },  
+            { name: 'INKY',   c: 0x00ffff, t: 'flank', s: 0.9 },    
+            { name: 'CLYDE',  c: 0xffb852, t: 'wander', s: 0.85 },  
+            { name: 'TIM',    c: 0x800080, t: 'chase', s: 1.10 },    
+            { name: 'SPIKE',  c: 0x00ff00, t: 'ambush', s: 1.00 },   
+            { name: 'GOLDY',  c: 0xffff00, t: 'wander', s: 0.80 },   
+            { name: 'WHITY',  c: 0xffffff, t: 'flank', s: 0.95 }    
+        ];
+
+        let ghosts = [];
+        function initGhosts() {
+            ghosts.forEach(g => scene.remove(g));
+            ghosts = ghostTypes.map((config, index) => {
+                const group = new THREE.Group();
+                
+                const bodyGroup = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.5, 4, 8), new THREE.MeshPhongMaterial({color: config.c}));
+                body.position.y = 0.5;
+                bodyGroup.add(body);
+                group.add(bodyGroup);
+
+                const eyesGroup = new THREE.Group();
+                const eGeo = new THREE.SphereGeometry(0.12, 8, 8), pGeo = new THREE.SphereGeometry(0.05, 8, 8);
+                const eMat = new THREE.MeshBasicMaterial({color: 0xffffff}), pMat = new THREE.MeshBasicMaterial({color: 0x000000});
+                const lE = new THREE.Mesh(eGeo, eMat); lE.position.set(0.2, 0.8, 0.4);
+                const lP = new THREE.Mesh(pGeo, pMat); lP.position.set(0.2, 0.8, 0.5);
+                const rE = new THREE.Mesh(eGeo, eMat); rE.position.set(-0.2, 0.8, 0.4);
+                const rP = new THREE.Mesh(pGeo, pMat); rP.position.set(-0.2, 0.8, 0.5);
+                eyesGroup.add(lE, lP, rE, rP);
+                group.add(eyesGroup);
+
+                group.bodyGroup = bodyGroup;
+                group.eyesGroup = eyesGroup;
+                group.ghostName = config.name;
+                group.baseColor = config.c; 
+                group.aiType = config.t;
+                group.baseSpeed = config.s;
+                group.isDead = false;
+                group.dir = new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize();
+                
+                // --- ADVANCED PATHFINDING & STATE VARIABLES ---
+                group.currentAIState = 'walk'; // 5 States: chase, scape, scared, help, walk
+                group.aStarPath = [];
+                group.pathUpdateTimer = Math.random() * 200; 
+                group.currentTargetCell = {x: 14, z: 15};
+                
+                scene.add(group);
+                return group;
+            });
+        }
+
+        // --- FRUITS ---
+        const fruitData = [
+            { name: "CHERRY", color: 0xff0000, score: 100 },
+            { name: "STRAWBERRY", color: 0xff007f, score: 300 },
+            { name: "PEACH", color: 0xffa500, score: 500 },
+            { name: "APPLE", color: 0xff0000, score: 700 },
+            { name: "GRAPES", color: 0x800080, score: 1000 },
+            { name: "GALAXIAN", color: 0x00ffff, score: 2000 },
+            { name: "BELL", color: 0xffff00, score: 3000 },
+            { name: "KEY", color: 0xffffff, score: 5000 }
+        ];
+        let fruitMesh = null;
+        let fruitTimer = 0;
+        let fruitActiveTime = 0;
+
+        function spawnFruit() {
+            if(fruitMesh) scene.remove(fruitMesh);
+            
+            const fruitIndex = Math.min(level - 1, fruitData.length - 1);
+            const data = fruitData[fruitIndex];
+            
+            fruitMesh = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(0.8), 
+                new THREE.MeshPhongMaterial({ color: data.color, shininess: 100 })
+            );
+            
+            fruitMesh.position.set(0, 0.8, 8);
+            fruitMesh.fruitScore = data.score;
+            fruitMesh.fruitName = data.name;
+            scene.add(fruitMesh);
+            
+            document.getElementById('fruitIndicator').style.display = 'block';
+            document.getElementById('fruitIndicator').innerText = `${data.name} APPEARED!`;
+            playSfx(800, 0.3, 'square');
+            
+            fruitActiveTime = 10000;
+        }
+
+        // --- RESET POSITIONS ---
+        function resetPositions() {
+            pacman.position.set(0, 0.8, 32);
+            pacman.rotation.set(0, Math.PI, 0);
+            topHalf.rotation.x = 0;
+            bottomHalf.rotation.x = 0;
+            pacman.scale.setScalar(1);
+            
+            ghosts.forEach((g, i) => {
+                g.position.set((Math.random()-0.5)*4, 0.3, -4 + (Math.random()-0.5)*2);
+                g.isDead = false;
+                g.bodyGroup.visible = true;
+                g.bodyGroup.children[0].material.color.set(g.baseColor);
+                g.aStarPath = [];
+                g.currentAIState = 'walk';
+            });
+            
+            powerUp = laserMode = speedMode = freezeMode = false;
+            auraMesh.visible = false;
+            auraLight.intensity = 0;
+            document.querySelectorAll('.bar-container').forEach(el => el.style.display = 'none');
+            
+            camAngleY = Math.PI/2;
+            camAngleX = 0.4;
+            updateLivesDisplay();
+            
+            lastPacmanSeenPos.set(0, 0.8, 32);
+        }
+
+        // --- LASER LOGIC WITH COMPREHENSIVE WALL IMPACT DISTANCE CLIPPING ---
+        function fireLaser() {
+            playSfx(1000, 0.1, 'sawtooth');
+            const laserDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
+            const raycaster = new THREE.Raycaster(pacman.position, laserDir);
+            
+            // Limit laser distance based on walls obstacle collisions
+            let maxLaserRange = 30.0;
+            const targetWallMeshes = walls.map(w => w.mesh);
+            const wallHits = raycaster.intersectObjects(targetWallMeshes);
+            if (wallHits.length > 0 && wallHits[0].distance < maxLaserRange) {
+                maxLaserRange = wallHits[0].distance;
+            }
+            
+            ghosts.forEach(g => {
+                if(!g.isDead) {
+                    const distToPoint = raycaster.ray.distanceToPoint(g.position);
+                    const projectedDist = raycaster.ray.origin.distanceTo(g.position);
+                    if (distToPoint < 2.0 && projectedDist <= maxLaserRange) {
+                        killGhost(g, true);
+                    }
+                }
+            });
+            
+            const material = new THREE.LineBasicMaterial({ color: 0xff6400, linewidth: 5 });
+            const points = [pacman.position.clone(), pacman.position.clone().add(laserDir.multiplyScalar(maxLaserRange))];
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, material);
+            scene.add(line);
+            setTimeout(() => scene.remove(line), 100);
+        }
+
+        function killGhost(g, fromLaser = false) {
+            g.isDead = true; 
+            g.bodyGroup.visible = false; 
+            g.aStarPath = [];
+            
+            let pts = 200;
+            if(!fromLaser) {
+                pts = 200 * Math.pow(2, Math.min(ghostCombo, 4));
+                ghostCombo++;
+            }
+            addScore(pts, g.position);
+            playSfx(500 + ghostCombo*100, 0.2, 'square');
+        }
+
+        // --- MINIMAP LOGIC ---
+        function drawMinimap() {
+            const canvas = document.getElementById('minimap');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const mapX = (x) => ((x + 56) / 112) * canvas.width;
+            const mapY = (z) => ((z + 62) / 124) * canvas.height;
+
+            const wallColorHexStr = '#' + getWallColorForLevel(level).toString(16).padStart(6, '0');
+            ctx.fillStyle = wallColorHexStr;
+            walls.forEach(w => {
+                ctx.fillRect(mapX(w.mesh.position.x) - 1.5, mapY(w.mesh.position.z) - 1.5, 3, 3);
+            });
+
+            ctx.fillStyle = 'rgba(255, 0, 255, 0.5)';
+            ghostBoxWalls.forEach(w => {
+                ctx.fillRect(mapX(w.mesh.position.x) - 1.5, mapY(w.mesh.position.z) - 1.5, 3, 3);
+            });
+
+            dots.forEach(d => {
+                if(!d.visible) return;
+                let color = '#ffffff';
+                if(d.type === 2) color = '#ffff00'; 
+                else if(d.type === 4) color = '#ff6400'; 
+                else if(d.type === 5) color = '#00ff00'; 
+                else if(d.type === 6) color = '#00ffff'; 
+                
+                ctx.fillStyle = color;
+                const size = (d.type !== 0) ? 2.5 : 1;
+                ctx.fillRect(mapX(d.position.x) - size/2, mapY(d.position.z) - size/2, size, size);
+            });
+
+            if (fruitMesh) {
+                ctx.fillStyle = '#' + fruitMesh.material.color.getHexString();
+                ctx.beginPath(); ctx.arc(mapX(fruitMesh.position.x), mapY(fruitMesh.position.z), 2.5, 0, Math.PI*2); ctx.fill();
+            }
+
+            ghosts.forEach(g => {
+                if (g.isDead) return;
+                ctx.fillStyle = powerUp ? '#0055ff' : '#' + g.baseColor.toString(16).padStart(6, '0');
+                ctx.beginPath(); ctx.arc(mapX(g.position.x), mapY(g.position.z), 2, 0, Math.PI*2); ctx.fill();
+            });
+
+            const px = mapX(pacman.position.x);
+            const py = mapY(pacman.position.z);
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI*2); ctx.fill();
+            
+            // Render active power aura indicator ring onto minimap bounds
+            if (powerUp || laserMode || speedMode || freezeMode) {
+                ctx.strokeStyle = auraMesh.material.color.getStyle();
+                ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.stroke();
+            }
+        }
+
+        // --- SCORE & LIFE SYSTEM ---
+        function addScore(amount, pos3D = null) {
+            score += amount;
+            document.getElementById('score').innerText = score;
+            if (pos3D) showFloatingText(`+${amount}`, pos3D);
+            
+            if (score >= nextLifeThreshold) {
+                lives++;
+                nextLifeThreshold += 10000;
+                updateLivesDisplay();
+                playSfx(1500, 0.6, 'sine', 0.1); 
+                if (pos3D) showFloatingText("1 UP!", pos3D.clone().add(new THREE.Vector3(0, 1.5, 0)));
+            }
+        }
+
+        // --- INPUTS ---
+        let moveF = 0, moveS = 0;
+        let camAngleY = Math.PI/2, camAngleX = 0.4, camRadius = 15;
+        let touchStartX = 0, touchStartY = 0, isDraggingCamera = false;
+
+        document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); if(!isJumping && gameState === 'playing') { velocityY = 0.25; isJumping = true; playSfx(300, 0.2, 'square'); }});
+        
+        window.addEventListener('touchstart', (e) => {
+            for(let i=0; i<e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.clientX > window.innerWidth / 2 && !e.target.closest('.btn')) {
+                    isDraggingCamera = true; touchStartX = t.clientX; touchStartY = t.clientY;
+                }
+            }
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if(gameState !== 'playing') return;
+            e.preventDefault();
+            for(let i=0; i<e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.clientX < window.innerWidth / 2) {
+                    const r = document.getElementById('joystick-container').getBoundingClientRect();
+                    let dx = t.clientX - (r.left + 50), dy = t.clientY - (r.top + 50);
+                    const d = Math.sqrt(dx*dx+dy*dy) || 1;
+                    moveS = (dx/d); moveF = (dy/d);
+                    document.getElementById('joystick-knob').style.transform = `translate(${(dx/d)*Math.min(d,40)/2}px, ${(dy/d)*Math.min(d,40)/2}px)`;
+                } else if (isDraggingCamera) {
+                    let deltaX = t.clientX - touchStartX, deltaY = t.clientY - touchStartY;
+                    camAngleY -= deltaX * 0.01; camAngleX -= deltaY * 0.01;
+                    camAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, camAngleX));
+                    touchStartX = t.clientX; touchStartY = t.clientY;
+                }
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', (e) => { 
+            for(let i=0; i<e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if(t.clientX < window.innerWidth/2) {
+                    moveF = moveS = 0; document.getElementById('joystick-knob').style.transform = 'translate(0,0)'; 
+                } else { isDraggingCamera = false; }
+            }
+        });
+
+        // --- GRID POSITION MATH TRANSLATIONS FOR PATHFINDING ---
+        function worldToGrid(pos) {
+            let cx = Math.round(pos.x / 4 + 13.5);
+            let cz = Math.round(pos.z / 4 + 15);
+            return { x: Math.max(0, Math.min(27, cx)), z: Math.max(0, Math.min(30, cz)) };
+        }
+        
+        function gridToWorld(gx, gz) {
+            return new THREE.Vector3((gx - 13.5) * 4, 0.3, (gz - 15) * 4);
+        }
+
+        // --- PAC-MAN SPECIFIC COLLISION ---
+        function checkCol(p, size=1.6) { 
+            const checkP = p.clone();
+            checkP.y = 0.8; // Override Y to perfectly mimic ground trajectory
+            
+            const hitsWall = walls.some(w => new THREE.Box3().setFromCenterAndSize(checkP, new THREE.Vector3(size,size,size)).intersectsBox(w.box)); 
+            if (hitsWall) return true;
+            
+            const hitsGhostBox = ghostBoxWalls.some(gW => new THREE.Box3().setFromCenterAndSize(checkP, new THREE.Vector3(size,size,size)).intersectsBox(gW.box));
+            return hitsGhostBox;
+        }
+
+        // --- GHOST SPECIFIC COLLISION (UPDATED: Side portals are passable for ghosts) ---
+        function checkGhostColGrid(gx, gz, isDead = false, currX = -1, currZ = -1) {
+            // Row 14 is the side portal tunnel. Allow ghosts to enter / pass through wrap tunnels.
+            if (gz === 14 && (gx < 0 || gx >= 28)) return false;
+            if (gx < 0 || gx >= 28 || gz < 0 || gz >= 31) return true;
+            const cellVal = mapTemplate[gz][gx];
+            if (cellVal === 1) return true; // solid wall
+            
+            // Handle ghost house (doors are 8, inside is 9)
+            if (cellVal === 8) {
+                if (isDead) return false; // Defeated ghosts can pass through to enter
+                if (currX !== -1 && currZ !== -1) {
+                    const currCell = mapTemplate[currZ][currX];
+                    if (currCell === 8 || currCell === 9) return false;
+                }
+                return true; // Otherwise blocked from entering
+            }
+            if (cellVal === 9) {
+                if (isDead) return false;
+                if (currX !== -1 && currZ !== -1) {
+                    const currCell = mapTemplate[currZ][currX];
+                    if (currCell === 8 || currCell === 9) return false;
+                }
+                return true; 
+            }
+            return false; // Free open path
+        }
+
+        // --- A* PATHFINDING ALGORITHM IMPLEMENTATION FOR LABYRINTH NAVIGATION ---
+        function computeAStarPath(startGrid, targetGrid, isDead = false) {
+            if (checkGhostColGrid(targetGrid.x, targetGrid.z, isDead, startGrid.x, startGrid.z)) {
+                let bestNode = { x: 14, z: 15 };
+                let minDist = Infinity;
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dz = -1; dz <= 1; dz++) {
+                        let nx = targetGrid.x + dx, nz = targetGrid.z + dz;
+                        if (!checkGhostColGrid(nx, nz, isDead, startGrid.x, startGrid.z)) {
+                            let d = Math.abs(nx - startGrid.x) + Math.abs(nz - startGrid.z);
+                            if (d < minDist) { minDist = d; bestNode = { x: nx, z: nz }; }
+                        }
+                    }
+                }
+                targetGrid = bestNode;
+            }
+
+            let openList = [];
+            let closedSet = new Set();
+            
+            function nodeKey(g) { return g.x + "_" + g.z; }
+            
+            let startNode = {
+                x: startGrid.x, z: startGrid.z,
+                g: 0, h: Math.abs(startGrid.x - targetGrid.x) + Math.abs(startGrid.z - targetGrid.z),
+                parent: null
+            };
+            startNode.f = startNode.g + startNode.h;
+            openList.push(startNode);
+            
+            let maxIterations = 400; 
+            while (openList.length > 0 && maxIterations-- > 0) {
+                openList.sort((a, b) => a.f - b.f);
+                let current = openList.shift();
+                
+                if (current.x === targetGrid.x && current.z === targetGrid.z) {
+                    let path = [];
+                    let curr = current;
+                    while (curr !== null) {
+                        path.push({ x: curr.x, z: curr.z });
+                        curr = curr.parent;
+                    }
+                    path.reverse();
+                    return path;
+                }
+                
+                closedSet.add(nodeKey(current));
+                
+                let dirs = [{x:0, z:1}, {x:0, z:-1}, {x:1, z:0}, {x:-1, z:0}];
+                for (let i = 0; i < dirs.length; i++) {
+                    let nx = current.x + dirs[i].x;
+                    let nz = current.z + dirs[i].z;
+                    
+                    // Labyrinth wraparound tunnel integration check
+                    if (nz === 14) {
+                        if (nx < 0) nx = 27;
+                        if (nx > 27) nx = 0;
+                    }
+                    
+                    if (nx < 0 || nx >= 28 || nz < 0 || nz >= 31) {
+                        if (nz !== 14) continue; // Allow side portal in row 14
+                    }
+                    
+                    if (checkGhostColGrid(nx, nz, isDead, current.x, current.z)) continue;
+                    
+                    let neighborNode = { x: nx, z: nz };
+                    if (closedSet.has(nodeKey(neighborNode))) continue;
+                    
+                    let tentativeG = current.g + 1;
+                    let existingOpen = openList.find(o => o.x === nx && o.z === nz);
+                    
+                    if (!existingOpen) {
+                        let h = Math.abs(nx - targetGrid.x) + Math.abs(nz - targetGrid.z);
+                        let nNode = { x: nx, z: nz, g: tentativeG, h: h, f: tentativeG + h, parent: current };
+                        openList.push(nNode);
+                    } else if (tentativeG < existingOpen.g) {
+                        existingOpen.g = tentativeG;
+                        existingOpen.f = tentativeG + existingOpen.h;
+                        existingOpen.parent = current;
+                    }
+                }
+            }
+            return [];
+        }
+
+        // --- MULTI-COLOR GLITCH MATRIX GENERATOR FOR LEVEL 256 ---
+        const glitchColors = ['#ff00ff', '#00ffff', '#00ff00', '#ffff00', '#ff0000', '#ff8800', '#ffffff', '#a855f7'];
+        function generateGlitchMatrix() {
+            const container = document.getElementById('glitch-matrix');
+            let content = '';
+            for (let i = 0; i < 40; i++) {
+                let row = '';
+                for (let j = 0; j < 60; j++) {
+                    const charType = Math.random();
+                    let charStr = '';
+                    if (charType < 0.3) {
+                        charStr = String.fromCharCode(33 + Math.floor(Math.random() * 50));
+                    } else if (charType < 0.6) {
+                        charStr = Math.floor(Math.random() * 10);
+                    } else {
+                        charStr = '&nbsp;';
+                    }
+
+                    if (charStr !== '&nbsp;') {
+                        const randomColor = glitchColors[Math.floor(Math.random() * glitchColors.length)];
+                        row += `<span style="color:${randomColor}">${charStr}</span>`;
+                    } else {
+                        row += '&nbsp;';
+                    }
+                }
+                content += '<div>' + row + '</div>';
+            }
+            container.innerHTML = content;
+        }
+
+        // --- INTERMISSION SCENE SETUP ---
+        const interScene = new THREE.Scene();
+        interScene.background = new THREE.Color(0x000000);
+        const interCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        interCamera.position.set(0, 5, 30);
+        interCamera.lookAt(0, 0, 0);
+
+        const interLight = new THREE.PointLight(0xffffff, 50, 100);
+        interLight.position.set(0, 10, 10);
+        interScene.add(interLight);
+        interScene.add(new THREE.AmbientLight(0x606060));
+
+        const csPacman = new THREE.Group();
+        const csTopHalf = new THREE.Mesh(topGeo, pmMaterial);
+        const csBotHalf = new THREE.Mesh(bottomGeo, pmMaterial);
+        csPacman.add(csTopHalf); csPacman.add(csBotHalf);
+        interScene.add(csPacman);
+
+        const csBlinky = new THREE.Group();
+        const csBlinkyMat = new THREE.MeshPhongMaterial({color: 0xff0000});
+        const csBlinkyBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.8, 0.8, 2, 8), csBlinkyMat);
+        csBlinkyBody.position.y = 0.8;
+        
+        const csEyesGroup = new THREE.Group();
+        const csLE = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color:0xffffff}));
+        csLE.position.set(0.3, 1.2, 0.6);
+        const csLP = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({color:0x000000}));
+        csLP.position.set(0.3, 1.2, 0.75);
+        const csRE = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color:0xffffff}));
+        csRE.position.set(-0.3, 1.2, 0.6);
+        const csRP = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({color:0x000000}));
+        csRP.position.set(-0.3, 1.2, 0.75);
+        csEyesGroup.add(csLE, csLP, csRE, csRP);
+        
+        csBlinky.add(csBlinkyBody);
+        csBlinky.add(csEyesGroup);
+        csBlinky.mat = csBlinkyMat; 
+        csBlinky.body = csBlinkyBody; 
+        interScene.add(csBlinky);
+
+        const csPellet = new THREE.Mesh(new THREE.SphereGeometry(1.5), new THREE.MeshPhongMaterial({color: 0xffff00, shininess: 100})); 
+        interScene.add(csPellet);
+
+        // --- INTERMISSION PROPS & ACTORS ---
+        function createCSGhost(color) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshPhongMaterial({color: color});
+            const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.8, 0.8, 2, 8), mat);
+            body.position.y = 0.8;
+            const eyes = csEyesGroup.clone();
+            group.add(body); group.add(eyes);
+            group.mat = mat;
+            group.body = body;
+            return group;
+        }
+        
+        const csPinky = createCSGhost(0xffb8ff); interScene.add(csPinky);
+        const csInky = createCSGhost(0x00ffff); interScene.add(csInky);
+        const csClyde = createCSGhost(0xffb852); interScene.add(csClyde);
+        
+        const csBlock = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 2), new THREE.MeshPhongMaterial({color: 0x0033ff}));
+        interScene.add(csBlock);
+        
+        const csLaser = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 10), new THREE.MeshBasicMaterial({color: 0xff6400}));
+        csLaser.rotation.z = Math.PI / 2;
+        interScene.add(csLaser);
+        
+        const csGalaxian = new THREE.Mesh(new THREE.DodecahedronGeometry(1.0), new THREE.MeshPhongMaterial({color: 0x00ffff}));
+        interScene.add(csGalaxian);
+
+        function hideAllCSActors() {
+            csPacman.visible = false;
+            csBlinky.visible = false;
+            csPinky.visible = false;
+            csInky.visible = false;
+            csClyde.visible = false;
+            csPellet.visible = false;
+            csBlock.visible = false;
+            csLaser.visible = false;
+            csGalaxian.visible = false;
+        }
+
+        let interTimer = 0, interPhase = 0, interType = 0;
+        const INTERMISSION_DURATION = 12000; // Exact 12 seconds per coffee break animation
+
+        function endIntermission() {
+            level++;
+            ghostSpeedMult += 0.15;
+            document.getElementById('level').innerText = level;
+            document.getElementById('ui').style.display = 'block';
+            document.getElementById('minimap').style.display = 'block';
+            buildMap();
+            resetPositions();
+            gameState = 'playing';
+            
+            // Revert Audio to Gameplay
+            bgmCoffeeBreak.pause();
+            bgmGameplay.play().catch(e=>e);
+        }
+
+        // --- MAIN LOOP ---
+        let lastTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const now = performance.now();
+            const deltaMs = now - lastTime;
+            lastTime = now;
+            
+            if (gameState === 'lobby') {
+                renderer.render(scene, camera);
+                return;
+            }
+
+            if (gameState === 'ready') {
+                renderer.render(scene, camera);
+                return;
+            }
+            
+            if (gameState === 'victory256') {
+                if (Math.random() < 0.15) generateGlitchMatrix();
+                
+                // 3D Victory Animation
+                pacman.rotation.y += 0.05;
+                pacman.position.y = 0.8 + Math.sin(now * 0.005) * 2;
+                
+                ghosts.forEach((g, index) => {
+                    g.rotation.y += 0.02 + (index * 0.01);
+                    g.position.y = 0.8 + Math.cos(now * 0.005 + index) * 2;
+                    if(g.bodyGroup && g.bodyGroup.children[0]) {
+                        g.bodyGroup.children[0].material.color.setHSL((now * 0.001 + index * 0.1) % 1, 1, 0.5);
+                    }
+                });
+                
+                camera.position.x = pacman.position.x + Math.sin(now * 0.001) * 20;
+                camera.position.z = pacman.position.z + Math.cos(now * 0.001) * 20;
+                camera.position.y = 10 + Math.sin(now * 0.002) * 5;
+                camera.lookAt(pacman.position);
+                
+                renderer.render(scene, camera);
+                return;
+            }
+
+            // --- INTERMISSION COFFEE BREAK ANIMATIONS (12 SECONDS EXACT DURATION) ---
+            if (gameState === 'intermission') {
+                interTimer += deltaMs;
+                
+                const mouthAngle = (Math.sin(interTimer * 0.015) + 1) * 0.3;
+                csTopHalf.rotation.x = -mouthAngle; 
+                csBotHalf.rotation.x = mouthAngle;
+
+                // End precisely at 12 seconds (12000 ms)
+                if (interTimer >= INTERMISSION_DURATION) {
+                    endIntermission();
+                    return;
+                }
+
+                switch(interType) {
+                    case 0: // Classic Chase & Giant Pellet Transformation
+                        if (interTimer < 5000) { // 0 - 5.0s: Chase left
+                            csPacman.position.x = 20 - (interTimer / 5000) * 35; // 20 to -15
+                            csBlinky.position.x = 30 - (interTimer / 5000) * 35; // 30 to -5
+                        } else {
+                            if (interPhase === 0) {
+                                interPhase = 1;
+                                csPellet.visible = false;
+                                csPacman.scale.setScalar(1.8);
+                                csPacman.position.y = 1.4;
+                                csBlinkyMat.color.setHex(0x0055ff); 
+                                csPacman.rotation.y = Math.PI/2; 
+                                csBlinky.rotation.y = Math.PI/2;
+                                playSfx(1000, 0.5, 'triangle');
+                            }
+                            // 5.0s - 12.0s: Giant Pac-Man chases Blinky back right
+                            const p = (interTimer - 5000) / 7000;
+                            csPacman.position.x = -15 + p * 45; // -15 to +30
+                            csBlinky.position.x = -5 + p * 25;  // -5 to +20
+                            if (csPacman.position.x >= csBlinky.position.x - 2.0 && csBlinkyBody.visible) {
+                                csBlinkyBody.visible = false; 
+                                playSfx(500, 0.2, 'square');
+                            }
+                        }
+                        break;
+
+                    case 1: // Pinky & Wall Block Collision
+                        if (interTimer < 6000) { // 0 - 6.0s: Chase left & Block rises
+                            const p = interTimer / 6000;
+                            csPacman.position.x = 25 - p * 35; // 25 to -10
+                            csPinky.position.x = 35 - p * 33;  // 35 to 2
+                            if (csPacman.position.x < -5 && !csBlock.visible) {
+                                csBlock.visible = true;
+                                csBlock.position.y = -5;
+                                playSfx(400, 0.3, 'square');
+                            }
+                            if (csBlock.visible && csBlock.position.y < 2) {
+                                csBlock.position.y += 0.015 * deltaMs;
+                            }
+                        } else {
+                            if (interPhase === 0) {
+                                interPhase = 1;
+                                playSfx(200, 0.5, 'sawtooth');
+                            }
+                            // 6.0s - 12.0s: Pinky bounces back spinning, Pacman continues left
+                            const p = (interTimer - 6000) / 6000;
+                            csPacman.position.x = -10 - p * 20; // -10 to -30
+                            csPinky.position.x = 2 + p * 25;    // 2 to 27
+                            csPinky.rotation.y += 0.02 * deltaMs;
+                        }
+                        break;
+                        
+                    case 2: // Inky & Laser Zap
+                        if (interTimer < 4000) { // 0 - 4.0s: Run to center
+                            const p = interTimer / 4000;
+                            csPacman.position.x = 20 - p * 20; // 20 to 0
+                            csInky.position.x = 30 - p * 20;   // 30 to 10
+                            if (csPacman.position.x <= 0.1 && csPacman.rotation.y !== Math.PI/2) {
+                                csPacman.rotation.y = Math.PI/2;
+                            }
+                        } else if (interTimer < 7000) { // 4.0s - 7.0s: Fire Laser
+                            if (interPhase === 0 && interTimer > 4800) {
+                                csLaser.visible = true;
+                                csLaser.position.set(csPacman.position.x + 5, 0.8, 0);
+                                playSfx(1000, 0.3, 'sawtooth');
+                                csInky.body.visible = false;
+                                csInky.rotation.y += 0.5;
+                                interPhase = 1;
+                            }
+                        } else { // 7.0s - 12.0s: Turn left and exit
+                            csLaser.visible = false;
+                            csPacman.rotation.y = -Math.PI/2;
+                            const p = (interTimer - 7000) / 5000;
+                            csPacman.position.x = 0 - p * 30; // 0 to -30
+                        }
+                        break;
+                        
+                    case 3: // Clyde Exhaustion Sprint
+                        if (interTimer < 6000) { // 0 - 6.0s: Fast sprint left
+                            const p = interTimer / 6000;
+                            csPacman.position.x = 25 - p * 55; // 25 to -30
+                            csClyde.position.x = 35 - p * 75;  // 35 to -40
+                            csPacman.rotation.y = -Math.PI/2;
+                            csClyde.rotation.y = -Math.PI/2;
+                        } else { // 6.0s - 12.0s: Exhausted crawl right
+                            const p = (interTimer - 6000) / 6000;
+                            csPacman.position.x = -30 + p * 60; // -30 to +30
+                            csClyde.position.x = -40 + p * 60;  // -40 to +20
+                            csPacman.rotation.y = Math.PI/2;
+                            csClyde.rotation.y = Math.PI/2;
+                            csTopHalf.rotation.x = -mouthAngle * 0.2; 
+                            csBotHalf.rotation.x = mouthAngle * 0.2;
+                        }
+                        break;
+                        
+                    case 4: // Swarm & Freeze
+                        if (interTimer < 5000) { // 0 - 5.0s: Swarm chases Pacman left
+                            const p = interTimer / 5000;
+                            csPacman.position.x = 25 - p * 40; // 25 to -15
+                            csBlinky.position.x = 35 - p * 40;
+                            csPinky.position.x = 39 - p * 40;
+                            csInky.position.x = 43 - p * 40;
+                            csClyde.position.x = 47 - p * 40;
+                        } else {
+                            if (interPhase === 0) {
+                                interPhase = 1;
+                                csPellet.visible = false;
+                                csPacman.rotation.y = Math.PI/2;
+                                csBlinky.mat.color.setHex(0x00ffff);
+                                csPinky.mat.color.setHex(0x00ffff);
+                                csInky.mat.color.setHex(0x00ffff);
+                                csClyde.mat.color.setHex(0x00ffff);
+                                playSfx(1200, 0.5, 'triangle');
+                            }
+                            // 5.0s - 12.0s: Pacman turns right and clears frozen ghosts
+                            const p = (interTimer - 5000) / 7000;
+                            csPacman.position.x = -15 + p * 48; // -15 to +33
+                            if (csPacman.position.x >= csBlinky.position.x - 1.5) csBlinky.body.visible = false;
+                            if (csPacman.position.x >= csPinky.position.x - 1.5) csPinky.body.visible = false;
+                            if (csPacman.position.x >= csInky.position.x - 1.5) csInky.body.visible = false;
+                            if (csPacman.position.x >= csClyde.position.x - 1.5) csClyde.body.visible = false;
+                        }
+                        break;
+                        
+                    case 5: // Galaxian Abduction
+                        if (interTimer < 3500) { // 0 - 3.5s: Run left to center
+                            const p = interTimer / 3500;
+                            csPacman.position.x = 20 - p * 20; // 20 to 0
+                            csBlinky.position.x = 30 - p * 30; // 30 to 0
+                        } else if (interTimer < 6500) { // 3.5s - 6.5s: Galaxian descends
+                            csGalaxian.visible = true;
+                            const p = (interTimer - 3500) / 3000;
+                            csGalaxian.position.set(0, 15 - p * 11, 0); // 15 to 4
+                            csPacman.position.x = -p * 10;
+                            if (p > 0.5) csPacman.rotation.y = Math.PI/2;
+                        } else if (interTimer < 9500) { // 6.5s - 9.5s: Abduct Blinky up
+                            const p = (interTimer - 6500) / 3000;
+                            csGalaxian.position.y = 4 + p * 11;
+                            csBlinky.position.y = 0.8 + p * 11;
+                            csBlinky.rotation.y += 0.02 * deltaMs;
+                        } else { // 9.5s - 12.0s: Pacman exits left
+                            csPacman.rotation.y = -Math.PI/2;
+                            const p = (interTimer - 9500) / 2500;
+                            csPacman.position.x = -10 - p * 20; // -10 to -30
+                        }
+                        break;
+                }
+                
+                renderer.render(interScene, interCamera);
+                return;
+            }
+
+            if (gameState === 'dying') {
+                deathTimer -= deltaMs / 1000;
+                topHalf.rotation.x -= 0.05;
+                bottomHalf.rotation.x += 0.05;
+                let s = Math.max(0.01, deathTimer);
+                pacman.scale.setScalar(s);
+                
+                if (deathTimer <= 0) {
+                    lives--; updateLivesDisplay();
+                    if (lives <= 0) {
+                        gameState = 'gameover';
+                        document.getElementById('gameover').style.display = 'flex';
+                        document.getElementById('minimap').style.display = 'none';
+                        document.getElementById('go-reason').innerText = "NO LIVES LEFT!";
+                        bgmGameplay.pause(); // Mute gameplay OST
+                    } else {
+                        resetPositions();
+                        gameState = 'playing';
+                    }
+                }
+                renderer.render(scene, camera);
+                return;
+            }
+
+            if(gameState !== 'playing') return;
+            
+            drawMinimap();
+
+            if(isJumping) {
+                pacman.position.y += velocityY; velocityY -= 0.015;
+                if(pacman.position.y <= 0.8) { pacman.position.y = 0.8; isJumping = false; }
+            }
+
+            let curSpeed = pacBaseSpeed * (speedMode ? 2.0 : 1.0);
+            const v = new THREE.Vector3(moveS, 0, moveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize().multiplyScalar(curSpeed);
+            isMoving = (moveS !== 0 || moveF !== 0);
+
+            if(isMoving) {
+                const npX = pacman.position.clone(); npX.x += v.x; if(!checkCol(npX)) pacman.position.x = npX.x;
+                const npZ = pacman.position.clone(); npZ.z += v.z; if(!checkCol(npZ)) pacman.position.z = npZ.z;
+                
+                pacman.rotation.y = Math.atan2(v.x, v.z);
+                
+                mouthTimer += 0.25 * (speedMode ? 1.5 : 1);
+                const mouthAngle = (Math.sin(mouthTimer) + 1) * 0.3;
+                topHalf.rotation.x = -mouthAngle; bottomHalf.rotation.x = mouthAngle;
+                
+                if (pacman.position.x > 56) pacman.position.x = -56;
+                else if (pacman.position.x < -56) pacman.position.x = 56;
+            } else {
+                topHalf.rotation.x = 0; bottomHalf.rotation.x = 0;
+            }
+
+            camera.position.x = pacman.position.x + camRadius * Math.sin(camAngleY) * Math.cos(camAngleX);
+            camera.position.y = pacman.position.y + camRadius * Math.sin(camAngleX);
+            camera.position.z = pacman.position.z + camRadius * Math.cos(camAngleY) * Math.cos(camAngleX);
+            camera.lookAt(pacman.position);
+            light.position.copy(pacman.position).add(new THREE.Vector3(0, 3, 0));
+
+            // --- LINE OF SIGHT & RETINAL SCAN INTELLIGENCE COMPASS ---
+            const pacmanGridPos = worldToGrid(pacman.position);
+            wasPacmanSeenThisFrame = false;
+            
+            ghosts.forEach(g => {
+                if(g.isDead) return;
+                const gRayDir = pacman.position.clone().sub(g.position);
+                const losDistance = gRayDir.length();
+                gRayDir.normalize();
+                
+                const losRay = new THREE.Raycaster(g.position, gRayDir);
+                const wallObjects = walls.map(w => w.mesh);
+                const hits = losRay.intersectObjects(wallObjects);
+                
+                if (hits.length === 0 || hits[0].distance > losDistance) {
+                    wasPacmanSeenThisFrame = true;
+                }
+            });
+            if (wasPacmanSeenThisFrame) {
+                lastPacmanSeenPos.copy(pacman.position);
+            }
+
+            // --- DECREMENT POWER TIMERS ---
+            if(powerUp) powerTimeLeft -= deltaMs;
+            if(laserMode) { laserTimeLeft -= deltaMs; laserCooldown -= deltaMs; }
+            if(speedMode) speedTimeLeft -= deltaMs;
+            if(freezeMode) freezeTimeLeft -= deltaMs;
+
+            // --- ALL-POWERUP AURA CONTROLLER ---
+            if (powerUp || laserMode || speedMode || freezeMode) {
+                auraMesh.visible = true;
+                auraLight.intensity = 65; 
+                
+                let currentAuraColor = new THREE.Color();
+                if (powerUp) {
+                    const hue = (now % 2000) / 2000;
+                    currentAuraColor.setHSL(hue, 1.0, 0.5);
+                } else if (freezeMode) {
+                    currentAuraColor.setHex(0x00ffff);
+                } else if (speedMode) {
+                    currentAuraColor.setHex(0x00ff00);
+                } else if (laserMode) {
+                    currentAuraColor.setHex(0xff6400); 
+                }
+                
+                auraMat.color.copy(currentAuraColor);
+                auraLight.color.copy(currentAuraColor);
+            } else {
+                auraMesh.visible = false;
+                auraLight.intensity = 0;
+            }
+
+            // --- INDIVIDUAL POWERUP BAR & CLEANUP TRACKING ---
+            if(powerUp) {
+                document.getElementById('powerBar').style.width = (powerTimeLeft / 8000 * 100) + '%';
+                if(powerTimeLeft <= 0) { 
+                    powerUp = false; 
+                    document.getElementById('powerBarContainer').style.display = 'none'; 
+                    ghostCombo = 0; 
+                    ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(g.baseColor); }); 
+                }
+            }
+            if(laserMode) {
+                document.getElementById('laserBar').style.width = (laserTimeLeft / 10000 * 100) + '%';
+                if(laserCooldown <= 0) { fireLaser(); laserCooldown = 100; }
+                if(laserTimeLeft <= 0) { laserMode = false; document.getElementById('laserBarContainer').style.display = 'none'; }
+            }
+            if(speedMode) {
+                document.getElementById('speedBar').style.width = (speedTimeLeft / 6000 * 100) + '%';
+                if(speedTimeLeft <= 0) { speedMode = false; document.getElementById('speedBarContainer').style.display = 'none'; }
+            }
+            if(freezeMode) {
+                document.getElementById('freezeBar').style.width = (freezeTimeLeft / 5000 * 100) + '%';
+                if(freezeTimeLeft <= 0) { freezeMode = false; document.getElementById('freezeBarContainer').style.display = 'none'; }
+            }
+
+            // Fruits logic
+            fruitTimer += deltaMs;
+            if (fruitTimer > 15000 && !fruitMesh) {
+                spawnFruit();
+                fruitTimer = 0;
+            }
+            if (fruitMesh) {
+                fruitMesh.rotation.y += 0.05;
+                fruitActiveTime -= deltaMs;
+                if(fruitActiveTime <= 0) {
+                    scene.remove(fruitMesh); fruitMesh = null;
+                    document.getElementById('fruitIndicator').style.display = 'none';
+                } else if (pacman.position.distanceTo(fruitMesh.position) < 2.0) {
+                    addScore(fruitMesh.fruitScore, fruitMesh.position);
+                    playSfx(1200, 0.4, 'sine');
+                    scene.remove(fruitMesh); fruitMesh = null;
+                    document.getElementById('fruitIndicator').style.display = 'none';
+                }
+            }
+
+            // --- GHOST ADVANCED A* STATE DRIVEN CONTROL SYSTEM ---
+            const centerBox = new THREE.Vector3(0, 0.3, -4);
+            const gridCenterBox = worldToGrid(centerBox);
+            
+            ghosts.forEach(g => {
+                let gGrid = worldToGrid(g.position);
+
+                if(g.isDead) {
+                    let toCenter = centerBox.clone().sub(g.position);
+                    if(toCenter.length() < 0.5) {
+                        g.isDead = false;
+                        g.bodyGroup.visible = true;
+                        g.bodyGroup.children[0].material.color.set(powerUp ? 0x0055ff : g.baseColor);
+                        g.aStarPath = [];
+                    } else {
+                        // A* Pathfinding integrated for defeated ghost eyes
+                        let targetGrid = { x: 14, z: 15 }; // Ghost house center target
+                        
+                        g.pathUpdateTimer -= deltaMs;
+                        if (g.pathUpdateTimer <= 0 || !g.aStarPath || g.aStarPath.length === 0) {
+                            g.pathUpdateTimer = 150; 
+                            g.aStarPath = computeAStarPath(gGrid, targetGrid, g.isDead);
+                        }
+                        
+                        let eyeSpeed = 0.4; // Boost eyes speed multiplier
+                        
+                        if (g.aStarPath && g.aStarPath.length > 1) {
+                            let nextNode = g.aStarPath[1];
+                            let worldNext = gridToWorld(nextNode.x, nextNode.z);
+                            worldNext.y = g.position.y;
+                            
+                            let moveVec = worldNext.clone().sub(g.position);
+                            let stepDist = moveVec.length();
+                            
+                            if (stepDist < eyeSpeed) {
+                                g.position.copy(worldNext);
+                                g.aStarPath.shift();
+                            } else {
+                                moveVec.normalize();
+                                g.position.add(moveVec.multiplyScalar(eyeSpeed));
+                                g.dir.copy(moveVec);
+                            }
+                        } else {
+                            let fallbackVec = toCenter.clone();
+                            fallbackVec.y = 0;
+                            if(fallbackVec.length() > 0.1) {
+                                fallbackVec.normalize();
+                                g.position.add(fallbackVec.multiplyScalar(eyeSpeed));
+                                g.dir.copy(fallbackVec);
+                            }
+                        }
+                        g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
+                    }
+                    return;
+                }
+
+                if(freezeMode) return;
+
+                let gSpeed = g.baseSpeed * ghostSpeedMult * ghostSpeedFactor;
+                if(powerUp) gSpeed *= 0.5;
+
+                // 1. UPDATE ADVANCED INTEL STATE MACHINE BASED ON LEVEL & ENVIRONMENTAL PARAMETERS
+                if (powerUp) {
+                    g.currentAIState = 'scared';
+                } else {
+                    let walkProbability = Math.max(0.05, 0.5 - (level * 0.08)); 
+                    
+                    let pelletThreat = false;
+                    dots.forEach(d => {
+                        if (d.visible && (d.type === 2 || d.type === 4) && pacman.position.distanceTo(d.position) < 10.0) {
+                            pelletThreat = true;
+                        }
+                    });
+                    
+                    if (pelletThreat) {
+                        g.currentAIState = 'scape';
+                    } else if (Math.random() < walkProbability && g.aStarPath.length === 0) {
+                        g.currentAIState = 'walk';
+                    } else {
+                        if (g.ghostName === 'INKY' || g.ghostName === 'WHITY') {
+                            g.currentAIState = 'help';
+                        } else {
+                            g.currentAIState = 'chase';
+                        }
+                    }
+                }
+
+                // 2. RETARGET PATHING DESTINATION COORDINATES BASED ON CURRENT ACTIVE PROFILE
+                g.pathUpdateTimer -= deltaMs;
+                if (g.pathUpdateTimer <= 0 || g.aStarPath.length === 0) {
+                    g.pathUpdateTimer = 250 + Math.random() * 200;
+                    
+                    let targetGrid = { x: 14, z: 15 };
+                    let pacCurrentTarget = wasPacmanSeenThisFrame ? pacmanGridPos : worldToGrid(lastPacmanSeenPos);
+
+                    switch (g.currentAIState) {
+                        case 'chase':
+                            if (g.ghostName === 'BLINKY' || g.ghostName === 'TIM') {
+                                targetGrid = pacCurrentTarget;
+                            } else if (g.ghostName === 'PINKY' || g.ghostName === 'SPIKE') {
+                                let pDir = new THREE.Vector3(0, 0, 1).applyQuaternion(pacman.quaternion);
+                                let leadPos = pacman.position.clone().add(pDir.multiplyScalar(16));
+                                targetGrid = worldToGrid(leadPos);
+                            } else {
+                                targetGrid = pacCurrentTarget;
+                            }
+                            break;
+                            
+                        case 'scape':
+                            targetGrid = {
+                                x: pacCurrentTarget.x > 14 ? 2 : 25,
+                                z: pacCurrentTarget.z > 15 ? 2 : 28
+                            };
+                            break;
+                            
+                        case 'scared':
+                            if (g.ghostName === 'BLINKY') targetGrid = { x: 2, z: 2 };
+                            else if (g.ghostName === 'PINKY') targetGrid = { x: 25, z: 2 };
+                            else if (g.ghostName === 'INKY') targetGrid = { x: 2, z: 28 };
+                            else targetGrid = { x: 25, z: 28 };
+                            break;
+                            
+                        case 'help':
+                            let blinkyMesh = ghosts.find(gh => gh.ghostName === 'BLINKY');
+                            if (blinkyMesh) {
+                                let blinkGrid = worldToGrid(blinkyMesh.position);
+                                targetGrid = {
+                                    x: Math.max(1, Math.min(26, pacCurrentTarget.x * 2 - blinkGrid.x)),
+                                    z: Math.max(1, Math.min(29, pacCurrentTarget.z * 2 - blinkGrid.z))
+                                };
+                            } else {
+                                targetGrid = pacCurrentTarget;
+                            }
+                            break;
+                            
+                        case 'walk':
+                        default:
+                            let rx = Math.floor(Math.random() * 26) + 1;
+                            let rz = Math.floor(Math.random() * 29) + 1;
+                            while (checkGhostColGrid(rx, rz, g.isDead, gGrid.x, gGrid.z)) {
+                                rx = Math.floor(Math.random() * 26) + 1;
+                                rz = Math.floor(Math.random() * 29) + 1;
+                            }
+                            targetGrid = { x: rx, z: rz };
+                            break;
+                    }
+                    
+                    g.currentTargetCell = targetGrid;
+                    g.aStarPath = computeAStarPath(gGrid, targetGrid, g.isDead);
+                }
+
+                // 3. TRAVEL SMOOTHLY ALONG PRECOMPUTED A* PATH PATHWAYS
+                if (g.aStarPath.length > 1) {
+                    let nextNode = g.aStarPath[1];
+                    let worldNext = gridToWorld(nextNode.x, nextNode.z);
+                    worldNext.y = g.position.y; 
+                    
+                    let moveVec = worldNext.clone().sub(g.position);
+                    let stepDist = moveVec.length();
+                    
+                    if (stepDist < gSpeed) {
+                        g.position.copy(worldNext);
+                        g.aStarPath.shift();
+                    } else {
+                        moveVec.normalize();
+                        g.position.add(moveVec.multiplyScalar(gSpeed));
+                        g.dir.copy(moveVec);
+                    }
+                } else {
+                    let targetWorld = gridToWorld(g.currentTargetCell.x, g.currentTargetCell.z);
+                    let fallbackVec = targetWorld.sub(g.position);
+                    fallbackVec.y = 0;
+                    if(fallbackVec.length() > 0.1) {
+                        fallbackVec.normalize();
+                        g.position.add(fallbackVec.multiplyScalar(gSpeed));
+                        g.dir.copy(fallbackVec);
+                    }
+                }
+
+                // Ghost map wrap portals check (Side Portal passage enabled!)
+                if (g.position.x > 56) g.position.x = -56;
+                else if (g.position.x < -56) g.position.x = 56;
+
+                g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
+
+                // Check fatal collision intersections with Pacman
+                if(pacman.position.distanceTo(g.position) < 1.6) {
+                    if(powerUp) {
+                        killGhost(g);
+                    } else if(!isJumping) {
+                        gameState = 'dying';
+                        deathTimer = 1.0;
+                        playSfx(200, 1.0, 'sawtooth');
+                    }
+                }
+            });
+
+            // Dots Collision
+            dots.forEach(d => {
+                if(d.visible && pacman.position.distanceTo(d.position) < 1.8) {
+                    d.visible = false; 
+                    addScore(10);
+                    playSfx(600, 0.05);
+                    
+                    if(d.type === 0) {
+                        remainingDots--;
+                        document.getElementById('remaining').innerText = remainingDots;
+                    } else {
+                        addScore(40);
+                        if(d.type === 2) { powerUp = true; powerTimeLeft = 8000; ghostCombo = 0; document.getElementById('powerBarContainer').style.display = 'block'; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x0055ff); }); }
+                        if(d.type === 4) { laserMode = true; laserTimeLeft = 10000; laserCooldown=0; document.getElementById('laserBarContainer').style.display = 'block'; }
+                        if(d.type === 5) { speedMode = true; speedTimeLeft = 6000; document.getElementById('speedBarContainer').style.display = 'block'; }
+                        if(d.type === 6) { freezeMode = true; freezeTimeLeft = 5000; document.getElementById('freezeBarContainer').style.display = 'block'; }
+                        showFloatingText("+50", d.position);
+                    }
+
+                    if(remainingDots <= 0) { 
+                        if (level >= 256) {
+                            gameState = 'victory256';
+                            document.getElementById('mythical-screen').style.display = 'flex';
+                            document.getElementById('minimap').style.display = 'none';
+                            bgmGameplay.pause(); // Mute gameplay OST on Final Victory
+                            playSfx(100, 2.0, 'sawtooth', 0.2);
+                            generateGlitchMatrix();
+                            return;
+                        }
+
+                        if (level % 3 === 0) {
+                            gameState = 'intermission';
+                            document.getElementById('ui').style.display = 'none';
+                            document.getElementById('minimap').style.display = 'none';
+                            playSfx(1000, 1.0, 'square');
+                            
+                            // Audio swap
+                            bgmGameplay.pause();
+                            bgmCoffeeBreak.currentTime = 0;
+                            bgmCoffeeBreak.play().catch(e=>e);
+
+                            interTimer = 0; interPhase = 0;
+                            interType = Math.floor((level - 1) / 3) % 6; // Cycle dynamically through 6 intermissions
+                            
+                            hideAllCSActors();
+
+                            // Common Setup
+                            csPacman.visible = true;
+                            csPacman.scale.setScalar(1);
+                            csPacman.position.y = 0.8;
+                            csPacman.rotation.y = -Math.PI/2;
+                            
+                            // Setup specifics for different intermission scenes
+                            switch(interType) {
+                                case 0:
+                                    csPacman.position.set(20, 0.8, 0);
+                                    csBlinky.visible = true;
+                                    csBlinky.position.set(30, 0.8, 0);
+                                    csBlinky.rotation.y = -Math.PI/2;
+                                    csBlinky.mat.color.setHex(0xff0000); 
+                                    csBlinky.body.visible = true; 
+                                    csPellet.visible = true;
+                                    csPellet.position.set(-15, 0.8, 0);
+                                    csPellet.material.color.setHex(0xffff00);
+                                    break;
+                                case 1:
+                                    csPacman.position.set(25, 0.8, 0);
+                                    csPinky.visible = true;
+                                    csPinky.position.set(35, 0.8, 0);
+                                    csPinky.rotation.y = -Math.PI/2;
+                                    csPinky.body.visible = true;
+                                    csBlock.position.set(0, -5, 0); 
+                                    break;
+                                case 2:
+                                    csPacman.position.set(20, 0.8, 0);
+                                    csInky.visible = true;
+                                    csInky.position.set(30, 0.8, 0);
+                                    csInky.rotation.y = -Math.PI/2;
+                                    csInky.body.visible = true;
+                                    csLaser.visible = false;
+                                    break;
+                                case 3:
+                                    csPacman.position.set(25, 0.8, 0);
+                                    csClyde.visible = true;
+                                    csClyde.position.set(35, 0.8, 0);
+                                    csClyde.rotation.y = -Math.PI/2;
+                                    csClyde.body.visible = true;
+                                    break;
+                                case 4:
+                                    csPacman.position.set(25, 0.8, 0);
+                                    csBlinky.visible = true; csBlinky.position.set(35, 0.8, 0); csBlinky.rotation.y = -Math.PI/2; csBlinky.body.visible = true; csBlinky.mat.color.setHex(0xff0000);
+                                    csPinky.visible = true; csPinky.position.set(39, 0.8, 0); csPinky.rotation.y = -Math.PI/2; csPinky.body.visible = true; csPinky.mat.color.setHex(0xffb8ff);
+                                    csInky.visible = true; csInky.position.set(43, 0.8, 0); csInky.rotation.y = -Math.PI/2; csInky.body.visible = true; csInky.mat.color.setHex(0x00ffff);
+                                    csClyde.visible = true; csClyde.position.set(47, 0.8, 0); csClyde.rotation.y = -Math.PI/2; csClyde.body.visible = true; csClyde.mat.color.setHex(0xffb852);
+                                    csPellet.visible = true;
+                                    csPellet.position.set(-15, 0.8, 0);
+                                    csPellet.material.color.setHex(0x00ffff);
+                                    break;
+                                case 5:
+                                    csPacman.position.set(20, 0.8, 0);
+                                    csBlinky.visible = true;
+                                    csBlinky.position.set(30, 0.8, 0);
+                                    csBlinky.rotation.y = -Math.PI/2;
+                                    csBlinky.mat.color.setHex(0xff0000); 
+                                    csBlinky.body.visible = true; 
+                                    csBlinky.position.y = 0.8; 
+                                    csGalaxian.visible = false;
+                                    break;
+                            }
+                        } else {
+                            level++;
+                            ghostSpeedMult += 0.15;
+                            document.getElementById('level').innerText = level;
+                            buildMap();
+                            resetPositions();
+                            playSfx(1000, 1.0, 'square');
+                        }
+                    }
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // Initialize elements
+        buildMap();
+        initGhosts();
+        resetPositions();
+        animate();
+
+    </script>
+</body>
+    </html>
