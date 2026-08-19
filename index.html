@@ -1863,7 +1863,7 @@
                 g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
 
                 // Check fatal collision intersections with Pacman
-                if(pacman.position.distanceTo(g.position) < 1.6) {
+                if(pacman.position.distanceTo(g.position) < 2.0) {
                     if(powerUp) {
                         killGhost(g);
                     } else if(!isJumping) {
