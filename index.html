@@ -923,7 +923,7 @@
             const laserDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
             const raycaster = new THREE.Raycaster(pacman.position, laserDir);
             
-            let maxLaserRange = 30.0;
+            let maxLaserRange = 100.0;
             const targetWallMeshes = walls.map(w => w.mesh);
             const wallHits = raycaster.intersectObjects(targetWallMeshes);
             if (wallHits.length > 0 && wallHits[0].distance < maxLaserRange) {
@@ -1908,7 +1908,7 @@
                             bgmCoffeeBreak.play().catch(e=>e);
                             
                             interTimer = 0; interPhase = 0;
-                            interType = (level - 1) % 6;
+                            interType = (level - 3) % 6;
                             hideAllCSActors();
                             
                             switch(interType) {
