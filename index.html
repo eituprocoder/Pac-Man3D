@@ -49,8 +49,8 @@
         .glitch-left { width: 50%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-right: 2px dashed #00ff00; }
         .glitch-right { width: 50%; height: 100%; padding: 10px; background: rgba(5, 5, 5, 0.7); color: #ff00ff; word-break: break-all; font-size: 10px; overflow: hidden; opacity: 0.9; text-align: left; line-height: 1.1; }
         
-        .bar-container { display: none; width: 250px; height: 12px; border: 2px solid white; border-radius: 6px; margin: 5px auto; overflow: hidden; background: #000; position: relative; }
-        .bar-label { font-size: 10px; position: absolute; width: 250px; text-align: center; margin-top: -1px; color: #fff; text-shadow: 1px 1px 0 #000; z-index: 2; }
+        .bar-container { display: none; width: 250px; height: 12px; border: 2px solid white; border-radius: 6px; margin: 5px auto; overflow: hidden; background: #000; }
+        .bar-label { font-size: 10px; position: absolute; width: 250px; text-align: center; margin-top: -1px; color: #fff; text-shadow: 1px 1px 0 #000; }
         #powerBar { width: 100%; height: 100%; background: #ffff00; }
         #laserBar { width: 100%; height: 100%; background: #ff6400; }
         #speedBar { width: 100%; height: 100%; background: #00ff00; }
@@ -76,7 +76,7 @@
 
     <div id="menu-screen">
         <h1>PAC-MAN 3D</h1>
-        <h2>3D LABYRINTH</h2>
+        <h2>3D LABYRINTH NEURAL AI</h2>
         
         <div id="stats-container">
             <div class="stat-badge">HIGH SCORE: <span id="menu-highscore" style="color:#ffff00;">0</span></div>
@@ -88,27 +88,27 @@
         <div id="ghost-cast-container">
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ff0000;"></span>
-                <div class="ghost-info"><strong style="color:#ff0000;">BLINKY</strong><br>Shadow - Direct Neural Interceptor</div>
+                <div class="ghost-info"><strong style="color:#ff0000;">BLINKY</strong><br>Shadow - Neural Trajectory Tracker</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffb8ff;"></span>
-                <div class="ghost-info"><strong style="color:#ffb8ff;">PINKY</strong><br>Speedy - Ambush Trajectory Predictor</div>
+                <div class="ghost-info"><strong style="color:#ffb8ff;">PINKY</strong><br>Speedy - Neural Ambush Forecaster</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#00ffff;"></span>
-                <div class="ghost-info"><strong style="color:#00ffff;">INKY</strong><br>Bashful - Dual-Vector Pincer Matrix</div>
+                <div class="ghost-info"><strong style="color:#00ffff;">INKY</strong><br>Bashful - Dual-Vector Neural Flanker</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffb852;"></span>
-                <div class="ghost-info"><strong style="color:#ffb852;">CLYDE</strong><br>Pokey - Proximity Shift Engine</div>
+                <div class="ghost-info"><strong style="color:#ffb852;">CLYDE</strong><br>Pokey - Proximity Shift Wanderer</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#800080;"></span>
-                <div class="ghost-info"><strong style="color:#800080;">TIM</strong><br>Stalker - Collision Intercept Seeker</div>
+                <div class="ghost-info"><strong style="color:#800080;">TIM</strong><br>Stalker - Vector Intercept Seeker</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#00ff00;"></span>
-                <div class="ghost-info"><strong style="color:#00ff00;">SPIKE</strong><br>Cruiser - Grid Lane Cut-Off Guard</div>
+                <div class="ghost-info"><strong style="color:#00ff00;">SPIKE</strong><br>Cruiser - Neural Lane Cut-Off Guard</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffff00;"></span>
@@ -116,7 +116,7 @@
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffffff;"></span>
-                <div class="ghost-info"><strong style="color:#ffffff;">WHITY</strong><br>Ghost - Adaptive Cover Support Matrix</div>
+                <div class="ghost-info"><strong style="color:#ffffff;">WHITY</strong><br>Ghost - Adaptive Support Node</div>
             </div>
         </div>
     </div>
@@ -181,7 +181,7 @@
         let level = 1;
         let score = 0, lives = 3, remainingDots = 0;
         let nextLifeThreshold = 10000;
-        let gameState = 'lobby'; // lobby, ready, playing, dying, intermission, victory256, gameover
+        let gameState = 'lobby'; // lobby, ready, playing, dying, intermission, victory256
         let ghostCombo = 0;
         
         // --- PERSISTENT MENU HIGH SCORE & MAX LEVEL ---
@@ -229,7 +229,6 @@
         // --- COOPERATIVE INTEL & COMPASS SHARED SYSTEM ---
         let lastPacmanSeenPos = new THREE.Vector3(0, 0.8, 32);
         let wasPacmanSeenThisFrame = false;
-        let pacmanVelVector = new THREE.Vector3(0, 0, 0);
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -254,8 +253,16 @@
         // --- DYNAMIC LEVEL WALL COLOR PALETTE GENERATOR ---
         function getWallColorForLevel(lvl) {
             const palette = [
-                0x0033ff, 0xff0055, 0x00ffcc, 0xff9900, 0x9900ff,
-                0x00ff00, 0xffff00, 0xff00ff, 0x0099ff, 0xff3300
+                0x0033ff, // Level 1: Classic Blue
+                0xff0055, // Level 2: Neon Red/Pink
+                0x00ffcc, // Level 3: Cyan/Turquoise
+                0xff9900, // Level 4: Amber/Orange
+                0x9900ff, // Level 5: Purple/Violet
+                0x00ff00, // Level 6: Lime Green
+                0xffff00, // Level 7: Gold/Yellow
+                0xff00ff, // Level 8: Magenta
+                0x0099ff, // Level 9: Azure Blue
+                0xff3300  // Level 10: Crimson Red
             ];
             if (lvl <= palette.length) {
                 return palette[lvl - 1];
@@ -266,6 +273,7 @@
             return c.getHex();
         }
 
+        // --- SYNTHESIZED CLASSIC THEME ---
         function playPacmanTheme(onComplete) {
             try {
                 if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -328,7 +336,7 @@
                     if(onComplete) onComplete();
                 }, (startTime - ctx.currentTime) * 1000);
             } catch(e) {
-                if(onComplete) onComplete(); 
+                if(onComplete) onComplete();
             }
         }
 
@@ -348,6 +356,7 @@
             setTimeout(() => div.remove(), 1000);
         }
 
+        // --- RETRO PACMAN LIVES UI FUNCTION ---
         function updateLivesDisplay() {
             const container = document.getElementById('lives-container');
             if (!container) return;
@@ -361,6 +370,7 @@
             }
         }
 
+        // --- PAC-MAN CREATION ---
         const pacman = new THREE.Group();
         const pmMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00, side: THREE.DoubleSide });
         
@@ -390,6 +400,7 @@
         let isMoving = false;
         let deathTimer = 1.0; 
 
+        // --- START GAME ---
         window.startGame = function() {
             document.getElementById('menu-screen').style.display = 'none';
             document.getElementById('ui').style.display = 'block';
@@ -400,9 +411,6 @@
             gameState = 'ready'; 
             updateLivesDisplay();
             checkAndUpdateStats();
-            buildMap();
-            initGhosts();
-            resetPositions();
             
             const readyGoScreen = document.getElementById('ready-go-screen');
             const readyGoText = document.getElementById('ready-go-text');
@@ -417,11 +425,13 @@
                 setTimeout(() => {
                     readyGoScreen.style.display = 'none';
                     gameState = 'playing';
-                    bgmGameplay.play().catch(e=>e);
+                    bgmGameplay.play().catch(e=>e); 
                 }, 1000);
             });
         };
 
+        // --- BASE MAP TEMPLATE & PROCEDURAL MAZE GENERATOR ---
+        // Classic Map Template (Level 1 base)
         const mapTemplate = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -456,83 +466,104 @@
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
 
-        // --- ELEGANT MAZE GENERATOR ALGORITHM (PRESERVING GHOST HOUSE INTACT) ---
-        function generateElegantMaze(lvl) {
-            if (lvl === 1) return mapTemplate.map(row => [...row]);
+        // --- NEW ELEGANT PROCEDURAL MAZE GENERATOR (Ghost House Intact) ---
+        function generateProceduralMaze(currentLevel) {
+            if (currentLevel === 1) return mapTemplate;
 
             const rows = 31, cols = 28;
             let grid = Array.from({ length: rows }, () => Array(cols).fill(1));
 
-            // Lock ghost house region (Rows 11 to 19, Cols 9 to 18) from standard template
-            for (let r = 11; r <= 19; r++) {
-                for (let c = 9; c <= 18; c++) {
-                    grid[r][c] = mapTemplate[r][c];
+            // Reserve Ghost House & Tunnel Region (rows 9 to 19, cols 8 to 19)
+            // Copy Ghost House region strictly from template to keep it intact
+            for (let r = 9; r <= 19; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (c >= 6 && c <= 21 && r >= 9 && r <= 19) {
+                        grid[r][c] = mapTemplate[r][c];
+                    }
                 }
             }
-
-            // Lock outer walls and wrap-around tunnel paths
-            for (let c = 0; c < cols; c++) { grid[0][c] = 1; grid[rows - 1][c] = 1; }
-            for (let r = 0; r < rows; r++) { grid[r][0] = 1; grid[r][cols - 1] = 1; }
-
-            // Tunnel rows
-            for (let c = 0; c <= 5; c++) { grid[14][c] = 3; }
-            for (let c = 22; c < cols; c++) { grid[14][c] = 3; }
-
-            // Symmetric Maze Carving using Recursive Backtracker on Left Half
-            const halfCols = 13;
-            let visited = Array.from({ length: rows }, () => Array(halfCols).fill(false));
-
-            function canCarve(r, c) {
-                if (r <= 0 || r >= rows - 1 || c <= 0 || c >= halfCols) return false;
-                if (r >= 10 && r <= 20 && c >= 8) return false; // Keep ghost house buffer
-                return true;
+            // Preserve horizontal warp tunnel row
+            for (let c = 0; c < cols; c++) {
+                grid[14][c] = mapTemplate[14][c];
             }
 
-            function carve(r, c) {
-                visited[r][c] = true;
-                grid[r][c] = 0;
-                grid[r][cols - 1 - c] = 0; // Symmetric mirroring
+            // Procedurally carve symmetric paths in remaining upper (rows 1..8) and lower (rows 20..29) grids
+            const carveSymmetricBox = (rStart, rEnd, cStart, cEnd) => {
+                for (let r = rStart; r <= rEnd; r++) {
+                    for (let c = cStart; c <= cEnd; c++) {
+                        grid[r][c] = 0; 
+                    }
+                }
+            };
 
-                const dirs = [
-                    [-2, 0], [2, 0], [0, -2], [0, 2]
-                ].sort(() => Math.random() - 0.5);
+            // Generate structured symmetric wall blocks
+            const blockWidths = [2, 3, 4];
+            const blockHeights = [2, 3];
 
-                for (let [dr, dc] of dirs) {
-                    let nr = r + dr, nc = c + dc;
-                    if (canCarve(nr, nc) && !visited[nr][nc]) {
-                        grid[r + dr / 2][c + dc / 2] = 0;
-                        grid[r + dr / 2][cols - 1 - (c + dc / 2)] = 0;
-                        carve(nr, nc);
+            // Upper grid generation (rows 1 to 8)
+            for (let r = 2; r <= 7; r += 3) {
+                for (let c = 2; c <= 11; c += 4) {
+                    let w = blockWidths[(r + c + currentLevel) % blockWidths.length];
+                    let h = blockHeights[(r * c + currentLevel) % blockHeights.length];
+                    
+                    // Apply wall block symmetrically
+                    for (let br = 0; br < h && (r + br) <= 7; br++) {
+                        for (let bc = 0; bc < w && (c + bc) <= 12; bc++) {
+                            let currR = r + br, currC = c + bc;
+                            let mirrorC = cols - 1 - currC;
+                            grid[currR][currC] = 1;
+                            grid[currR][mirrorC] = 1;
+                        }
                     }
                 }
             }
 
-            // Seed carving from multiple symmetric hubs
-            carve(1, 1);
-            carve(5, 1);
-            carve(23, 1);
-            carve(29, 1);
+            // Lower grid generation (rows 20 to 29)
+            for (let r = 21; r <= 28; r += 3) {
+                for (let c = 2; c <= 11; c += 4) {
+                    let w = blockWidths[(r + c + currentLevel * 3) % blockWidths.length];
+                    let h = blockHeights[(r * c + currentLevel * 2) % blockHeights.length];
 
-            // Connect outer pathways to ensure open arcade gameplay
-            for (let r = 1; r < rows - 1; r++) {
-                grid[r][1] = 0; grid[r][cols - 2] = 0;
-            }
-            for (let c = 1; c < cols - 1; c++) {
-                grid[1][c] = 0; grid[rows - 2][c] = 0; grid[5][c] = 0; grid[20][c] = 0;
-            }
-
-            // Restore Ghost House strictly from template
-            for (let r = 11; r <= 19; r++) {
-                for (let c = 9; c <= 18; c++) {
-                    grid[r][c] = mapTemplate[r][c];
+                    for (let br = 0; br < h && (r + br) <= 28; br++) {
+                        for (let bc = 0; bc < w && (c + bc) <= 12; bc++) {
+                            let currR = r + br, currC = c + bc;
+                            let mirrorC = cols - 1 - currC;
+                            grid[currR][currC] = 1;
+                            grid[currR][mirrorC] = 1;
+                        }
+                    }
                 }
             }
 
-            // Place Power Pellets in classic four corners
-            grid[3][1] = 2; grid[3][cols - 2] = 2;
-            grid[23][1] = 2; grid[23][cols - 2] = 2;
+            // Ensure border ring pathways are open
+            for (let c = 1; c < cols - 1; c++) {
+                grid[1][c] = (grid[1][c] === 1) ? 0 : grid[1][c];
+                grid[5][c] = (c % 5 === 0) ? 1 : 0;
+                grid[20][c] = (grid[20][c] === 1) ? 0 : grid[20][c];
+                grid[29][c] = 0;
+            }
+            for (let r = 1; r < rows - 1; r++) {
+                grid[r][1] = 0;
+                grid[r][cols - 2] = 0;
+                grid[r][13] = 0;
+                grid[r][14] = 0;
+            }
 
-            // Place Special Powerups (Laser 4, Speed 5, Freeze 6)
+            // Re-enforce Outer Border
+            for (let c = 0; c < cols; c++) {
+                grid[0][c] = 1;
+                grid[rows - 1][c] = 1;
+            }
+            for (let r = 0; r < rows; r++) {
+                grid[r][0] = 1;
+                grid[r][cols - 1] = 1;
+            }
+            // Warp tunnel openings
+            grid[14][0] = 3; grid[14][1] = 3; grid[14][2] = 3;
+            grid[14][cols - 1] = 3; grid[14][cols - 2] = 3; grid[14][cols - 3] = 3;
+
+            // Strategic Power Pellets placement in 4 outer quadrants
+            grid[3][1] = 2; grid[3][cols - 2] = 2;
             grid[8][1] = 4; grid[8][cols - 2] = 4;
             grid[20][1] = 5; grid[20][cols - 2] = 5;
             grid[26][1] = 6; grid[26][cols - 2] = 6;
@@ -540,7 +571,6 @@
             return grid;
         }
 
-        let currentActiveMap = mapTemplate;
         let walls = []; let dots = [];
         const floorMat = new THREE.MeshPhongMaterial({ color: 0x000a22 });
         const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), floorMat);
@@ -560,10 +590,10 @@
             dots = []; 
             remainingDots = 0;
 
-            currentActiveMap = generateElegantMaze(level);
+            const activeMap = generateProceduralMaze(level);
             const currentWallColor = getWallColorForLevel(level);
 
-            currentActiveMap.forEach((row, z) => {
+            activeMap.forEach((row, z) => {
                 row.forEach((cell, x) => {
                     const pos = [(x - 13.5) * 4, 0, (z - 15) * 4];
                     
@@ -597,10 +627,11 @@
         scene.add(new THREE.AmbientLight(0x404040));
         const light = new THREE.PointLight(0xffffff, 50, 60); scene.add(light);
 
+        // --- GHOSTS (8 Unique Personalities with Neural Weights) ---
         const ghostTypes = [
             { name: 'BLINKY', c: 0xff0000, t: 'chase', s: 1.05 },   
             { name: 'PINKY',  c: 0xffb8ff, t: 'ambush', s: 0.95 },  
-            { name: 'INKY',   c: 0x00ffff, t: 'flank', s: 0.90 },    
+            { name: 'INKY',   c: 0x00ffff, t: 'flank', s: 0.9 },    
             { name: 'CLYDE',  c: 0xffb852, t: 'wander', s: 0.85 },  
             { name: 'TIM',    c: 0x800080, t: 'chase', s: 1.10 },    
             { name: 'SPIKE',  c: 0x00ff00, t: 'ambush', s: 1.00 },   
@@ -608,91 +639,77 @@
             { name: 'WHITY',  c: 0xffffff, t: 'flank', s: 0.95 }    
         ];
 
-        // --- DIGITAL NEURAL PREDICTION MATRIX FOR GHOST TACTICAL DECISION MAKING ---
-        class GhostNeuralPredictor {
-            constructor(name) {
-                this.name = name;
+        // --- COMPLEX DIGITAL NEURAL PREDICTION ENGINE (Simulated Artificial Neural Matrix) ---
+        class DigitalNeuralPredictor {
+            constructor(personality) {
+                this.personality = personality;
+                // Weights initialized for a 10-input -> 8-hidden -> 4-output digital neural decision matrix
+                this.weightsLayer1 = Array.from({ length: 10 }, () => Array.from({ length: 8 }, () => (Math.random() - 0.5) * 2));
+                this.weightsLayer2 = Array.from({ length: 8 }, () => Array.from({ length: 4 }, () => (Math.random() - 0.5) * 2));
+                this.biases1 = Array.from({ length: 8 }, () => (Math.random() - 0.5));
+                this.biases2 = Array.from({ length: 4 }, () => (Math.random() - 0.5));
+                this.applyPersonalityBias();
             }
 
-            predictTargetCell(ghost, pacmanPos, pacmanVel, pacmanDir, ghostsList, currentLevel) {
-                const pacGrid = worldToGrid(pacmanPos);
-                const ghostGrid = worldToGrid(ghost.position);
-                
-                let leadSteps = 4;
-                if (this.name === 'PINKY') leadSteps = 8;
-                if (this.name === 'TIM') leadSteps = 6;
-                
-                let predictedPacGrid = {
-                    x: Math.max(1, Math.min(26, Math.round(pacGrid.x + pacmanDir.x * leadSteps))),
-                    z: Math.max(1, Math.min(29, Math.round(pacGrid.z + pacmanDir.z * leadSteps)))
-                };
+            applyPersonalityBias() {
+                // Tailor neural matrix behavior weights to ghost roles
+                if (this.personality === 'BLINKY') this.weightsLayer1[0][0] += 2.5; // Direct distance bias
+                if (this.personality === 'PINKY') { this.weightsLayer1[1][1] += 3.0; this.weightsLayer1[2][2] += 3.0; } // Velocity forecast bias
+                if (this.personality === 'TIM') this.weightsLayer1[7][3] += 2.0; // Intercept trajectory vector
+                if (this.personality === 'SPIKE') this.weightsLayer1[9][4] += 2.2; // Pathway intersection density bias
+            }
 
-                let target = { x: 14, z: 15 };
+            tanh(x) { return Math.tanh(x); }
+            sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
 
-                switch (this.name) {
-                    case 'BLINKY': target = pacGrid; break;
-                    case 'PINKY': target = predictedPacGrid; break;
-                    case 'INKY': {
-                        const blinky = ghostsList.find(g => g.ghostName === 'BLINKY') || ghost;
-                        const blinkyGrid = worldToGrid(blinky.position);
-                        const vx = predictedPacGrid.x - blinkyGrid.x;
-                        const vz = predictedPacGrid.z - blinkyGrid.z;
-                        target = {
-                            x: Math.max(1, Math.min(26, blinkyGrid.x + vx * 2)),
-                            z: Math.max(1, Math.min(29, blinkyGrid.z + vz * 2))
-                        };
-                        break;
-                    }
-                    case 'CLYDE': {
-                        const dist = Math.hypot(ghostGrid.x - pacGrid.x, ghostGrid.z - pacGrid.z);
-                        if (dist > 8) target = pacGrid;
-                        else target = { x: 2, z: 28 };
-                        break;
-                    }
-                    case 'TIM': {
-                        const dist = Math.hypot(ghostGrid.x - pacGrid.x, ghostGrid.z - pacGrid.z);
-                        const interceptTime = dist / Math.max(0.1, ghost.baseSpeed);
-                        target = {
-                            x: Math.max(1, Math.min(26, Math.round(pacGrid.x + pacmanVel.x * interceptTime * 5))),
-                            z: Math.max(1, Math.min(29, Math.round(pacGrid.z + pacmanVel.z * interceptTime * 5)))
-                        };
-                        break;
-                    }
-                    case 'SPIKE':
-                        target = {
-                            x: Math.max(1, Math.min(26, pacGrid.x + (pacGrid.x > ghostGrid.x ? 3 : -3))),
-                            z: Math.max(1, Math.min(29, pacGrid.z + (pacGrid.z > ghostGrid.z ? 3 : -3)))
-                        };
-                        break;
-                    case 'GOLDY':
-                        target = { x: pacGrid.x > 14 ? 26 : 1, z: pacGrid.z };
-                        break;
-                    case 'WHITY': default:
-                        target = { x: Math.max(1, Math.min(26, 27 - pacGrid.x)), z: Math.max(1, Math.min(29, pacGrid.z)) };
-                        break;
+            predictOptimalTarget(ghostPos, pacPos, pacVel, isScared) {
+                // 1. Construct Neural Inputs
+                const dx = pacPos.x - ghostPos.x;
+                const dz = pacPos.z - ghostPos.z;
+                const dist = Math.sqrt(dx * dx + dz * dz) || 1;
+
+                const inputs = [
+                    dist / 100,                     // I0: Normalized distance
+                    pacVel.x,                       // I1: Pacman X-velocity
+                    pacVel.z,                       // I2: Pacman Z-velocity
+                    dx / 50,                        // I3: Normalized delta X
+                    dz / 50,                        // I4: Normalized delta Z
+                    isScared ? 1.0 : 0.0,           // I5: Scared state flag
+                    wasPacmanSeenThisFrame ? 1.0 : 0.0, // I6: Visual contact flag
+                    Math.atan2(dz, dx) / Math.PI,   // I7: Relative angle
+                    (dist < 12) ? 1.0 : 0.0,        // I8: Proximity alert threshold
+                    level / 10                      // I9: Level aggression scalar
+                ];
+
+                // 2. Hidden Layer Forward Feed Transformation
+                const hidden = new Array(8).fill(0);
+                for (let j = 0; j < 8; j++) {
+                    let sum = this.biases1[j];
+                    for (let i = 0; i < 10; i++) sum += inputs[i] * this.weightsLayer1[i][j];
+                    hidden[j] = this.tanh(sum);
                 }
 
-                if (powerUp) {
-                    target = { x: pacGrid.x > 14 ? 2 : 25, z: pacGrid.z > 15 ? 2 : 28 };
+                // 3. Output Layer Evaluation (Predicts Forward Step Offset Trajectory)
+                const outputs = new Array(4).fill(0);
+                for (let k = 0; k < 4; k++) {
+                    let sum = this.biases2[k];
+                    for (let j = 0; j < 8; j++) sum += hidden[j] * this.weightsLayer2[j][k];
+                    outputs[k] = this.sigmoid(sum);
                 }
 
-                if (checkGhostColGrid(target.x, target.z, ghost.isDead, ghostGrid.x, ghostGrid.z)) {
-                    let best = target;
-                    let minD = Infinity;
-                    for (let dx = -2; dx <= 2; dx++) {
-                        for (let dz = -2; dz <= 2; dz++) {
-                            let nx = Math.max(1, Math.min(26, target.x + dx));
-                            let nz = Math.max(1, Math.min(29, target.z + dz));
-                            if (!checkGhostColGrid(nx, nz, ghost.isDead, ghostGrid.x, ghostGrid.z)) {
-                                let d = Math.abs(nx - target.x) + Math.abs(nz - target.z);
-                                if (d < minD) { minD = d; best = { x: nx, z: nz }; }
-                            }
-                        }
-                    }
-                    target = best;
+                // Translate Neural Outputs into dynamic predicted target coordinates
+                let predictSteps = 4 + Math.round(outputs[0] * 6); 
+                if (isScared) predictSteps = -6; 
+
+                let targetX = pacPos.x + pacVel.x * predictSteps * 4;
+                let targetZ = pacPos.z + pacVel.z * predictSteps * 4;
+
+                if (this.personality === 'INKY') {
+                    targetX = pacPos.x - dx * outputs[1];
+                    targetZ = pacPos.z - dz * outputs[2];
                 }
 
-                return target;
+                return worldToGrid(new THREE.Vector3(targetX, 0.8, targetZ));
             }
         }
 
@@ -727,17 +744,20 @@
                 group.isDead = false;
                 group.dir = new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize();
                 
-                group.currentAIState = 'walk';
+                // Neural Predictor Engine attached to Ghost
+                group.neuralEngine = new DigitalNeuralPredictor(config.name);
+                
+                group.currentAIState = 'walk'; 
                 group.aStarPath = [];
                 group.pathUpdateTimer = Math.random() * 200; 
                 group.currentTargetCell = {x: 14, z: 15};
-                group.neuralPredictor = new GhostNeuralPredictor(config.name);
                 
                 scene.add(group);
                 return group;
             });
         }
 
+        // --- HIGH-DETAIL ADVANCED 3D FRUIT CREATION ---
         const fruitData = [
             { name: "CHERRY", score: 100 },
             { name: "STRAWBERRY", score: 300 },
@@ -753,7 +773,7 @@
             const group = new THREE.Group();
 
             switch (fruitIndex) {
-                case 0: { // CHERRY
+                case 0: { 
                     const cherryMat = new THREE.MeshPhongMaterial({ color: 0xee0000, shininess: 120 });
                     const stemMat = new THREE.MeshPhongMaterial({ color: 0x22aa22 });
                     const leafMat = new THREE.MeshPhongMaterial({ color: 0x118811, side: THREE.DoubleSide });
@@ -764,96 +784,165 @@
                     c2.position.set(0.25, -0.2, 0);
 
                     const stem1 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.7), stemMat);
-                    stem1.position.set(-0.12, 0.2, 0); stem1.rotation.z = -0.4;
+                    stem1.position.set(-0.12, 0.2, 0);
+                    stem1.rotation.z = -0.4;
+
                     const stem2 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.7), stemMat);
-                    stem2.position.set(0.12, 0.15, 0); stem2.rotation.z = 0.3;
+                    stem2.position.set(0.12, 0.15, 0);
+                    stem2.rotation.z = 0.3;
 
                     const leafShape = new THREE.Shape();
-                    leafShape.moveTo(0,0); leafShape.quadraticCurveTo(0.2, 0.2, 0.4, 0); leafShape.quadraticCurveTo(0.2, -0.2, 0, 0);
-                    const leaf = new THREE.Mesh(new THREE.ShapeGeometry(leafShape), leafMat);
-                    leaf.position.set(0, 0.45, 0); leaf.rotation.z = 0.5;
+                    leafShape.moveTo(0,0);
+                    leafShape.quadraticCurveTo(0.2, 0.2, 0.4, 0);
+                    leafShape.quadraticCurveTo(0.2, -0.2, 0, 0);
+                    const leafGeo = new THREE.ShapeGeometry(leafShape);
+                    const leaf = new THREE.Mesh(leafGeo, leafMat);
+                    leaf.position.set(0, 0.45, 0);
+                    leaf.rotation.z = 0.5;
 
                     group.add(c1, c2, stem1, stem2, leaf);
                     break;
                 }
-                case 1: { // STRAWBERRY
+                case 1: { 
                     const strawMat = new THREE.MeshPhongMaterial({ color: 0xff0033, shininess: 80 });
                     const crownMat = new THREE.MeshPhongMaterial({ color: 0x00cc44 });
                     const seedMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+
                     const body = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.9, 16), strawMat);
-                    body.rotation.x = Math.PI;
+                    body.rotation.x = Math.PI; 
 
                     for (let i = 0; i < 5; i++) {
                         const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 8), crownMat);
                         const angle = (i / 5) * Math.PI * 2;
                         leaf.position.set(Math.cos(angle)*0.2, 0.45, Math.sin(angle)*0.2);
-                        leaf.rotation.x = Math.cos(angle) * 0.5; leaf.rotation.z = Math.sin(angle) * 0.5;
+                        leaf.rotation.x = Math.cos(angle) * 0.5;
+                        leaf.rotation.z = Math.sin(angle) * 0.5;
                         group.add(leaf);
                     }
+
                     for (let i = 0; i < 12; i++) {
                         const seed = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), seedMat);
-                        const a = (i / 12) * Math.PI * 2, h = (i % 3) * 0.25 - 0.2, r = 0.35 * (0.45 - h);
+                        const a = (i / 12) * Math.PI * 2;
+                        const h = (i % 3) * 0.25 - 0.2;
+                        const r = 0.35 * (0.45 - h);
                         seed.position.set(Math.cos(a)*r, h, Math.sin(a)*r);
                         group.add(seed);
                     }
+
                     group.add(body);
                     break;
                 }
-                case 2: { // PEACH
+                case 2: { 
                     const peachMat = new THREE.MeshPhongMaterial({ color: 0xff7733, shininess: 40 });
                     const leafMat = new THREE.MeshPhongMaterial({ color: 0x22aa33 });
-                    const sphere1 = new THREE.Mesh(new THREE.SphereGeometry(0.48, 16, 16), peachMat); sphere1.position.x = -0.06;
-                    const sphere2 = new THREE.Mesh(new THREE.SphereGeometry(0.48, 16, 16), peachMat); sphere2.position.x = 0.06;
-                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3), leafMat); stem.position.set(0, 0.45, 0);
-                    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.35, 8), leafMat); leaf.position.set(0.12, 0.45, 0); leaf.rotation.z = -1.1;
+
+                    const sphere1 = new THREE.Mesh(new THREE.SphereGeometry(0.48, 16, 16), peachMat);
+                    sphere1.position.x = -0.06;
+                    const sphere2 = new THREE.Mesh(new THREE.SphereGeometry(0.48, 16, 16), peachMat);
+                    sphere2.position.x = 0.06;
+
+                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3), leafMat);
+                    stem.position.set(0, 0.45, 0);
+
+                    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.35, 8), leafMat);
+                    leaf.position.set(0.12, 0.45, 0);
+                    leaf.rotation.z = -1.1;
+
                     group.add(sphere1, sphere2, stem, leaf);
                     break;
                 }
-                case 3: { // APPLE
+                case 3: { 
                     const appleMat = new THREE.MeshPhongMaterial({ color: 0xdd0000, shininess: 120 });
                     const stemMat = new THREE.MeshPhongMaterial({ color: 0x553311 });
                     const leafMat = new THREE.MeshPhongMaterial({ color: 0x00cc33, side: THREE.DoubleSide });
-                    const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), appleMat); body.scale.set(1.0, 0.88, 1.0);
-                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.35), stemMat); stem.position.set(0, 0.42, 0); stem.rotation.z = -0.2;
-                    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), leafMat); leaf.scale.set(1.5, 0.1, 0.8); leaf.position.set(0.12, 0.45, 0);
+
+                    const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), appleMat);
+                    body.scale.set(1.0, 0.88, 1.0);
+
+                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.35), stemMat);
+                    stem.position.set(0, 0.42, 0);
+                    stem.rotation.z = -0.2;
+
+                    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), leafMat);
+                    leaf.scale.set(1.5, 0.1, 0.8);
+                    leaf.position.set(0.12, 0.45, 0);
+
                     group.add(body, stem, leaf);
                     break;
                 }
-                case 4: { // GRAPES
+                case 4: { 
                     const grapeMat = new THREE.MeshPhongMaterial({ color: 0x7700cc, shininess: 90 });
                     const stemMat = new THREE.MeshPhongMaterial({ color: 0x448822 });
-                    const positions = [[0, -0.3, 0], [-0.18, -0.1, 0.1], [0.18, -0.1, 0.1], [0, -0.1, -0.18], [-0.22, 0.1, -0.1], [0.22, 0.1, -0.1], [0, 0.1, 0.22], [-0.15, 0.28, 0.1], [0.15, 0.28, 0.1]];
-                    positions.forEach(p => { const gSphere = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), grapeMat); gSphere.position.set(...p); group.add(gSphere); });
-                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3), stemMat); stem.position.set(0, 0.45, 0); group.add(stem);
+
+                    const positions = [
+                        [0, -0.3, 0],
+                        [-0.18, -0.1, 0.1], [0.18, -0.1, 0.1], [0, -0.1, -0.18],
+                        [-0.22, 0.1, -0.1], [0.22, 0.1, -0.1], [0, 0.1, 0.22],
+                        [-0.15, 0.28, 0.1], [0.15, 0.28, 0.1]
+                    ];
+
+                    positions.forEach(p => {
+                        const gSphere = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), grapeMat);
+                        gSphere.position.set(...p);
+                        group.add(gSphere);
+                    });
+
+                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3), stemMat);
+                    stem.position.set(0, 0.45, 0);
+                    group.add(stem);
                     break;
                 }
-                case 5: { // GALAXIAN
+                case 5: { 
                     const cyanMat = new THREE.MeshPhongMaterial({ color: 0x00ffff, shininess: 100 });
                     const redMat = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
                     const yellowMat = new THREE.MeshPhongMaterial({ color: 0xffff00 });
+
                     const body = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.7), cyanMat);
-                    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.35, 4), yellowMat); nose.rotation.x = Math.PI / 2; nose.position.set(0, 0, 0.45);
-                    const wingL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.3), redMat); wingL.position.set(-0.3, 0, 0);
-                    const wingR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.3), redMat); wingR.position.set(0.3, 0, 0);
-                    group.add(body, nose, wingL, wingR); group.scale.setScalar(0.9);
+                    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.35, 4), yellowMat);
+                    nose.rotation.x = Math.PI / 2;
+                    nose.position.set(0, 0, 0.45);
+
+                    const wingL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.3), redMat);
+                    wingL.position.set(-0.3, 0, 0);
+                    const wingR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.3), redMat);
+                    wingR.position.set(0.3, 0, 0);
+
+                    group.add(body, nose, wingL, wingR);
+                    group.scale.setScalar(0.9);
                     break;
                 }
-                case 6: { // BELL
+                case 6: { 
                     const goldMat = new THREE.MeshPhongMaterial({ color: 0xffdd00, shininess: 150 });
                     const clapperMat = new THREE.MeshPhongMaterial({ color: 0xffeeaa });
+
                     const dome = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.5, 0.6, 16), goldMat);
-                    const lip = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.08, 8, 24), goldMat); lip.rotation.x = Math.PI / 2; lip.position.y = -0.3;
-                    const topRing = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.04, 8, 16), goldMat); topRing.position.y = 0.35;
-                    const clapper = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), clapperMat); clapper.position.y = -0.32;
+                    const lip = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.08, 8, 24), goldMat);
+                    lip.rotation.x = Math.PI / 2;
+                    lip.position.y = -0.3;
+
+                    const topRing = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.04, 8, 16), goldMat);
+                    topRing.position.y = 0.35;
+
+                    const clapper = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), clapperMat);
+                    clapper.position.y = -0.32;
+
                     group.add(dome, lip, topRing, clapper);
                     break;
                 }
-                case 7: default: { // KEY
+                case 7: default: { 
                     const keyMat = new THREE.MeshPhongMaterial({ color: 0xeeeeee, shininess: 160 });
-                    const head = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.07, 8, 20), keyMat); head.position.y = 0.35;
-                    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.7), keyMat); shaft.position.y = -0.05;
-                    const bit1 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.06), keyMat); bit1.position.set(0.08, -0.25, 0);
-                    const bit2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.08, 0.06), keyMat); bit2.position.set(0.07, -0.38, 0);
+
+                    const head = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.07, 8, 20), keyMat);
+                    head.position.y = 0.35;
+
+                    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.7), keyMat);
+                    shaft.position.y = -0.05;
+
+                    const bit1 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.06), keyMat);
+                    bit1.position.set(0.08, -0.25, 0);
+                    const bit2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.08, 0.06), keyMat);
+                    bit2.position.set(0.07, -0.38, 0);
+
                     group.add(head, shaft, bit1, bit2);
                     break;
                 }
@@ -884,14 +973,13 @@
             fruitActiveTime = 10000;
         }
 
-        // RESET POSITIONS
+        // --- RESET POSITIONS ---
         function resetPositions() {
             pacman.position.set(0, 0.8, 32);
             pacman.rotation.set(0, Math.PI, 0);
             topHalf.rotation.x = 0;
             bottomHalf.rotation.x = 0;
             pacman.scale.setScalar(1);
-            pacmanVelVector.set(0, 0, 0);
             
             ghosts.forEach((g, i) => {
                 g.position.set((Math.random()-0.5)*4, 0.3, -4 + (Math.random()-0.5)*2);
@@ -914,13 +1002,14 @@
             lastPacmanSeenPos.set(0, 0.8, 32);
         }
 
-        // --- LASER WEAPON (Laser Length = 100) ---
+        // --- LASER LOGIC WITH EXTENDED RANGE = 100 ---
         function fireLaser() {
             playSfx(1000, 0.1, 'sawtooth');
             const laserDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
             const raycaster = new THREE.Raycaster(pacman.position, laserDir);
             
-            let maxLaserRange = 100.0; // LASER LENGTH = 100
+            // Set max laser length to 100.0
+            let maxLaserRange = 100.0;
             const targetWallMeshes = walls.map(w => w.mesh);
             const wallHits = raycaster.intersectObjects(targetWallMeshes);
             if (wallHits.length > 0 && wallHits[0].distance < maxLaserRange) {
@@ -959,6 +1048,7 @@
             playSfx(500 + ghostCombo*100, 0.2, 'square');
         }
 
+        // --- MINIMAP LOGIC ---
         function drawMinimap() {
             const canvas = document.getElementById('minimap');
             const ctx = canvas.getContext('2d');
@@ -1013,6 +1103,7 @@
             }
         }
 
+        // --- SCORE & LIFE SYSTEM ---
         function addScore(amount, pos3D = null) {
             score += amount;
             document.getElementById('score').innerText = score;
@@ -1029,6 +1120,7 @@
             }
         }
 
+        // --- INPUT CONTROLLERS ---
         let moveF = 0, moveS = 0;
         let camAngleY = Math.PI/2, camAngleX = 0.4, camRadius = 15;
         let touchStartX = 0, touchStartY = 0, isDraggingCamera = false;
@@ -1073,7 +1165,7 @@
             }
         });
 
-        // GRID POSITION MATH TRANSLATIONS
+        // --- GRID POSITION MATH TRANSLATIONS ---
         function worldToGrid(pos) {
             let cx = Math.round(pos.x / 4 + 13.5);
             let cz = Math.round(pos.z / 4 + 15);
@@ -1084,7 +1176,7 @@
             return new THREE.Vector3((gx - 13.5) * 4, 0.3, (gz - 15) * 4);
         }
 
-        // PAC-MAN SPECIFIC COLLISION
+        // --- PAC-MAN SPECIFIC COLLISION ---
         function checkCol(p, size=1.6) { 
             const checkP = p.clone();
             checkP.y = 0.8; 
@@ -1096,17 +1188,28 @@
             return hitsGhostBox;
         }
 
-        // GHOST SPECIFIC GRID COLLISION
+        // --- STRICT HARD WALL COLLISION FOR GHOSTS ---
+        function checkGhostWallCollision(pos, radius = 0.8) {
+            const ghostBox = new THREE.Box3().setFromCenterAndSize(
+                new THREE.Vector3(pos.x, 0.8, pos.z),
+                new THREE.Vector3(radius * 1.8, 1.6, radius * 1.8)
+            );
+            return walls.some(w => ghostBox.intersectsBox(w.box));
+        }
+
+        // --- GHOST SPECIFIC GRID CELL COLLISION ---
         function checkGhostColGrid(gx, gz, isDead = false, currX = -1, currZ = -1) {
-            if (gz === 14 && (gx < 0 || gx >= 28)) return false;
+            if (gz === 14 && (gx < 0 || gx >= 28)) return false; // Tunnel wrap side
             if (gx < 0 || gx >= 28 || gz < 0 || gz >= 31) return true;
-            const cellVal = currentActiveMap[gz][gx];
+            
+            const activeMap = generateProceduralMaze(level);
+            const cellVal = activeMap[gz][gx];
             if (cellVal === 1) return true;
             
             if (cellVal === 8 || cellVal === 9) {
                 if (isDead) return false;
-                if (currX !== -1 && currZ !== -1 && currZ < 31 && currX < 28) {
-                    const currCell = currentActiveMap[currZ][currX];
+                if (currX !== -1 && currZ !== -1) {
+                    const currCell = activeMap[currZ][currX];
                     if (currCell === 8 || currCell === 9) return false;
                 }
                 return true; 
@@ -1114,6 +1217,7 @@
             return false;
         }
 
+        // --- A* PATHFINDING ALGORITHM IMPLEMENTATION WITH WRAP SIDES SUPPORT ---
         function computeAStarPath(startGrid, targetGrid, isDead = false) {
             if (checkGhostColGrid(targetGrid.x, targetGrid.z, isDead, startGrid.x, startGrid.z)) {
                 let bestNode = { x: 14, z: 15 };
@@ -1166,6 +1270,7 @@
                     let nx = current.x + dirs[i].x;
                     let nz = current.z + dirs[i].z;
                     
+                    // Seamless tunnel wrapping at row 14
                     if (nz === 14) {
                         if (nx < 0) nx = 27;
                         if (nx > 27) nx = 0;
@@ -1197,6 +1302,7 @@
             return [];
         }
 
+        // --- MULTI-COLOR GLITCH MATRIX GENERATOR FOR LEVEL 256 ---
         const glitchColors = ['#ff00ff', '#00ffff', '#00ff00', '#ffff00', '#ff0000', '#ff8800', '#ffffff', '#a855f7'];
         function generateGlitchMatrix() {
             const container = document.getElementById('glitch-matrix');
@@ -1226,7 +1332,7 @@
             container.innerHTML = content;
         }
 
-        // --- COFFEE BREAK / INTERMISSION SCENE & VISUAL FIXES ---
+        // --- INTERMISSION SCENE SETUP ---
         const interScene = new THREE.Scene();
         interScene.background = new THREE.Color(0x000000);
         const interCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -1244,6 +1350,7 @@
         csPacman.add(csTopHalf); csPacman.add(csBotHalf);
         interScene.add(csPacman);
 
+        const csBlinky = new THREE.Group();
         const csBlinkyMat = new THREE.MeshPhongMaterial({color: 0xff0000});
         const csBlinkyBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.8, 0.8, 2, 8), csBlinkyMat);
         csBlinkyBody.position.y = 0.8;
@@ -1258,10 +1365,11 @@
         const csRP = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({color:0x000000}));
         csRP.position.set(-0.3, 1.2, 0.75);
         csEyesGroup.add(csLE, csLP, csRE, csRP);
-
-        const csBlinky = new THREE.Group();
-        csBlinky.add(csBlinkyBody); csBlinky.add(csEyesGroup);
-        csBlinky.mat = csBlinkyMat; csBlinky.body = csBlinkyBody;
+        
+        csBlinky.add(csBlinkyBody);
+        csBlinky.add(csEyesGroup);
+        csBlinky.mat = csBlinkyMat; 
+        csBlinky.body = csBlinkyBody; 
         interScene.add(csBlinky);
 
         const csPellet = new THREE.Mesh(new THREE.SphereGeometry(1.5), new THREE.MeshPhongMaterial({color: 0xffff00, shininess: 100})); 
@@ -1274,7 +1382,8 @@
             body.position.y = 0.8;
             const eyes = csEyesGroup.clone();
             group.add(body); group.add(eyes);
-            group.mat = mat; group.body = body;
+            group.mat = mat;
+            group.body = body;
             return group;
         }
         
@@ -1307,56 +1416,6 @@
         let interTimer = 0, interPhase = 0, interType = 0;
         const INTERMISSION_DURATION = 12000;
 
-        function startIntermission() {
-            gameState = 'intermission';
-            interTimer = 0;
-            interPhase = 0;
-            interType = (level - 1) % 6;
-
-            document.getElementById('ui').style.display = 'none';
-            document.getElementById('minimap').style.display = 'none';
-            document.getElementById('victory').style.display = 'none';
-
-            bgmGameplay.pause();
-            bgmCoffeeBreak.currentTime = 0;
-            bgmCoffeeBreak.play().catch(e=>e);
-
-            hideAllCSActors();
-
-            // Reset Pac-Man CS transforms
-            csPacman.visible = true;
-            csPacman.scale.set(1, 1, 1);
-            csPacman.position.set(20, 0.8, 0);
-            csPacman.rotation.set(0, -Math.PI/2, 0);
-            csTopHalf.rotation.x = 0; csBotHalf.rotation.x = 0;
-
-            // Reset Ghosts CS transforms
-            csBlinky.visible = true;
-            csBlinky.position.set(30, 0, 0);
-            csBlinky.rotation.set(0, -Math.PI/2, 0);
-            csBlinkyBody.visible = true;
-            csBlinkyMat.color.setHex(0xff0000);
-
-            csPinky.visible = (interType === 1 || interType === 4);
-            csPinky.position.set(35, 0, 0); csPinky.rotation.set(0, -Math.PI/2, 0);
-            csPinky.body.visible = true; csPinky.mat.color.setHex(0xffb8ff);
-
-            csInky.visible = (interType === 2 || interType === 4);
-            csInky.position.set(30, 0, 0); csInky.rotation.set(0, -Math.PI/2, 0);
-            csInky.body.visible = true; csInky.mat.color.setHex(0x00ffff);
-
-            csClyde.visible = (interType === 3 || interType === 4);
-            csClyde.position.set(35, 0, 0); csClyde.rotation.set(0, -Math.PI/2, 0);
-            csClyde.body.visible = true; csClyde.mat.color.setHex(0xffb852);
-
-            csPellet.visible = (interType === 0);
-            csPellet.position.set(-10, 0.8, 0);
-
-            csBlock.visible = false; csBlock.position.set(-5, -5, 0);
-            csLaser.visible = false; csLaser.position.set(0, 0.8, 0);
-            csGalaxian.visible = false; csGalaxian.position.set(0, 15, 0);
-        }
-
         function endIntermission() {
             level++;
             checkAndUpdateStats();
@@ -1371,6 +1430,7 @@
             bgmGameplay.play().catch(e=>e);
         }
 
+        // --- MAIN GAMEPLAY LOOP ---
         let lastTime = performance.now();
 
         function animate() {
@@ -1407,6 +1467,7 @@
                 return;
             }
 
+            // --- INTERMISSION SCENES ---
             if (gameState === 'intermission') {
                 interTimer += deltaMs;
                 
@@ -1603,28 +1664,27 @@
                 if(pacman.position.y <= 0.8) { pacman.position.y = 0.8; isJumping = false; }
             }
 
+            // Pacman Speed with Level Scaling
             const levelSpeedFactor = getLevelSpeedMultiplier(level);
             let curSpeed = pacBaseSpeed * levelSpeedFactor * (speedMode ? 2.0 : 1.0);
             
-            const moveVec = new THREE.Vector3(moveS, 0, moveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize();
-            const v = moveVec.clone().multiplyScalar(curSpeed);
+            const v = new THREE.Vector3(moveS, 0, moveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize().multiplyScalar(curSpeed);
             isMoving = (moveS !== 0 || moveF !== 0);
 
             if(isMoving) {
                 const npX = pacman.position.clone(); npX.x += v.x; if(!checkCol(npX)) pacman.position.x = npX.x;
                 const npZ = pacman.position.clone(); npZ.z += v.z; if(!checkCol(npZ)) pacman.position.z = npZ.z;
                 
-                pacmanVelVector.copy(v);
                 pacman.rotation.y = Math.atan2(v.x, v.z);
                 
                 mouthTimer += 0.25 * (speedMode ? 1.5 : 1);
                 const mouthAngle = (Math.sin(mouthTimer) + 1) * 0.3;
                 topHalf.rotation.x = -mouthAngle; bottomHalf.rotation.x = mouthAngle;
                 
+                // Seamless Pacman tunnel warp side transition
                 if (pacman.position.x > 56) pacman.position.x = -56;
                 else if (pacman.position.x < -56) pacman.position.x = 56;
             } else {
-                pacmanVelVector.set(0, 0, 0);
                 topHalf.rotation.x = 0; bottomHalf.rotation.x = 0;
             }
 
@@ -1634,7 +1694,7 @@
             camera.lookAt(pacman.position);
             light.position.copy(pacman.position).add(new THREE.Vector3(0, 3, 0));
 
-            // LINE OF SIGHT INTELLIGENCE SCAN
+            // Compass Line of sight scan
             const pacmanGridPos = worldToGrid(pacman.position);
             wasPacmanSeenThisFrame = false;
             
@@ -1656,13 +1716,13 @@
                 lastPacmanSeenPos.copy(pacman.position);
             }
 
-            // DECREMENT POWER TIMERS
+            // Powerup Timers
             if(powerUp) powerTimeLeft -= deltaMs;
             if(laserMode) { laserTimeLeft -= deltaMs; laserCooldown -= deltaMs; }
             if(speedMode) speedTimeLeft -= deltaMs;
             if(freezeMode) freezeTimeLeft -= deltaMs;
 
-            // AURA CONTROLLER
+            // Aura Light and UI Updates
             if (powerUp || laserMode || speedMode || freezeMode) {
                 auraMesh.visible = true;
                 auraLight.intensity = 65; 
@@ -1720,7 +1780,7 @@
                 if(freezeTimeLeft <= 0) { freezeMode = false; document.getElementById('freezeBarContainer').style.display = 'none'; }
             }
 
-            // Fruits logic
+            // Fruits spawn logic
             fruitTimer += deltaMs;
             if (fruitTimer > 15000 && !fruitMesh) {
                 spawnFruit();
@@ -1740,106 +1800,273 @@
                 }
             }
 
-            // GHOST AI EXECUTION & MOVEMENT LOOP
+            // --- GHOST DIGITAL NEURAL PREDICTION CONTROL SYSTEM ---
+            const centerBox = new THREE.Vector3(0, 0.3, -4);
+            const pacVel = v.clone(); 
+            
             ghosts.forEach(g => {
                 let gGrid = worldToGrid(g.position);
 
-                if (g.isDead) {
-                    const targetGrid = { x: 14, z: 13 };
-                    if (gGrid.x === targetGrid.x && gGrid.z === targetGrid.z) {
+                if(g.isDead) {
+                    let toCenter = centerBox.clone().sub(g.position);
+                    if(toCenter.length() < 0.5) {
                         g.isDead = false;
                         g.bodyGroup.visible = true;
-                        g.bodyGroup.children[0].material.color.set(g.baseColor);
+                        g.bodyGroup.children[0].material.color.set(powerUp ? 0x2121ff : g.baseColor);
+                        g.aStarPath = [];
                     } else {
-                        let path = computeAStarPath(gGrid, targetGrid, true);
-                        if (path.length > 1) {
-                            let nextW = gridToWorld(path[1].x, path[1].z);
-                            let moveD = nextW.clone().sub(g.position).normalize();
-                            g.position.add(moveD.multiplyScalar(0.3));
+                        let targetGrid = { x: 14, z: 15 };
+                        
+                        g.pathUpdateTimer -= deltaMs;
+                        if (g.pathUpdateTimer <= 0 || !g.aStarPath || g.aStarPath.length === 0) {
+                            g.pathUpdateTimer = 150; 
+                            g.aStarPath = computeAStarPath(gGrid, targetGrid, g.isDead);
                         }
+                        
+                        let eyeSpeed = 0.4 * levelSpeedFactor;
+                        
+                        if (g.aStarPath && g.aStarPath.length > 1) {
+                            let nextNode = g.aStarPath[1];
+                            let worldNext = gridToWorld(nextNode.x, nextNode.z);
+                            worldNext.y = g.position.y;
+                            
+                            let moveVec = worldNext.clone().sub(g.position);
+                            let stepDist = moveVec.length();
+                            
+                            if (stepDist < eyeSpeed) {
+                                g.position.copy(worldNext);
+                                g.aStarPath.shift();
+                            } else {
+                                moveVec.normalize();
+                                g.position.add(moveVec.multiplyScalar(eyeSpeed));
+                                g.dir.copy(moveVec);
+                            }
+                        } else {
+                            let fallbackVec = toCenter.clone();
+                            fallbackVec.y = 0;
+                            if(fallbackVec.length() > 0.1) {
+                                fallbackVec.normalize();
+                                g.position.add(fallbackVec.multiplyScalar(eyeSpeed));
+                                g.dir.copy(fallbackVec);
+                            }
+                        }
+                        g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
                     }
-                } else if (!freezeMode) {
-                    let moveSpeed = g.baseSpeed * ghostSpeedFactor * levelSpeedFactor * (powerUp ? 0.6 : 1.0);
+                    return;
+                }
+
+                if(freezeMode) return;
+
+                // Ghost movement speed calculated directly with level scale
+                let gSpeed = g.baseSpeed * ghostSpeedFactor * levelSpeedFactor;
+                if(powerUp) gSpeed *= 0.5;
+
+                // 1. RE-EVALUATE NEURAL TARGET PREDICTION AT PATH NODES
+                g.pathUpdateTimer -= deltaMs;
+                if (g.pathUpdateTimer <= 0 || g.aStarPath.length === 0) {
+                    g.pathUpdateTimer = 200 + Math.random() * 150;
                     
-                    g.pathUpdateTimer -= deltaMs;
-                    if (g.pathUpdateTimer <= 0 || g.aStarPath.length === 0) {
-                        g.pathUpdateTimer = 300 + Math.random() * 200;
-                        let targetCell = g.neuralPredictor.predictTargetCell(g, pacman.position, pacmanVelVector, pacman.getWorldDirection(new THREE.Vector3()), ghosts, level);
-                        g.aStarPath = computeAStarPath(gGrid, targetCell, false);
-                    }
+                    // Run Simulated Neural Matrix Prediction
+                    let predictedTargetCell = g.neuralEngine.predictOptimalTarget(
+                        g.position, 
+                        pacman.position, 
+                        pacVel, 
+                        powerUp
+                    );
 
-                    if (g.aStarPath.length > 1) {
-                        let nextNode = g.aStarPath[1];
-                        let targetWorld = gridToWorld(nextNode.x, nextNode.z);
-                        let dir = targetWorld.clone().sub(g.position);
-                        dir.y = 0;
+                    g.currentTargetCell = predictedTargetCell;
+                    g.aStarPath = computeAStarPath(gGrid, predictedTargetCell, g.isDead);
+                }
 
-                        if (dir.length() < moveSpeed) {
-                            g.position.x = targetWorld.x;
-                            g.position.z = targetWorld.z;
+                // 2. MOVE SMOOTHLY ALONG PATHWAY WITH SEAMLESS TUNNEL WRAP & WALL COLLISION GUARD
+                if (g.aStarPath.length > 1) {
+                    let nextNode = g.aStarPath[1];
+                    
+                    // Handle Tunnel Wrapping (Row 14)
+                    let isTunnelWrapStep = (gGrid.z === 14 && nextNode.z === 14 && Math.abs(nextNode.x - gGrid.x) > 1);
+                    
+                    if (isTunnelWrapStep) {
+                        let wrapDirection = (gGrid.x === 0 && nextNode.x === 27) ? -1 : 1;
+                        g.position.x += wrapDirection * gSpeed * 4;
+                        g.dir.set(wrapDirection, 0, 0);
+
+                        if (g.position.x > 56) { g.position.x = -56; g.aStarPath.shift(); }
+                        else if (g.position.x < -56) { g.position.x = 56; g.aStarPath.shift(); }
+                    } else {
+                        let worldNext = gridToWorld(nextNode.x, nextNode.z);
+                        worldNext.y = g.position.y; 
+                        
+                        let moveVec = worldNext.clone().sub(g.position);
+                        let stepDist = moveVec.length();
+                        
+                        if (stepDist < gSpeed) {
+                            g.position.copy(worldNext);
                             g.aStarPath.shift();
                         } else {
-                            dir.normalize();
-                            g.position.add(dir.multiplyScalar(moveSpeed));
-                            g.rotation.y = Math.atan2(dir.x, dir.z);
+                            moveVec.normalize();
+                            let stepPos = g.position.clone().add(moveVec.clone().multiplyScalar(gSpeed));
+                            
+                            // Wall Collision Protection Guard against Clipping
+                            if (!checkGhostWallCollision(stepPos)) {
+                                g.position.copy(stepPos);
+                            } else {
+                                // Sliding collision fallback
+                                let stepPosX = g.position.clone(); stepPosX.x += moveVec.x * gSpeed;
+                                if (!checkGhostWallCollision(stepPosX)) g.position.x = stepPosX.x;
+                                
+                                let stepPosZ = g.position.clone(); stepPosZ.z += moveVec.z * gSpeed;
+                                if (!checkGhostWallCollision(stepPosZ)) g.position.z = stepPosZ.z;
+                            }
+                            g.dir.copy(moveVec);
                         }
+                    }
+                } else {
+                    let targetWorld = gridToWorld(g.currentTargetCell.x, g.currentTargetCell.z);
+                    let fallbackVec = targetWorld.sub(g.position);
+                    fallbackVec.y = 0;
+                    if(fallbackVec.length() > 0.1) {
+                        fallbackVec.normalize();
+                        let nextP = g.position.clone().add(fallbackVec.clone().multiplyScalar(gSpeed));
+                        if (!checkGhostWallCollision(nextP)) {
+                            g.position.copy(nextP);
+                        }
+                        g.dir.copy(fallbackVec);
                     }
                 }
 
-                g.position.y = 0.3 + Math.sin(now * 0.005 + ghosts.indexOf(g)) * 0.1;
+                // Tunnel side coordinate bounds check
+                if (g.position.x > 56) g.position.x = -56;
+                else if (g.position.x < -56) g.position.x = 56;
 
-                // PACMAN COLLISION WITH GHOST
-                if (pacman.position.distanceTo(g.position) < 1.3) {
-                    if (g.isDead) return;
-                    if (powerUp) {
-                        killGhost(g, false);
-                    } else if (gameState === 'playing') {
+                g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
+
+                // Check collision with Pac-Man
+                if(pacman.position.distanceTo(g.position) < 1.6) {
+                    if(powerUp) {
+                        killGhost(g);
+                    } else if(!isJumping) {
                         gameState = 'dying';
                         deathTimer = 1.0;
-                        playSfx(150, 0.8, 'sawtooth', 0.2);
+                        playSfx(200, 1.0, 'sawtooth');
                     }
                 }
             });
 
-            // EATING DOTS & POWERUPS
+            // Dots Collision
             dots.forEach(d => {
-                if (d.visible && pacman.position.distanceTo(d.position) < 1.3) {
-                    d.visible = false;
-                    playSfx(600, 0.05, 'sine');
-
-                    if (d.type === 0) {
-                        addScore(10, d.position);
+                if(d.visible && pacman.position.distanceTo(d.position) < 1.8) {
+                    d.visible = false; 
+                    addScore(10);
+                    playSfx(600, 0.05);
+                    
+                    if(d.type === 0) {
                         remainingDots--;
                         document.getElementById('remaining').innerText = remainingDots;
-                    } else if (d.type === 2) {
-                        addScore(50, d.position);
-                        powerUp = true; powerTimeLeft = 8000;
-                        document.getElementById('powerBarContainer').style.display = 'block';
-                    } else if (d.type === 4) {
-                        addScore(100, d.position);
-                        laserMode = true; laserTimeLeft = 10000; laserCooldown = 0;
-                        document.getElementById('laserBarContainer').style.display = 'block';
-                    } else if (d.type === 5) {
-                        addScore(100, d.position);
-                        speedMode = true; speedTimeLeft = 6000;
-                        document.getElementById('speedBarContainer').style.display = 'block';
-                    } else if (d.type === 6) {
-                        addScore(100, d.position);
-                        freezeMode = true; freezeTimeLeft = 5000;
-                        document.getElementById('freezeBarContainer').style.display = 'block';
+                    } else {
+                        addScore(40);
+                        if(d.type === 2) { powerUp = true; powerTimeLeft = 8000; ghostCombo = 0; document.getElementById('powerBarContainer').style.display = 'block'; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x2121ff); }); }
+                        if(d.type === 4) { laserMode = true; laserTimeLeft = 10000; laserCooldown=0; document.getElementById('laserBarContainer').style.display = 'block'; }
+                        if(d.type === 5) { speedMode = true; speedTimeLeft = 6000; document.getElementById('speedBarContainer').style.display = 'block'; }
+                        if(d.type === 6) { freezeMode = true; freezeTimeLeft = 5000; document.getElementById('freezeBarContainer').style.display = 'block'; }
+                        showFloatingText("+50", d.position);
                     }
 
-                    if (remainingDots <= 0) {
-                        if (level === 256) {
+                    if(remainingDots <= 0) { 
+                        if (level >= 256) {
                             gameState = 'victory256';
-                            document.getElementById('mythical-screen').style.display = 'block';
+                            checkAndUpdateStats();
+                            document.getElementById('mythical-screen').style.display = 'flex';
+                            document.getElementById('minimap').style.display = 'none';
+                            bgmGameplay.pause();
+                            playSfx(100, 2.0, 'sawtooth', 0.2);
+                            generateGlitchMatrix();
+                            return;
+                        }
+
+                        if (level % 3 === 0) {
+                            gameState = 'intermission';
+                            checkAndUpdateStats();
                             document.getElementById('ui').style.display = 'none';
                             document.getElementById('minimap').style.display = 'none';
+                            playSfx(1000, 1.0, 'square');
+                            
+                            bgmGameplay.pause();
+                            bgmCoffeeBreak.currentTime = 0;
+                            bgmCoffeeBreak.play().catch(e=>e);
+
+                            interTimer = 0; interPhase = 0;
+                            interType = Math.floor((level - 1) / 3) % 6;
+                            
+                            hideAllCSActors();
+
+                            csPacman.visible = true;
+                            csPacman.scale.setScalar(1);
+                            csPacman.position.y = 0.8;
+                            csPacman.rotation.y = -Math.PI/2;
+                            
+                            switch(interType) {
+                                case 0:
+                                    csPacman.position.set(20, 0.8, 0);
+                                    csBlinky.visible = true;
+                                    csBlinky.position.set(30, 0.8, 0);
+                                    csBlinky.rotation.y = -Math.PI/2;
+                                    csBlinky.mat.color.setHex(0xff0000); 
+                                    csBlinky.body.visible = true; 
+                                    csPellet.visible = true;
+                                    csPellet.position.set(-15, 0.8, 0);
+                                    csPellet.material.color.setHex(0xffff00);
+                                    break;
+                                case 1:
+                                    csPacman.position.set(25, 0.8, 0);
+                                    csPinky.visible = true;
+                                    csPinky.position.set(35, 0.8, 0);
+                                    csPinky.rotation.y = -Math.PI/2;
+                                    csPinky.body.visible = true;
+                                    csBlock.position.set(0, -5, 0); 
+                                    break;
+                                case 2:
+                                    csPacman.position.set(20, 0.8, 0);
+                                    csInky.visible = true;
+                                    csInky.position.set(30, 0.8, 0);
+                                    csInky.rotation.y = -Math.PI/2;
+                                    csInky.body.visible = true;
+                                    csLaser.visible = false;
+                                    break;
+                                case 3:
+                                    csPacman.position.set(25, 0.8, 0);
+                                    csClyde.visible = true;
+                                    csClyde.position.set(35, 0.8, 0);
+                                    csClyde.rotation.y = -Math.PI/2;
+                                    csClyde.body.visible = true;
+                                    break;
+                                case 4:
+                                    csPacman.position.set(25, 0.8, 0);
+                                    csBlinky.visible = true; csBlinky.position.set(35, 0.8, 0); csBlinky.rotation.y = -Math.PI/2; csBlinky.body.visible = true; csBlinky.mat.color.setHex(0xff0000);
+                                    csPinky.visible = true; csPinky.position.set(39, 0.8, 0); csPinky.rotation.y = -Math.PI/2; csPinky.body.visible = true; csPinky.mat.color.setHex(0xffb8ff);
+                                    csInky.visible = true; csInky.position.set(43, 0.8, 0); csInky.rotation.y = -Math.PI/2; csInky.body.visible = true; csInky.mat.color.setHex(0x00ffff);
+                                    csClyde.visible = true; csClyde.position.set(47, 0.8, 0); csClyde.rotation.y = -Math.PI/2; csClyde.body.visible = true; csClyde.mat.color.setHex(0xffb852);
+                                    csPellet.visible = true;
+                                    csPellet.position.set(-15, 0.8, 0);
+                                    csPellet.material.color.setHex(0x00ffff);
+                                    break;
+                                case 5:
+                                    csPacman.position.set(20, 0.8, 0);
+                                    csBlinky.visible = true;
+                                    csBlinky.position.set(30, 0.8, 0);
+                                    csBlinky.rotation.y = -Math.PI/2;
+                                    csBlinky.mat.color.setHex(0xff0000); 
+                                    csBlinky.body.visible = true; 
+                                    csBlinky.position.y = 0.8; 
+                                    csGalaxian.visible = false;
+                                    break;
+                            }
                         } else {
-                            document.getElementById('victory').style.display = 'flex';
-                            setTimeout(() => {
-                                startIntermission();
-                            }, 1500);
+                            level++;
+                            checkAndUpdateStats();
+                            document.getElementById('level').innerText = level;
+                            buildMap();
+                            resetPositions();
+                            playSfx(1000, 1.0, 'square');
                         }
                     }
                 }
@@ -1848,9 +2075,12 @@
             renderer.render(scene, camera);
         }
 
-        window.onload = function() {
-            animate();
-        };
+        // Initialize elements
+        buildMap();
+        initGhosts();
+        resetPositions();
+        animate();
+
     </script>
 </body>
     </html>
