@@ -119,7 +119,7 @@
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffffff;"></span>
-                <div class="ghost-info"><strong style="color:#ffffff;">WHITY</strong><br>Ghostly</div>
+                <div class="ghost-info"><strong style="color:#ffffff;">WHITY</strong><br>Ghost</div>
             </div>
         </div>
     </div>
@@ -335,6 +335,7 @@
         }
 
         function showFloatingText(text, pos3D) {
+            if (!pos3D || !camera) return;
             const div = document.createElement('div');
             div.className = 'floating-text';
             div.innerText = text;
@@ -814,6 +815,10 @@
             
             camAngleY = Math.PI/2;
             camAngleX = 0.4;
+            camera.position.x = pacman.position.x + camRadius * Math.sin(camAngleY) * Math.cos(camAngleX);
+            camera.position.y = pacman.position.y + camRadius * Math.sin(camAngleX);
+            camera.position.z = pacman.position.z + camRadius * Math.cos(camAngleY) * Math.cos(camAngleX);
+            camera.lookAt(pacman.position);
             updateLivesDisplay();
             
             lastPacmanSeenPos.set(0, 0.8, 32);
@@ -1008,10 +1013,17 @@
             return hitsGhostBox;
         }
 
+        // --- REAL-TIME GHOST 3D BOX COLLISION WITH CLASSIC WALLS ---
+        function checkGhostWallCol(pos, size = 1.2) {
+            const checkP = pos.clone();
+            checkP.y = 0.3;
+            const gBox = new THREE.Box3().setFromCenterAndSize(checkP, new THREE.Vector3(size, 2.5, size));
+            return walls.some(w => gBox.intersectsBox(w.box));
+        }
+
         // --- GHOST SPECIFIC GRID COLLISION FIX ---
         function checkGhostColGrid(gx, gz, isDead = false, currX = -1, currZ = -1) {
             let wX = ((gx % 28) + 28) % 28;
-            if (gz === 14) return false; // Side wrap tunnel row is always passable
             if (gz < 0 || gz >= 31) return true;
             
             const cellVal = mapTemplate[gz][wX];
@@ -1284,6 +1296,10 @@
             lastTime = now;
             
             if (gameState === 'lobby' || gameState === 'ready') {
+                camera.position.x = pacman.position.x + camRadius * Math.sin(camAngleY) * Math.cos(camAngleX);
+                camera.position.y = pacman.position.y + camRadius * Math.sin(camAngleX);
+                camera.position.z = pacman.position.z + camRadius * Math.cos(camAngleY) * Math.cos(camAngleX);
+                camera.lookAt(pacman.position);
                 renderer.render(scene, camera);
                 return;
             }
@@ -1518,27 +1534,6 @@
                     giantBossGroup.position.y = 3.5 + Math.sin(now * 0.003) * 0.6;
                     giantBossGroup.rotation.y += 0.01;
                 }
-
-                // Boss enrages normal ghosts every 10 seconds
-                bossEnrageTimer += deltaMs;
-                if (bossEnrageTimer >= 10000) {
-                    bossEnrageTimer = 0;
-                    bossEnrageActive = true;
-                    bossEnrageDuration = 5000; // 5 seconds enraged
-                    
-                    // Enrage strips all Pac-Man active powerups!
-                    powerUp = laserMode = speedMode = freezeMode = false;
-                    document.querySelectorAll('.bar-container').forEach(el => el.style.display = 'none');
-                    playSfx(150, 0.8, 'sawtooth', 0.2);
-                    showFloatingText("BOSS ENRAGED GHOSTS!", giantBossGroup.position);
-                }
-
-                if (bossEnrageActive) {
-                    bossEnrageDuration -= deltaMs;
-                    if (bossEnrageDuration <= 0) {
-                        bossEnrageActive = false;
-                    }
-                }
             }
             
             drawMinimap();
@@ -1732,14 +1727,27 @@
                             let stepDist = moveVec.length();
                             
                             if (stepDist < eyeSpeed) {
-                                g.position.copy(worldNext); g.aStarPath.shift();
+                                if (!checkGhostWallCol(worldNext)) {
+                                    g.position.copy(worldNext);
+                                }
+                                g.aStarPath.shift();
                             } else {
-                                moveVec.normalize(); g.position.add(moveVec.multiplyScalar(eyeSpeed)); g.dir.copy(moveVec);
+                                moveVec.normalize();
+                                let nextStep = g.position.clone().add(moveVec.clone().multiplyScalar(eyeSpeed));
+                                if (!checkGhostWallCol(nextStep)) {
+                                    g.position.copy(nextStep);
+                                }
+                                g.dir.copy(moveVec);
                             }
                         } else {
                             let fallbackVec = toCenter.clone(); fallbackVec.y = 0;
                             if(fallbackVec.length() > 0.1) {
-                                fallbackVec.normalize(); g.position.add(fallbackVec.multiplyScalar(eyeSpeed)); g.dir.copy(fallbackVec);
+                                fallbackVec.normalize();
+                                let nextStep = g.position.clone().add(fallbackVec.clone().multiplyScalar(eyeSpeed));
+                                if (!checkGhostWallCol(nextStep)) {
+                                    g.position.copy(nextStep);
+                                }
+                                g.dir.copy(fallbackVec);
                             }
                         }
                         g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
@@ -1789,7 +1797,9 @@
                         else if (g.position.x < -50) g.position.x = 52;
                         g.aStarPath.shift();
                     } else if (stepDist < gSpeed) {
-                        g.position.copy(worldNext);
+                        if (!checkGhostWallCol(worldNext)) {
+                            g.position.copy(worldNext);
+                        }
                         g.aStarPath.shift();
                     } else {
                         moveVec.normalize();
@@ -1803,7 +1813,23 @@
                             g.position.x += (laneX - g.position.x) * 0.2; // Lerp center
                         }
 
-                        g.position.add(moveVec.clone().multiplyScalar(gSpeed));
+                        let nextStep = g.position.clone().add(moveVec.clone().multiplyScalar(gSpeed));
+                        if (!checkGhostWallCol(nextStep)) {
+                            g.position.copy(nextStep);
+                        } else {
+                            let posX = g.position.clone(); posX.x += moveVec.x * gSpeed;
+                            if (!checkGhostWallCol(posX)) {
+                                g.position.copy(posX);
+                            } else {
+                                let posZ = g.position.clone(); posZ.z += moveVec.z * gSpeed;
+                                if (!checkGhostWallCol(posZ)) {
+                                    g.position.copy(posZ);
+                                } else {
+                                    g.aStarPath = [];
+                                    g.pathUpdateTimer = 0;
+                                }
+                            }
+                        }
                         g.dir.copy(moveVec);
                     }
                 } else {
@@ -1812,7 +1838,10 @@
                     fallbackVec.y = 0;
                     if(fallbackVec.length() > 0.1) {
                         fallbackVec.normalize();
-                        g.position.add(fallbackVec.multiplyScalar(gSpeed));
+                        let nextStep = g.position.clone().add(fallbackVec.clone().multiplyScalar(gSpeed));
+                        if (!checkGhostWallCol(nextStep)) {
+                            g.position.copy(nextStep);
+                        }
                         g.dir.copy(fallbackVec);
                     }
                 }
@@ -1858,17 +1887,31 @@
                         showFloatingText("+50", d.position);
                     }
 
-                    // --- MEGA PELLET SPAWN ON BOSS STAGE ---
-                    if (remainingDots <= 0 && isBossStage && !isMegaPelletSpawned) {
-                        isMegaPelletSpawned = true;
-                        megaPelletMesh = new THREE.Mesh(
-                            new THREE.SphereGeometry(1.2, 32, 32),
-                            new THREE.MeshPhongMaterial({ color: 0xffff00, emissive: 0xffaa00, shininess: 100 })
-                        );
-                        megaPelletMesh.position.set(0, 0.8, -4);
-                        scene.add(megaPelletMesh);
-                        playSfx(1500, 0.8, 'sine');
-                        showFloatingText("MEGA PELLET SPAWNED!", megaPelletMesh.position);
+                    // --- MEGA PELLET & INFINITE BOSS ENRAGE ON CLEARING ALL DOTS ---
+                    if (remainingDots <= 0 && isBossStage) {
+                        if (!bossEnrageActive) {
+                            bossEnrageActive = true;
+                            powerUp = laserMode = speedMode = freezeMode = false;
+                            document.querySelectorAll('.bar-container').forEach(el => el.style.display = 'none');
+                            playSfx(150, 0.8, 'sawtooth', 0.2);
+                            if (giantBossGroup && giantBossGroup.position) {
+                                showFloatingText("BOSS ENRAGED GHOSTS!", giantBossGroup.position);
+                            }
+                        }
+
+                        if (!isMegaPelletSpawned) {
+                            isMegaPelletSpawned = true;
+                            megaPelletMesh = new THREE.Mesh(
+                                new THREE.SphereGeometry(1.2, 32, 32),
+                                new THREE.MeshPhongMaterial({ color: 0xffff00, emissive: 0xffaa00, shininess: 100 })
+                            );
+                            megaPelletMesh.position.set(0, 0.8, 8);
+                            scene.add(megaPelletMesh);
+                            playSfx(1500, 0.8, 'sine');
+                            if (megaPelletMesh && megaPelletMesh.position) {
+                                showFloatingText("MEGA PELLET SPAWNED!", megaPelletMesh.position);
+                            }
+                        }
                     }
 
                     if(remainingDots <= 0 && !isBossStage) { 
