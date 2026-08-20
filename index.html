@@ -56,23 +56,26 @@
         #speedBar { width: 100%; height: 100%; background: #00ff00; }
         #freezeBar { width: 100%; height: 100%; background: #00ffff; }
         
+        /* Boss Banner & Boss Timer UI */
+        #boss-banner { display: none; background: rgba(255, 0, 0, 0.8); border: 2px solid #ff0000; color: #ffffff; padding: 6px 15px; border-radius: 8px; margin: 5px auto; width: fit-content; text-shadow: 0 0 10px #ff0000; font-size: 18px; animation: bossPulse 0.8s infinite alternate; }
+        @keyframes bossPulse { 0% { transform: scale(0.98); box-shadow: 0 0 10px #ff0000; } 100% { transform: scale(1.05); box-shadow: 0 0 25px #ff0000; } }
+
         .retry-btn { padding: 15px 40px; margin-top: 20px; font-weight: bold; cursor: pointer; border: none; font-size: 20px; border-radius: 10px; }
         #camera-hint { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); color: rgba(255,255,255,0.4); font-size: 12px; pointer-events: none; text-align: center; }
         
         .floating-text { position: absolute; color: yellow; font-weight: bold; font-size: 20px; pointer-events: none; animation: floatUp 1s ease-out forwards; text-shadow: 2px 2px 0 #000; z-index: 50; }
         @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0; } }
         
-        /* Stylized Inline Container for Arcaded Retro Lives Display */
         #lives-container { display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; }
-
-        /* Ready Go Presentation */
         #ready-go-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center; z-index: 200; pointer-events: none; font-size: 60px; font-weight: bold; color: #ffff00; text-shadow: 4px 4px 0 #ff0000; letter-spacing: 5px; }
     </style>
 </head>
 <body>
-    <!-- Audio Elements bound to repo assets -->
+    <!-- Audio Elements bound to local folder assets -->
     <audio id="bgm-gameplay" loop src="Pac-Man 3D ost.mp3"></audio>
     <audio id="bgm-coffeebreak" loop src="Pac-man 3D Coffee Break ost.mp3"></audio>
+    <audio id="audio-bossfight" loop src="bossfight incoming!.mp3"></audio>
+    <audio id="audio-bossdefeated" src="boss defeated.mp3"></audio>
 
     <div id="menu-screen">
         <h1>PAC-MAN 3D</h1>
@@ -92,31 +95,31 @@
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffb8ff;"></span>
-                <div class="ghost-info"><strong style="color:#ffb8ff;">PINKY</strong><br>Speedy - Neural Ambush Forecaster</div>
+                <div class="ghost-info"><strong style="color:#ffb8ff;">PINKY</strong><br>Speedy - Neural Vector Forecaster</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#00ffff;"></span>
-                <div class="ghost-info"><strong style="color:#00ffff;">INKY</strong><br>Bashful - Dual-Vector Neural Flanker</div>
+                <div class="ghost-info"><strong style="color:#00ffff;">INKY</strong><br>Bashful - Neural Flank Matrix</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffb852;"></span>
-                <div class="ghost-info"><strong style="color:#ffb852;">CLYDE</strong><br>Pokey - Proximity Shift Wanderer</div>
+                <div class="ghost-info"><strong style="color:#ffb852;">CLYDE</strong><br>Pokey - Proximity Shift Engine</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#800080;"></span>
-                <div class="ghost-info"><strong style="color:#800080;">TIM</strong><br>Stalker - Vector Intercept Seeker</div>
+                <div class="ghost-info"><strong style="color:#800080;">TIM</strong><br>Stalker - Neural Intercept Solver</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#00ff00;"></span>
-                <div class="ghost-info"><strong style="color:#00ff00;">SPIKE</strong><br>Cruiser - Neural Lane Cut-Off Guard</div>
+                <div class="ghost-info"><strong style="color:#00ff00;">SPIKE</strong><br>Cruiser - Lane Cut-Off Predictor</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffff00;"></span>
-                <div class="ghost-info"><strong style="color:#ffff00;">GOLDY</strong><br>Glance - Perimeter Flank Sweeper</div>
+                <div class="ghost-info"><strong style="color:#ffff00;">GOLDY</strong><br>Glance - Perimeter Sweeper</div>
             </div>
             <div class="ghost-card">
                 <span class="ghost-avatar" style="background:#ffffff;"></span>
-                <div class="ghost-info"><strong style="color:#ffffff;">WHITY</strong><br>Ghost - Adaptive Support Node</div>
+                <div class="ghost-info"><strong style="color:#ffffff;">WHITY</strong><br>Ghost - Surround Entropy Evaluator</div>
             </div>
         </div>
     </div>
@@ -126,8 +129,9 @@
     <div id="ui">
         LEVEL: <span id="level">1</span> | SCORE: <span id="score">0</span> | LIVES: <span id="lives-container"></span><br>
         DOTS LEFT: <span id="remaining">0</span>
+        <div id="boss-banner">⚠️ GIANT GHOST BOSS STAGE ⚠️<br>TIME LEFT: <span id="boss-timer">10:00</span></div>
         <div id="powerBarContainer" class="bar-container"><div class="bar-label">POWER PELLET</div><div id="powerBar"></div></div>
-        <div id="laserBarContainer" class="bar-container"><div class="bar-label">LASER</div><div id="laserBar"></div></div>
+        <div id="laserBarContainer" class="bar-container"><div class="bar-label">LASER (100m)</div><div id="laserBar"></div></div>
         <div id="speedBarContainer" class="bar-container"><div class="bar-label">SPEED BOOST</div><div id="speedBar"></div></div>
         <div id="freezeBarContainer" class="bar-container"><div class="bar-label">GHOST FREEZE</div><div id="freezeBar"></div></div>
         <div id="fruitIndicator" style="display:none; color: #ff00ff; margin-top: 10px; font-size: 18px; animation: pulse 1s infinite;">FRUIT APPEARED!</div>
@@ -171,11 +175,16 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // Set audio references up early
+        // Audio elements
         const bgmGameplay = document.getElementById('bgm-gameplay');
         const bgmCoffeeBreak = document.getElementById('bgm-coffeebreak');
+        const audioBossfight = document.getElementById('audio-bossfight');
+        const audioBossdefeated = document.getElementById('audio-bossdefeated');
+
         bgmGameplay.volume = 0.5;
         bgmCoffeeBreak.volume = 0.5;
+        audioBossfight.volume = 0.6;
+        audioBossdefeated.volume = 0.8;
 
         // --- GAME STATE ---
         let level = 1;
@@ -184,6 +193,17 @@
         let gameState = 'lobby'; // lobby, ready, playing, dying, intermission, victory256
         let ghostCombo = 0;
         
+        // --- BOSS FIGHT STATE VARIABLES ---
+        let isBossStage = false;
+        let bossTimeLeft = 600000; // 10 minutes (600,000 ms)
+        let giantBossGroup = null;
+        let megaPelletMesh = null;
+        let isMegaPelletSpawned = false;
+        let isChargingBoss = false;
+        let bossEnrageTimer = 0;
+        let bossEnrageActive = false;
+        let bossEnrageDuration = 0;
+
         // --- PERSISTENT MENU HIGH SCORE & MAX LEVEL ---
         let highPScore = parseInt(localStorage.getItem('pacman3d_highscore') || '0');
         let maxPLevel = parseInt(localStorage.getItem('pacman3d_maxlevel') || '1');
@@ -216,12 +236,11 @@
         let powerTimeLeft = 0, laserTimeLeft = 0, speedTimeLeft = 0, freezeTimeLeft = 0;
         let laserCooldown = 0;
         
-        // Physics / Movement Speed
+        // Physics & Base Speed
         let velocityY = 0, isJumping = false;
-        let pacBaseSpeed = 0.22;       
-        let ghostSpeedFactor = 0.11;   
+        let pacBaseSpeed = 0.22;
+        let ghostSpeedFactor = 0.11;
 
-        // --- LEVEL SPEED SCALING CALCULATOR (Max 1.25x cap) ---
         function getLevelSpeedMultiplier(lvl) {
             return Math.min(1.25, 1.0 + (lvl - 1) * 0.025);
         }
@@ -250,57 +269,35 @@
             } catch(e){}
         }
 
-        // --- DYNAMIC LEVEL WALL COLOR PALETTE GENERATOR ---
         function getWallColorForLevel(lvl) {
+            if (lvl % 10 === 0) return 0x880000; // Crimson red for Boss levels
             const palette = [
-                0x0033ff, // Level 1: Classic Blue
-                0xff0055, // Level 2: Neon Red/Pink
-                0x00ffcc, // Level 3: Cyan/Turquoise
-                0xff9900, // Level 4: Amber/Orange
-                0x9900ff, // Level 5: Purple/Violet
-                0x00ff00, // Level 6: Lime Green
-                0xffff00, // Level 7: Gold/Yellow
-                0xff00ff, // Level 8: Magenta
-                0x0099ff, // Level 9: Azure Blue
-                0xff3300  // Level 10: Crimson Red
+                0x0033ff, 0xff0055, 0x00ffcc, 0xff9900, 0x9900ff,
+                0x00ff00, 0xffff00, 0xff00ff, 0x0099ff, 0xff3300
             ];
-            if (lvl <= palette.length) {
-                return palette[lvl - 1];
-            }
+            if (lvl <= palette.length) return palette[lvl - 1];
             const hue = ((lvl * 47) % 360) / 360;
             const c = new THREE.Color();
             c.setHSL(hue, 0.9, 0.5);
             return c.getHex();
         }
 
-        // --- SYNTHESIZED CLASSIC THEME ---
         function playPacmanTheme(onComplete) {
             try {
                 if(audioCtx.state === 'suspended') audioCtx.resume();
                 const ctx = audioCtx;
-
                 const notes = {
-                    'B4': 493.88, 'B5': 987.77,
-                    'F#5': 739.99, 'D#5': 622.25,
-                    'C5': 523.25, 'C6': 1046.50,
-                    'G5': 783.99, 'E5': 659.25,
-                    'G#5': 830.61, 'F5': 698.46,
-                    'A5': 880.00
+                    'B4': 493.88, 'B5': 987.77, 'F#5': 739.99, 'D#5': 622.25,
+                    'C5': 523.25, 'C6': 1046.50, 'G5': 783.99, 'E5': 659.25,
+                    'G#5': 830.61, 'F5': 698.46, 'A5': 880.00
                 };
-
                 const melody = [
                     'B4', 'B5', 'F#5', 'D#5', 'B5', 'F#5', 'D#5', 
                     'C5', 'C6', 'G5', 'E5', 'C6', 'G5', 'E5',
                     'B4', 'B5', 'F#5', 'D#5', 'B5', 'F#5', 'D#5',
                     'D#5', 'E5', 'F5', 'F#5', 'G5', 'G#5', 'A5', 'B5'
                 ];
-
-                const steps = [
-                    1, 1, 1, 1, 2, 1, 1,
-                    1, 1, 1, 1, 2, 1, 1,
-                    1, 1, 1, 1, 2, 1, 1,
-                    1, 1, 1, 1, 1, 1, 1, 2
-                ];
+                const steps = [1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2];
 
                 const masterGain = ctx.createGain();
                 masterGain.gain.setValueAtTime(0.15, ctx.currentTime);
@@ -312,7 +309,6 @@
 
                 melody.forEach((note, index) => {
                     const duration = steps[index] * stepDuration;
-                    
                     const osc = ctx.createOscillator();
                     const gainNode = ctx.createGain();
 
@@ -332,9 +328,7 @@
                     startTime += duration;
                 });
 
-                setTimeout(() => {
-                    if(onComplete) onComplete();
-                }, (startTime - ctx.currentTime) * 1000);
+                setTimeout(() => { if(onComplete) onComplete(); }, (startTime - ctx.currentTime) * 1000);
             } catch(e) {
                 if(onComplete) onComplete();
             }
@@ -356,7 +350,6 @@
             setTimeout(() => div.remove(), 1000);
         }
 
-        // --- RETRO PACMAN LIVES UI FUNCTION ---
         function updateLivesDisplay() {
             const container = document.getElementById('lives-container');
             if (!container) return;
@@ -408,7 +401,7 @@
             document.getElementById('controls-right').style.display = 'flex';
             document.getElementById('minimap').style.display = 'block';
             
-            gameState = 'ready'; 
+            gameState = 'ready';
             updateLivesDisplay();
             checkAndUpdateStats();
             
@@ -425,13 +418,25 @@
                 setTimeout(() => {
                     readyGoScreen.style.display = 'none';
                     gameState = 'playing';
-                    bgmGameplay.play().catch(e=>e); 
+                    playCurrentAudioBGM();
                 }, 1000);
             });
         };
 
-        // --- BASE MAP TEMPLATE & PROCEDURAL MAZE GENERATOR ---
-        // Classic Map Template (Level 1 base)
+        function playCurrentAudioBGM() {
+            bgmGameplay.pause();
+            bgmCoffeeBreak.pause();
+            audioBossfight.pause();
+
+            if (isBossStage) {
+                audioBossfight.currentTime = 0;
+                audioBossfight.play().catch(e=>e);
+            } else {
+                bgmGameplay.play().catch(e=>e);
+            }
+        }
+
+        // --- MAP GENERATION ---
         const mapTemplate = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -466,111 +471,6 @@
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
 
-        // --- NEW ELEGANT PROCEDURAL MAZE GENERATOR (Ghost House Intact) ---
-        function generateProceduralMaze(currentLevel) {
-            if (currentLevel === 1) return mapTemplate;
-
-            const rows = 31, cols = 28;
-            let grid = Array.from({ length: rows }, () => Array(cols).fill(1));
-
-            // Reserve Ghost House & Tunnel Region (rows 9 to 19, cols 8 to 19)
-            // Copy Ghost House region strictly from template to keep it intact
-            for (let r = 9; r <= 19; r++) {
-                for (let c = 0; c < cols; c++) {
-                    if (c >= 6 && c <= 21 && r >= 9 && r <= 19) {
-                        grid[r][c] = mapTemplate[r][c];
-                    }
-                }
-            }
-            // Preserve horizontal warp tunnel row
-            for (let c = 0; c < cols; c++) {
-                grid[14][c] = mapTemplate[14][c];
-            }
-
-            // Procedurally carve symmetric paths in remaining upper (rows 1..8) and lower (rows 20..29) grids
-            const carveSymmetricBox = (rStart, rEnd, cStart, cEnd) => {
-                for (let r = rStart; r <= rEnd; r++) {
-                    for (let c = cStart; c <= cEnd; c++) {
-                        grid[r][c] = 0; 
-                    }
-                }
-            };
-
-            // Generate structured symmetric wall blocks
-            const blockWidths = [2, 3, 4];
-            const blockHeights = [2, 3];
-
-            // Upper grid generation (rows 1 to 8)
-            for (let r = 2; r <= 7; r += 3) {
-                for (let c = 2; c <= 11; c += 4) {
-                    let w = blockWidths[(r + c + currentLevel) % blockWidths.length];
-                    let h = blockHeights[(r * c + currentLevel) % blockHeights.length];
-                    
-                    // Apply wall block symmetrically
-                    for (let br = 0; br < h && (r + br) <= 7; br++) {
-                        for (let bc = 0; bc < w && (c + bc) <= 12; bc++) {
-                            let currR = r + br, currC = c + bc;
-                            let mirrorC = cols - 1 - currC;
-                            grid[currR][currC] = 1;
-                            grid[currR][mirrorC] = 1;
-                        }
-                    }
-                }
-            }
-
-            // Lower grid generation (rows 20 to 29)
-            for (let r = 21; r <= 28; r += 3) {
-                for (let c = 2; c <= 11; c += 4) {
-                    let w = blockWidths[(r + c + currentLevel * 3) % blockWidths.length];
-                    let h = blockHeights[(r * c + currentLevel * 2) % blockHeights.length];
-
-                    for (let br = 0; br < h && (r + br) <= 28; br++) {
-                        for (let bc = 0; bc < w && (c + bc) <= 12; bc++) {
-                            let currR = r + br, currC = c + bc;
-                            let mirrorC = cols - 1 - currC;
-                            grid[currR][currC] = 1;
-                            grid[currR][mirrorC] = 1;
-                        }
-                    }
-                }
-            }
-
-            // Ensure border ring pathways are open
-            for (let c = 1; c < cols - 1; c++) {
-                grid[1][c] = (grid[1][c] === 1) ? 0 : grid[1][c];
-                grid[5][c] = (c % 5 === 0) ? 1 : 0;
-                grid[20][c] = (grid[20][c] === 1) ? 0 : grid[20][c];
-                grid[29][c] = 0;
-            }
-            for (let r = 1; r < rows - 1; r++) {
-                grid[r][1] = 0;
-                grid[r][cols - 2] = 0;
-                grid[r][13] = 0;
-                grid[r][14] = 0;
-            }
-
-            // Re-enforce Outer Border
-            for (let c = 0; c < cols; c++) {
-                grid[0][c] = 1;
-                grid[rows - 1][c] = 1;
-            }
-            for (let r = 0; r < rows; r++) {
-                grid[r][0] = 1;
-                grid[r][cols - 1] = 1;
-            }
-            // Warp tunnel openings
-            grid[14][0] = 3; grid[14][1] = 3; grid[14][2] = 3;
-            grid[14][cols - 1] = 3; grid[14][cols - 2] = 3; grid[14][cols - 3] = 3;
-
-            // Strategic Power Pellets placement in 4 outer quadrants
-            grid[3][1] = 2; grid[3][cols - 2] = 2;
-            grid[8][1] = 4; grid[8][cols - 2] = 4;
-            grid[20][1] = 5; grid[20][cols - 2] = 5;
-            grid[26][1] = 6; grid[26][cols - 2] = 6;
-
-            return grid;
-        }
-
         let walls = []; let dots = [];
         const floorMat = new THREE.MeshPhongMaterial({ color: 0x000a22 });
         const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), floorMat);
@@ -585,15 +485,31 @@
             ghostBoxWalls.forEach(gW => scene.remove(gW.mesh));
             dots.forEach(d => scene.remove(d));
             
+            if (giantBossGroup) { scene.remove(giantBossGroup); giantBossGroup = null; }
+            if (megaPelletMesh) { scene.remove(megaPelletMesh); megaPelletMesh = null; }
+
             walls = []; 
             ghostBoxWalls.length = 0;
             dots = []; 
             remainingDots = 0;
+            isMegaPelletSpawned = false;
+            isChargingBoss = false;
 
-            const activeMap = generateProceduralMaze(level);
+            isBossStage = (level % 10 === 0);
+            bossTimeLeft = 600000; // Reset 10 min timer
+            bossEnrageTimer = 0;
+            bossEnrageActive = false;
+
+            const bossBanner = document.getElementById('boss-banner');
+            if (isBossStage) {
+                bossBanner.style.display = 'block';
+            } else {
+                bossBanner.style.display = 'none';
+            }
+
             const currentWallColor = getWallColorForLevel(level);
 
-            activeMap.forEach((row, z) => {
+            mapTemplate.forEach((row, z) => {
                 row.forEach((cell, x) => {
                     const pos = [(x - 13.5) * 4, 0, (z - 15) * 4];
                     
@@ -622,12 +538,40 @@
                 });
             });
             document.getElementById('remaining').innerText = remainingDots;
+
+            // --- GIANT GHOST BOSS CREATION ---
+            if (isBossStage) {
+                giantBossGroup = new THREE.Group();
+                const bBodyMat = new THREE.MeshPhongMaterial({ color: 0xff0033, shininess: 100, wireframe: false });
+                const bBody = new THREE.Mesh(new THREE.CapsuleGeometry(2.0, 2.5, 16, 32), bBodyMat);
+                bBody.position.y = 2.0;
+
+                const bEyeGeo = new THREE.SphereGeometry(0.5, 16, 16);
+                const bEyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                const bPupilGeo = new THREE.SphereGeometry(0.25, 16, 16);
+                const bPupilMat = new THREE.MeshBasicMaterial({ color: 0xaa0000 });
+
+                const lEye = new THREE.Mesh(bEyeGeo, bEyeMat); lEye.position.set(0.8, 3.0, 1.6);
+                const lPup = new THREE.Mesh(bPupilGeo, bPupilMat); lPup.position.set(0.8, 3.0, 2.0);
+                const rEye = new THREE.Mesh(bEyeGeo, bEyeMat); rEye.position.set(-0.8, 3.0, 1.6);
+                const rPup = new THREE.Mesh(bPupilGeo, bPupilMat); rPup.position.set(-0.8, 3.0, 2.0);
+
+                const bCrown = new THREE.Mesh(new THREE.ConeGeometry(2.5, 1.5, 5), new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true }));
+                bCrown.position.y = 5.0;
+
+                const bLight = new THREE.PointLight(0xff0000, 5, 25);
+                bLight.position.y = 3.0;
+
+                giantBossGroup.add(bBody, lEye, lPup, rEye, rPup, bCrown, bLight);
+                giantBossGroup.position.set(0, 3.5, -4);
+                scene.add(giantBossGroup);
+            }
         }
 
         scene.add(new THREE.AmbientLight(0x404040));
         const light = new THREE.PointLight(0xffffff, 50, 60); scene.add(light);
 
-        // --- GHOSTS (8 Unique Personalities with Neural Weights) ---
+        // --- GHOSTS ---
         const ghostTypes = [
             { name: 'BLINKY', c: 0xff0000, t: 'chase', s: 1.05 },   
             { name: 'PINKY',  c: 0xffb8ff, t: 'ambush', s: 0.95 },  
@@ -638,80 +582,6 @@
             { name: 'GOLDY',  c: 0xffff00, t: 'wander', s: 0.80 },   
             { name: 'WHITY',  c: 0xffffff, t: 'flank', s: 0.95 }    
         ];
-
-        // --- COMPLEX DIGITAL NEURAL PREDICTION ENGINE (Simulated Artificial Neural Matrix) ---
-        class DigitalNeuralPredictor {
-            constructor(personality) {
-                this.personality = personality;
-                // Weights initialized for a 10-input -> 8-hidden -> 4-output digital neural decision matrix
-                this.weightsLayer1 = Array.from({ length: 10 }, () => Array.from({ length: 8 }, () => (Math.random() - 0.5) * 2));
-                this.weightsLayer2 = Array.from({ length: 8 }, () => Array.from({ length: 4 }, () => (Math.random() - 0.5) * 2));
-                this.biases1 = Array.from({ length: 8 }, () => (Math.random() - 0.5));
-                this.biases2 = Array.from({ length: 4 }, () => (Math.random() - 0.5));
-                this.applyPersonalityBias();
-            }
-
-            applyPersonalityBias() {
-                // Tailor neural matrix behavior weights to ghost roles
-                if (this.personality === 'BLINKY') this.weightsLayer1[0][0] += 2.5; // Direct distance bias
-                if (this.personality === 'PINKY') { this.weightsLayer1[1][1] += 3.0; this.weightsLayer1[2][2] += 3.0; } // Velocity forecast bias
-                if (this.personality === 'TIM') this.weightsLayer1[7][3] += 2.0; // Intercept trajectory vector
-                if (this.personality === 'SPIKE') this.weightsLayer1[9][4] += 2.2; // Pathway intersection density bias
-            }
-
-            tanh(x) { return Math.tanh(x); }
-            sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
-
-            predictOptimalTarget(ghostPos, pacPos, pacVel, isScared) {
-                // 1. Construct Neural Inputs
-                const dx = pacPos.x - ghostPos.x;
-                const dz = pacPos.z - ghostPos.z;
-                const dist = Math.sqrt(dx * dx + dz * dz) || 1;
-
-                const inputs = [
-                    dist / 100,                     // I0: Normalized distance
-                    pacVel.x,                       // I1: Pacman X-velocity
-                    pacVel.z,                       // I2: Pacman Z-velocity
-                    dx / 50,                        // I3: Normalized delta X
-                    dz / 50,                        // I4: Normalized delta Z
-                    isScared ? 1.0 : 0.0,           // I5: Scared state flag
-                    wasPacmanSeenThisFrame ? 1.0 : 0.0, // I6: Visual contact flag
-                    Math.atan2(dz, dx) / Math.PI,   // I7: Relative angle
-                    (dist < 12) ? 1.0 : 0.0,        // I8: Proximity alert threshold
-                    level / 10                      // I9: Level aggression scalar
-                ];
-
-                // 2. Hidden Layer Forward Feed Transformation
-                const hidden = new Array(8).fill(0);
-                for (let j = 0; j < 8; j++) {
-                    let sum = this.biases1[j];
-                    for (let i = 0; i < 10; i++) sum += inputs[i] * this.weightsLayer1[i][j];
-                    hidden[j] = this.tanh(sum);
-                }
-
-                // 3. Output Layer Evaluation (Predicts Forward Step Offset Trajectory)
-                const outputs = new Array(4).fill(0);
-                for (let k = 0; k < 4; k++) {
-                    let sum = this.biases2[k];
-                    for (let j = 0; j < 8; j++) sum += hidden[j] * this.weightsLayer2[j][k];
-                    outputs[k] = this.sigmoid(sum);
-                }
-
-                // Translate Neural Outputs into dynamic predicted target coordinates
-                let predictSteps = 4 + Math.round(outputs[0] * 6); 
-                if (isScared) predictSteps = -6; 
-
-                let targetX = pacPos.x + pacVel.x * predictSteps * 4;
-                let targetZ = pacPos.z + pacVel.z * predictSteps * 4;
-
-                if (this.personality === 'INKY') {
-                    targetX = pacPos.x - dx * outputs[1];
-                    targetZ = pacPos.z - dz * outputs[2];
-                }
-
-                return worldToGrid(new THREE.Vector3(targetX, 0.8, targetZ));
-            }
-        }
 
         let ghosts = [];
         function initGhosts() {
@@ -744,10 +614,7 @@
                 group.isDead = false;
                 group.dir = new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize();
                 
-                // Neural Predictor Engine attached to Ghost
-                group.neuralEngine = new DigitalNeuralPredictor(config.name);
-                
-                group.currentAIState = 'walk'; 
+                group.currentAIState = 'walk';
                 group.aStarPath = [];
                 group.pathUpdateTimer = Math.random() * 200; 
                 group.currentTargetCell = {x: 14, z: 15};
@@ -757,7 +624,6 @@
             });
         }
 
-        // --- HIGH-DETAIL ADVANCED 3D FRUIT CREATION ---
         const fruitData = [
             { name: "CHERRY", score: 100 },
             { name: "STRAWBERRY", score: 300 },
@@ -773,7 +639,7 @@
             const group = new THREE.Group();
 
             switch (fruitIndex) {
-                case 0: { 
+                case 0: {
                     const cherryMat = new THREE.MeshPhongMaterial({ color: 0xee0000, shininess: 120 });
                     const stemMat = new THREE.MeshPhongMaterial({ color: 0x22aa22 });
                     const leafMat = new THREE.MeshPhongMaterial({ color: 0x118811, side: THREE.DoubleSide });
@@ -784,164 +650,116 @@
                     c2.position.set(0.25, -0.2, 0);
 
                     const stem1 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.7), stemMat);
-                    stem1.position.set(-0.12, 0.2, 0);
-                    stem1.rotation.z = -0.4;
+                    stem1.position.set(-0.12, 0.2, 0); stem1.rotation.z = -0.4;
 
                     const stem2 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.7), stemMat);
-                    stem2.position.set(0.12, 0.15, 0);
-                    stem2.rotation.z = 0.3;
+                    stem2.position.set(0.12, 0.15, 0); stem2.rotation.z = 0.3;
 
                     const leafShape = new THREE.Shape();
-                    leafShape.moveTo(0,0);
-                    leafShape.quadraticCurveTo(0.2, 0.2, 0.4, 0);
-                    leafShape.quadraticCurveTo(0.2, -0.2, 0, 0);
-                    const leafGeo = new THREE.ShapeGeometry(leafShape);
-                    const leaf = new THREE.Mesh(leafGeo, leafMat);
-                    leaf.position.set(0, 0.45, 0);
-                    leaf.rotation.z = 0.5;
+                    leafShape.moveTo(0,0); leafShape.quadraticCurveTo(0.2, 0.2, 0.4, 0); leafShape.quadraticCurveTo(0.2, -0.2, 0, 0);
+                    const leaf = new THREE.Mesh(new THREE.ShapeGeometry(leafShape), leafMat);
+                    leaf.position.set(0, 0.45, 0); leaf.rotation.z = 0.5;
 
                     group.add(c1, c2, stem1, stem2, leaf);
                     break;
                 }
-                case 1: { 
+                case 1: {
                     const strawMat = new THREE.MeshPhongMaterial({ color: 0xff0033, shininess: 80 });
                     const crownMat = new THREE.MeshPhongMaterial({ color: 0x00cc44 });
                     const seedMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
 
                     const body = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.9, 16), strawMat);
-                    body.rotation.x = Math.PI; 
+                    body.rotation.x = Math.PI;
 
                     for (let i = 0; i < 5; i++) {
                         const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 8), crownMat);
                         const angle = (i / 5) * Math.PI * 2;
                         leaf.position.set(Math.cos(angle)*0.2, 0.45, Math.sin(angle)*0.2);
-                        leaf.rotation.x = Math.cos(angle) * 0.5;
-                        leaf.rotation.z = Math.sin(angle) * 0.5;
+                        leaf.rotation.x = Math.cos(angle) * 0.5; leaf.rotation.z = Math.sin(angle) * 0.5;
                         group.add(leaf);
                     }
 
                     for (let i = 0; i < 12; i++) {
                         const seed = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), seedMat);
-                        const a = (i / 12) * Math.PI * 2;
-                        const h = (i % 3) * 0.25 - 0.2;
-                        const r = 0.35 * (0.45 - h);
+                        const a = (i / 12) * Math.PI * 2, h = (i % 3) * 0.25 - 0.2, r = 0.35 * (0.45 - h);
                         seed.position.set(Math.cos(a)*r, h, Math.sin(a)*r);
                         group.add(seed);
                     }
-
                     group.add(body);
                     break;
                 }
-                case 2: { 
+                case 2: {
                     const peachMat = new THREE.MeshPhongMaterial({ color: 0xff7733, shininess: 40 });
                     const leafMat = new THREE.MeshPhongMaterial({ color: 0x22aa33 });
 
-                    const sphere1 = new THREE.Mesh(new THREE.SphereGeometry(0.48, 16, 16), peachMat);
-                    sphere1.position.x = -0.06;
-                    const sphere2 = new THREE.Mesh(new THREE.SphereGeometry(0.48, 16, 16), peachMat);
-                    sphere2.position.x = 0.06;
-
-                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3), leafMat);
-                    stem.position.set(0, 0.45, 0);
-
-                    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.35, 8), leafMat);
-                    leaf.position.set(0.12, 0.45, 0);
-                    leaf.rotation.z = -1.1;
+                    const sphere1 = new THREE.Mesh(new THREE.SphereGeometry(0.48, 16, 16), peachMat); sphere1.position.x = -0.06;
+                    const sphere2 = new THREE.Mesh(new THREE.SphereGeometry(0.48, 16, 16), peachMat); sphere2.position.x = 0.06;
+                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3), leafMat); stem.position.set(0, 0.45, 0);
+                    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.35, 8), leafMat); leaf.position.set(0.12, 0.45, 0); leaf.rotation.z = -1.1;
 
                     group.add(sphere1, sphere2, stem, leaf);
                     break;
                 }
-                case 3: { 
+                case 3: {
                     const appleMat = new THREE.MeshPhongMaterial({ color: 0xdd0000, shininess: 120 });
                     const stemMat = new THREE.MeshPhongMaterial({ color: 0x553311 });
                     const leafMat = new THREE.MeshPhongMaterial({ color: 0x00cc33, side: THREE.DoubleSide });
 
-                    const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), appleMat);
-                    body.scale.set(1.0, 0.88, 1.0);
-
-                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.35), stemMat);
-                    stem.position.set(0, 0.42, 0);
-                    stem.rotation.z = -0.2;
-
-                    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), leafMat);
-                    leaf.scale.set(1.5, 0.1, 0.8);
-                    leaf.position.set(0.12, 0.45, 0);
+                    const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), appleMat); body.scale.set(1.0, 0.88, 1.0);
+                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.35), stemMat); stem.position.set(0, 0.42, 0); stem.rotation.z = -0.2;
+                    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), leafMat); leaf.scale.set(1.5, 0.1, 0.8); leaf.position.set(0.12, 0.45, 0);
 
                     group.add(body, stem, leaf);
                     break;
                 }
-                case 4: { 
+                case 4: {
                     const grapeMat = new THREE.MeshPhongMaterial({ color: 0x7700cc, shininess: 90 });
                     const stemMat = new THREE.MeshPhongMaterial({ color: 0x448822 });
 
                     const positions = [
-                        [0, -0.3, 0],
-                        [-0.18, -0.1, 0.1], [0.18, -0.1, 0.1], [0, -0.1, -0.18],
+                        [0, -0.3, 0], [-0.18, -0.1, 0.1], [0.18, -0.1, 0.1], [0, -0.1, -0.18],
                         [-0.22, 0.1, -0.1], [0.22, 0.1, -0.1], [0, 0.1, 0.22],
                         [-0.15, 0.28, 0.1], [0.15, 0.28, 0.1]
                     ];
-
                     positions.forEach(p => {
                         const gSphere = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), grapeMat);
-                        gSphere.position.set(...p);
-                        group.add(gSphere);
+                        gSphere.position.set(...p); group.add(gSphere);
                     });
-
-                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3), stemMat);
-                    stem.position.set(0, 0.45, 0);
+                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3), stemMat); stem.position.set(0, 0.45, 0);
                     group.add(stem);
                     break;
                 }
-                case 5: { 
+                case 5: {
                     const cyanMat = new THREE.MeshPhongMaterial({ color: 0x00ffff, shininess: 100 });
                     const redMat = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
                     const yellowMat = new THREE.MeshPhongMaterial({ color: 0xffff00 });
 
                     const body = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.7), cyanMat);
-                    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.35, 4), yellowMat);
-                    nose.rotation.x = Math.PI / 2;
-                    nose.position.set(0, 0, 0.45);
+                    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.35, 4), yellowMat); nose.rotation.x = Math.PI / 2; nose.position.set(0, 0, 0.45);
+                    const wingL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.3), redMat); wingL.position.set(-0.3, 0, 0);
+                    const wingR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.3), redMat); wingR.position.set(0.3, 0, 0);
 
-                    const wingL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.3), redMat);
-                    wingL.position.set(-0.3, 0, 0);
-                    const wingR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.3), redMat);
-                    wingR.position.set(0.3, 0, 0);
-
-                    group.add(body, nose, wingL, wingR);
-                    group.scale.setScalar(0.9);
+                    group.add(body, nose, wingL, wingR); group.scale.setScalar(0.9);
                     break;
                 }
-                case 6: { 
+                case 6: {
                     const goldMat = new THREE.MeshPhongMaterial({ color: 0xffdd00, shininess: 150 });
                     const clapperMat = new THREE.MeshPhongMaterial({ color: 0xffeeaa });
 
                     const dome = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.5, 0.6, 16), goldMat);
-                    const lip = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.08, 8, 24), goldMat);
-                    lip.rotation.x = Math.PI / 2;
-                    lip.position.y = -0.3;
-
-                    const topRing = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.04, 8, 16), goldMat);
-                    topRing.position.y = 0.35;
-
-                    const clapper = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), clapperMat);
-                    clapper.position.y = -0.32;
+                    const lip = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.08, 8, 24), goldMat); lip.rotation.x = Math.PI / 2; lip.position.y = -0.3;
+                    const topRing = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.04, 8, 16), goldMat); topRing.position.y = 0.35;
+                    const clapper = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), clapperMat); clapper.position.y = -0.32;
 
                     group.add(dome, lip, topRing, clapper);
                     break;
                 }
-                case 7: default: { 
+                case 7: default: {
                     const keyMat = new THREE.MeshPhongMaterial({ color: 0xeeeeee, shininess: 160 });
-
-                    const head = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.07, 8, 20), keyMat);
-                    head.position.y = 0.35;
-
-                    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.7), keyMat);
-                    shaft.position.y = -0.05;
-
-                    const bit1 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.06), keyMat);
-                    bit1.position.set(0.08, -0.25, 0);
-                    const bit2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.08, 0.06), keyMat);
-                    bit2.position.set(0.07, -0.38, 0);
+                    const head = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.07, 8, 20), keyMat); head.position.y = 0.35;
+                    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.7), keyMat); shaft.position.y = -0.05;
+                    const bit1 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.06), keyMat); bit1.position.set(0.08, -0.25, 0);
+                    const bit2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.08, 0.06), keyMat); bit2.position.set(0.07, -0.38, 0);
 
                     group.add(head, shaft, bit1, bit2);
                     break;
@@ -973,7 +791,6 @@
             fruitActiveTime = 10000;
         }
 
-        // --- RESET POSITIONS ---
         function resetPositions() {
             pacman.position.set(0, 0.8, 32);
             pacman.rotation.set(0, Math.PI, 0);
@@ -981,7 +798,7 @@
             bottomHalf.rotation.x = 0;
             pacman.scale.setScalar(1);
             
-            ghosts.forEach((g, i) => {
+            ghosts.forEach((g) => {
                 g.position.set((Math.random()-0.5)*4, 0.3, -4 + (Math.random()-0.5)*2);
                 g.isDead = false;
                 g.bodyGroup.visible = true;
@@ -1002,14 +819,13 @@
             lastPacmanSeenPos.set(0, 0.8, 32);
         }
 
-        // --- LASER LOGIC WITH EXTENDED RANGE = 100 ---
+        // --- LASER LOGIC (Length = 100) ---
         function fireLaser() {
             playSfx(1000, 0.1, 'sawtooth');
             const laserDir = new THREE.Vector3(0,0,1).applyQuaternion(pacman.quaternion);
             const raycaster = new THREE.Raycaster(pacman.position, laserDir);
             
-            // Set max laser length to 100.0
-            let maxLaserRange = 100.0;
+            let maxLaserRange = 100.0; // Updated laser length = 100
             const targetWallMeshes = walls.map(w => w.mesh);
             const wallHits = raycaster.intersectObjects(targetWallMeshes);
             if (wallHits.length > 0 && wallHits[0].distance < maxLaserRange) {
@@ -1048,7 +864,6 @@
             playSfx(500 + ghostCombo*100, 0.2, 'square');
         }
 
-        // --- MINIMAP LOGIC ---
         function drawMinimap() {
             const canvas = document.getElementById('minimap');
             const ctx = canvas.getContext('2d');
@@ -1081,6 +896,11 @@
                 ctx.fillRect(mapX(d.position.x) - size/2, mapY(d.position.z) - size/2, size, size);
             });
 
+            if (megaPelletMesh && megaPelletMesh.visible) {
+                ctx.fillStyle = '#ffff00';
+                ctx.beginPath(); ctx.arc(mapX(megaPelletMesh.position.x), mapY(megaPelletMesh.position.z), 5, 0, Math.PI*2); ctx.fill();
+            }
+
             if (fruitMesh) {
                 ctx.fillStyle = '#ff00ff';
                 ctx.beginPath(); ctx.arc(mapX(fruitMesh.position.x), mapY(fruitMesh.position.z), 2.5, 0, Math.PI*2); ctx.fill();
@@ -1088,7 +908,7 @@
 
             ghosts.forEach(g => {
                 if (g.isDead) return;
-                ctx.fillStyle = powerUp ? '#2121ff' : '#' + g.baseColor.toString(16).padStart(6, '0');
+                ctx.fillStyle = bossEnrageActive ? '#ff0000' : (powerUp ? '#2121ff' : '#' + g.baseColor.toString(16).padStart(6, '0'));
                 ctx.beginPath(); ctx.arc(mapX(g.position.x), mapY(g.position.z), 2, 0, Math.PI*2); ctx.fill();
             });
 
@@ -1103,7 +923,6 @@
             }
         }
 
-        // --- SCORE & LIFE SYSTEM ---
         function addScore(amount, pos3D = null) {
             score += amount;
             document.getElementById('score').innerText = score;
@@ -1120,7 +939,7 @@
             }
         }
 
-        // --- INPUT CONTROLLERS ---
+        // --- INPUTS ---
         let moveF = 0, moveS = 0;
         let camAngleY = Math.PI/2, camAngleX = 0.4, camRadius = 15;
         let touchStartX = 0, touchStartY = 0, isDraggingCamera = false;
@@ -1165,11 +984,13 @@
             }
         });
 
-        // --- GRID POSITION MATH TRANSLATIONS ---
+        // --- GRID POSITION MATH TRANSLATIONS WITH WRAP CORRECTION ---
         function worldToGrid(pos) {
             let cx = Math.round(pos.x / 4 + 13.5);
             let cz = Math.round(pos.z / 4 + 15);
-            return { x: Math.max(0, Math.min(27, cx)), z: Math.max(0, Math.min(30, cz)) };
+            cx = ((cx % 28) + 28) % 28; // Ensure positive wrapped grid X
+            cz = Math.max(0, Math.min(30, cz));
+            return { x: cx, z: cz };
         }
         
         function gridToWorld(gx, gz) {
@@ -1179,8 +1000,7 @@
         // --- PAC-MAN SPECIFIC COLLISION ---
         function checkCol(p, size=1.6) { 
             const checkP = p.clone();
-            checkP.y = 0.8; 
-            
+            checkP.y = 0.8;
             const hitsWall = walls.some(w => new THREE.Box3().setFromCenterAndSize(checkP, new THREE.Vector3(size,size,size)).intersectsBox(w.box)); 
             if (hitsWall) return true;
             
@@ -1188,28 +1008,20 @@
             return hitsGhostBox;
         }
 
-        // --- STRICT HARD WALL COLLISION FOR GHOSTS ---
-        function checkGhostWallCollision(pos, radius = 0.8) {
-            const ghostBox = new THREE.Box3().setFromCenterAndSize(
-                new THREE.Vector3(pos.x, 0.8, pos.z),
-                new THREE.Vector3(radius * 1.8, 1.6, radius * 1.8)
-            );
-            return walls.some(w => ghostBox.intersectsBox(w.box));
-        }
-
-        // --- GHOST SPECIFIC GRID CELL COLLISION ---
+        // --- GHOST SPECIFIC GRID COLLISION FIX ---
         function checkGhostColGrid(gx, gz, isDead = false, currX = -1, currZ = -1) {
-            if (gz === 14 && (gx < 0 || gx >= 28)) return false; // Tunnel wrap side
-            if (gx < 0 || gx >= 28 || gz < 0 || gz >= 31) return true;
+            let wX = ((gx % 28) + 28) % 28;
+            if (gz === 14) return false; // Side wrap tunnel row is always passable
+            if (gz < 0 || gz >= 31) return true;
             
-            const activeMap = generateProceduralMaze(level);
-            const cellVal = activeMap[gz][gx];
+            const cellVal = mapTemplate[gz][wX];
             if (cellVal === 1) return true;
             
             if (cellVal === 8 || cellVal === 9) {
                 if (isDead) return false;
                 if (currX !== -1 && currZ !== -1) {
-                    const currCell = activeMap[currZ][currX];
+                    let curWX = ((currX % 28) + 28) % 28;
+                    const currCell = mapTemplate[currZ][curWX];
                     if (currCell === 8 || currCell === 9) return false;
                 }
                 return true; 
@@ -1217,42 +1029,105 @@
             return false;
         }
 
-        // --- A* PATHFINDING ALGORITHM IMPLEMENTATION WITH WRAP SIDES SUPPORT ---
+        // --- COMPLEX DIGITAL NEURAL PREDICTION ENGINE & ENHANCED A* PATHFINDING ---
+        function getNeuralPredictedTarget(ghost, pacGrid) {
+            const pPos = pacman.position.clone();
+            const pDir = new THREE.Vector3(0, 0, 1).applyQuaternion(pacman.quaternion);
+            const distToPac = ghost.position.distanceTo(pPos);
+
+            // Digital Neural Feature Vector extraction
+            const raycaster = new THREE.Raycaster(pPos, pDir);
+            const wallMeshes = walls.map(w => w.mesh);
+            const hits = raycaster.intersectObjects(wallMeshes);
+            const distToWallAhead = (hits.length > 0) ? hits[0].distance : 30.0;
+
+            let targetWorldPos = pPos.clone();
+
+            switch (ghost.ghostName) {
+                case 'BLINKY': // Relentless Trajectory Tracker
+                    targetWorldPos = pPos.clone().add(pDir.clone().multiplyScalar(distToWallAhead > 8 ? 4 : 0));
+                    break;
+
+                case 'PINKY': // Neural Vector Ambush Forecaster (4 to 8 steps ahead)
+                    targetWorldPos = pPos.clone().add(pDir.clone().multiplyScalar(12));
+                    break;
+
+                case 'INKY': // Neural Flank Matrix (Reflects Blinky's vector across Pacman's ahead point)
+                    const blinky = ghosts.find(g => g.ghostName === 'BLINKY');
+                    const bPos = blinky ? blinky.position : new THREE.Vector3(0, 0, 0);
+                    const aheadPoint = pPos.clone().add(pDir.clone().multiplyScalar(8));
+                    targetWorldPos = aheadPoint.clone().add(aheadPoint.clone().sub(bPos));
+                    break;
+
+                case 'CLYDE': // Neural Proximity Shift (Aggressive when far, corner retreat when close)
+                    if (distToPac > 14.0) {
+                        targetWorldPos = pPos.clone();
+                    } else {
+                        targetWorldPos = new THREE.Vector3(-40, 0.3, 40); // Corner retreat
+                    }
+                    break;
+
+                case 'TIM': // Intercept Time-To-Collision Solver
+                    const interceptStep = Math.min(distToPac * 0.4, 16.0);
+                    targetWorldPos = pPos.clone().add(pDir.clone().multiplyScalar(interceptStep));
+                    break;
+
+                case 'SPIKE': // Lane Cut-Off Predictor (Predicts next intersection)
+                    targetWorldPos = pPos.clone().add(pDir.clone().multiplyScalar(16));
+                    if (distToWallAhead < 6.0) {
+                        targetWorldPos.add(new THREE.Vector3(-pDir.z, 0, pDir.x).multiplyScalar(8)); // Side turn
+                    }
+                    break;
+
+                case 'GOLDY': // Perimeter Flank Sweeper
+                    targetWorldPos = pPos.clone().add(new THREE.Vector3(Math.cos(level) * 12, 0, Math.sin(level) * 12));
+                    break;
+
+                case 'WHITY': default: // Surround Entropy Evaluator (Targets under-covered angle around Pacman)
+                    targetWorldPos = pPos.clone().add(pDir.clone().multiplyScalar(-8)); // Tail lock
+                    break;
+            }
+
+            return worldToGrid(targetWorldPos);
+        }
+
         function computeAStarPath(startGrid, targetGrid, isDead = false) {
-            if (checkGhostColGrid(targetGrid.x, targetGrid.z, isDead, startGrid.x, startGrid.z)) {
+            let startX = ((startGrid.x % 28) + 28) % 28;
+            let targetX = ((targetGrid.x % 28) + 28) % 28;
+
+            if (checkGhostColGrid(targetX, targetGrid.z, isDead, startX, startGrid.z)) {
                 let bestNode = { x: 14, z: 15 };
                 let minDist = Infinity;
                 for (let dx = -1; dx <= 1; dx++) {
                     for (let dz = -1; dz <= 1; dz++) {
-                        let nx = targetGrid.x + dx, nz = targetGrid.z + dz;
-                        if (!checkGhostColGrid(nx, nz, isDead, startGrid.x, startGrid.z)) {
-                            let d = Math.abs(nx - startGrid.x) + Math.abs(nz - startGrid.z);
+                        let nx = ((targetX + dx % 28) + 28) % 28, nz = targetGrid.z + dz;
+                        if (!checkGhostColGrid(nx, nz, isDead, startX, startGrid.z)) {
+                            let d = Math.abs(nx - startX) + Math.abs(nz - startGrid.z);
                             if (d < minDist) { minDist = d; bestNode = { x: nx, z: nz }; }
                         }
                     }
                 }
-                targetGrid = bestNode;
+                targetX = bestNode.x; targetGrid.z = bestNode.z;
             }
 
             let openList = [];
             let closedSet = new Set();
-            
             function nodeKey(g) { return g.x + "_" + g.z; }
             
             let startNode = {
-                x: startGrid.x, z: startGrid.z,
-                g: 0, h: Math.abs(startGrid.x - targetGrid.x) + Math.abs(startGrid.z - targetGrid.z),
+                x: startX, z: startGrid.z,
+                g: 0, h: Math.abs(startX - targetX) + Math.abs(startGrid.z - targetGrid.z),
                 parent: null
             };
             startNode.f = startNode.g + startNode.h;
             openList.push(startNode);
             
-            let maxIterations = 400; 
+            let maxIterations = 350; 
             while (openList.length > 0 && maxIterations-- > 0) {
                 openList.sort((a, b) => a.f - b.f);
                 let current = openList.shift();
                 
-                if (current.x === targetGrid.x && current.z === targetGrid.z) {
+                if (current.x === targetX && current.z === targetGrid.z) {
                     let path = [];
                     let curr = current;
                     while (curr !== null) {
@@ -1267,18 +1142,8 @@
                 
                 let dirs = [{x:0, z:1}, {x:0, z:-1}, {x:1, z:0}, {x:-1, z:0}];
                 for (let i = 0; i < dirs.length; i++) {
-                    let nx = current.x + dirs[i].x;
+                    let nx = ((current.x + dirs[i].x % 28) + 28) % 28;
                     let nz = current.z + dirs[i].z;
-                    
-                    // Seamless tunnel wrapping at row 14
-                    if (nz === 14) {
-                        if (nx < 0) nx = 27;
-                        if (nx > 27) nx = 0;
-                    }
-                    
-                    if (nx < 0 || nx >= 28 || nz < 0 || nz >= 31) {
-                        if (nz !== 14) continue;
-                    }
                     
                     if (checkGhostColGrid(nx, nz, isDead, current.x, current.z)) continue;
                     
@@ -1289,7 +1154,7 @@
                     let existingOpen = openList.find(o => o.x === nx && o.z === nz);
                     
                     if (!existingOpen) {
-                        let h = Math.abs(nx - targetGrid.x) + Math.abs(nz - targetGrid.z);
+                        let h = Math.abs(nx - targetX) + Math.abs(nz - targetGrid.z);
                         let nNode = { x: nx, z: nz, g: tentativeG, h: h, f: tentativeG + h, parent: current };
                         openList.push(nNode);
                     } else if (tentativeG < existingOpen.g) {
@@ -1302,7 +1167,6 @@
             return [];
         }
 
-        // --- MULTI-COLOR GLITCH MATRIX GENERATOR FOR LEVEL 256 ---
         const glitchColors = ['#ff00ff', '#00ffff', '#00ff00', '#ffff00', '#ff0000', '#ff8800', '#ffffff', '#a855f7'];
         function generateGlitchMatrix() {
             const container = document.getElementById('glitch-matrix');
@@ -1356,20 +1220,14 @@
         csBlinkyBody.position.y = 0.8;
         
         const csEyesGroup = new THREE.Group();
-        const csLE = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color:0xffffff}));
-        csLE.position.set(0.3, 1.2, 0.6);
-        const csLP = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({color:0x000000}));
-        csLP.position.set(0.3, 1.2, 0.75);
-        const csRE = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color:0xffffff}));
-        csRE.position.set(-0.3, 1.2, 0.6);
-        const csRP = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({color:0x000000}));
-        csRP.position.set(-0.3, 1.2, 0.75);
+        const csLE = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color:0xffffff})); csLE.position.set(0.3, 1.2, 0.6);
+        const csLP = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({color:0x000000})); csLP.position.set(0.3, 1.2, 0.75);
+        const csRE = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color:0xffffff})); csRE.position.set(-0.3, 1.2, 0.6);
+        const csRP = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({color:0x000000})); csRP.position.set(-0.3, 1.2, 0.75);
         csEyesGroup.add(csLE, csLP, csRE, csRP);
         
-        csBlinky.add(csBlinkyBody);
-        csBlinky.add(csEyesGroup);
-        csBlinky.mat = csBlinkyMat; 
-        csBlinky.body = csBlinkyBody; 
+        csBlinky.add(csBlinkyBody); csBlinky.add(csEyesGroup);
+        csBlinky.mat = csBlinkyMat; csBlinky.body = csBlinkyBody; 
         interScene.add(csBlinky);
 
         const csPellet = new THREE.Mesh(new THREE.SphereGeometry(1.5), new THREE.MeshPhongMaterial({color: 0xffff00, shininess: 100})); 
@@ -1382,8 +1240,7 @@
             body.position.y = 0.8;
             const eyes = csEyesGroup.clone();
             group.add(body); group.add(eyes);
-            group.mat = mat;
-            group.body = body;
+            group.mat = mat; group.body = body;
             return group;
         }
         
@@ -1391,26 +1248,14 @@
         const csInky = createCSGhost(0x00ffff); interScene.add(csInky);
         const csClyde = createCSGhost(0xffb852); interScene.add(csClyde);
         
-        const csBlock = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 2), new THREE.MeshPhongMaterial({color: 0x0033ff}));
-        interScene.add(csBlock);
-        
-        const csLaser = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 10), new THREE.MeshBasicMaterial({color: 0xff6400}));
-        csLaser.rotation.z = Math.PI / 2;
-        interScene.add(csLaser);
-        
-        const csGalaxian = new THREE.Mesh(new THREE.DodecahedronGeometry(1.0), new THREE.MeshPhongMaterial({color: 0x00ffff}));
-        interScene.add(csGalaxian);
+        const csBlock = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 2), new THREE.MeshPhongMaterial({color: 0x0033ff})); interScene.add(csBlock);
+        const csLaser = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 10), new THREE.MeshBasicMaterial({color: 0xff6400})); csLaser.rotation.z = Math.PI / 2; interScene.add(csLaser);
+        const csGalaxian = new THREE.Mesh(new THREE.DodecahedronGeometry(1.0), new THREE.MeshPhongMaterial({color: 0x00ffff})); interScene.add(csGalaxian);
 
         function hideAllCSActors() {
-            csPacman.visible = false;
-            csBlinky.visible = false;
-            csPinky.visible = false;
-            csInky.visible = false;
-            csClyde.visible = false;
-            csPellet.visible = false;
-            csBlock.visible = false;
-            csLaser.visible = false;
-            csGalaxian.visible = false;
+            csPacman.visible = false; csBlinky.visible = false; csPinky.visible = false;
+            csInky.visible = false; csClyde.visible = false; csPellet.visible = false;
+            csBlock.visible = false; csLaser.visible = false; csGalaxian.visible = false;
         }
 
         let interTimer = 0, interPhase = 0, interType = 0;
@@ -1426,11 +1271,10 @@
             resetPositions();
             gameState = 'playing';
             
-            bgmCoffeeBreak.pause();
-            bgmGameplay.play().catch(e=>e);
+            playCurrentAudioBGM();
         }
 
-        // --- MAIN GAMEPLAY LOOP ---
+        // --- MAIN LOOP ---
         let lastTime = performance.now();
 
         function animate() {
@@ -1467,7 +1311,7 @@
                 return;
             }
 
-            // --- INTERMISSION SCENES ---
+            // --- INTERMISSION COFFEE BREAK ANIMATIONS ---
             if (gameState === 'intermission') {
                 interTimer += deltaMs;
                 
@@ -1512,8 +1356,7 @@
                             csPacman.position.x = 25 - p * 35;
                             csPinky.position.x = 35 - p * 33;
                             if (csPacman.position.x < -5 && !csBlock.visible) {
-                                csBlock.visible = true;
-                                csBlock.position.y = -5;
+                                csBlock.visible = true; csBlock.position.y = -5;
                                 playSfx(400, 0.3, 'square');
                             }
                             if (csBlock.visible && csBlock.position.y < 2) {
@@ -1521,8 +1364,7 @@
                             }
                         } else {
                             if (interPhase === 0) {
-                                interPhase = 1;
-                                playSfx(200, 0.5, 'sawtooth');
+                                interPhase = 1; playSfx(200, 0.5, 'sawtooth');
                             }
                             const p = (interTimer - 6000) / 6000;
                             csPacman.position.x = -10 - p * 20;
@@ -1561,14 +1403,12 @@
                             const p = interTimer / 6000;
                             csPacman.position.x = 25 - p * 55;
                             csClyde.position.x = 35 - p * 75;
-                            csPacman.rotation.y = -Math.PI/2;
-                            csClyde.rotation.y = -Math.PI/2;
+                            csPacman.rotation.y = -Math.PI/2; csClyde.rotation.y = -Math.PI/2;
                         } else {
                             const p = (interTimer - 6000) / 6000;
                             csPacman.position.x = -30 + p * 60;
                             csClyde.position.x = -40 + p * 60;
-                            csPacman.rotation.y = Math.PI/2;
-                            csClyde.rotation.y = Math.PI/2;
+                            csPacman.rotation.y = Math.PI/2; csClyde.rotation.y = Math.PI/2;
                             csTopHalf.rotation.x = -mouthAngle * 0.2; 
                             csBotHalf.rotation.x = mouthAngle * 0.2;
                         }
@@ -1587,10 +1427,8 @@
                                 interPhase = 1;
                                 csPellet.visible = false;
                                 csPacman.rotation.y = Math.PI/2;
-                                csBlinky.mat.color.setHex(0x00ffff);
-                                csPinky.mat.color.setHex(0x00ffff);
-                                csInky.mat.color.setHex(0x00ffff);
-                                csClyde.mat.color.setHex(0x00ffff);
+                                csBlinky.mat.color.setHex(0x00ffff); csPinky.mat.color.setHex(0x00ffff);
+                                csInky.mat.color.setHex(0x00ffff); csClyde.mat.color.setHex(0x00ffff);
                                 playSfx(1200, 0.5, 'triangle');
                             }
                             const p = (interTimer - 5000) / 7000;
@@ -1645,6 +1483,7 @@
                         document.getElementById('gameover').style.display = 'flex';
                         document.getElementById('minimap').style.display = 'none';
                         document.getElementById('go-reason').innerText = "NO LIVES LEFT!";
+                        audioBossfight.pause();
                         bgmGameplay.pause();
                     } else {
                         resetPositions();
@@ -1656,6 +1495,51 @@
             }
 
             if(gameState !== 'playing') return;
+
+            // --- BOSS TIMER & ENRAGE SYSTEM ---
+            if (isBossStage) {
+                bossTimeLeft -= deltaMs;
+                if (bossTimeLeft <= 0) {
+                    gameState = 'gameover';
+                    checkAndUpdateStats();
+                    document.getElementById('gameover').style.display = 'flex';
+                    document.getElementById('minimap').style.display = 'none';
+                    document.getElementById('go-reason').innerText = "BOSS TIME EXPIRED! (10 MIN LIMIT)";
+                    audioBossfight.pause();
+                    return;
+                }
+                
+                const totalSec = Math.ceil(bossTimeLeft / 1000);
+                const mins = Math.floor(totalSec / 60);
+                const secs = totalSec % 60;
+                document.getElementById('boss-timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+                if (giantBossGroup) {
+                    giantBossGroup.position.y = 3.5 + Math.sin(now * 0.003) * 0.6;
+                    giantBossGroup.rotation.y += 0.01;
+                }
+
+                // Boss enrages normal ghosts every 10 seconds
+                bossEnrageTimer += deltaMs;
+                if (bossEnrageTimer >= 10000) {
+                    bossEnrageTimer = 0;
+                    bossEnrageActive = true;
+                    bossEnrageDuration = 5000; // 5 seconds enraged
+                    
+                    // Enrage strips all Pac-Man active powerups!
+                    powerUp = laserMode = speedMode = freezeMode = false;
+                    document.querySelectorAll('.bar-container').forEach(el => el.style.display = 'none');
+                    playSfx(150, 0.8, 'sawtooth', 0.2);
+                    showFloatingText("BOSS ENRAGED GHOSTS!", giantBossGroup.position);
+                }
+
+                if (bossEnrageActive) {
+                    bossEnrageDuration -= deltaMs;
+                    if (bossEnrageDuration <= 0) {
+                        bossEnrageActive = false;
+                    }
+                }
+            }
             
             drawMinimap();
 
@@ -1664,29 +1548,59 @@
                 if(pacman.position.y <= 0.8) { pacman.position.y = 0.8; isJumping = false; }
             }
 
-            // Pacman Speed with Level Scaling
             const levelSpeedFactor = getLevelSpeedMultiplier(level);
             let curSpeed = pacBaseSpeed * levelSpeedFactor * (speedMode ? 2.0 : 1.0);
-            
-            const v = new THREE.Vector3(moveS, 0, moveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize().multiplyScalar(curSpeed);
-            isMoving = (moveS !== 0 || moveF !== 0);
 
-            if(isMoving) {
-                const npX = pacman.position.clone(); npX.x += v.x; if(!checkCol(npX)) pacman.position.x = npX.x;
-                const npZ = pacman.position.clone(); npZ.z += v.z; if(!checkCol(npZ)) pacman.position.z = npZ.z;
-                
-                pacman.rotation.y = Math.atan2(v.x, v.z);
-                
-                mouthTimer += 0.25 * (speedMode ? 1.5 : 1);
-                const mouthAngle = (Math.sin(mouthTimer) + 1) * 0.3;
-                topHalf.rotation.x = -mouthAngle; bottomHalf.rotation.x = mouthAngle;
-                
-                // Seamless Pacman tunnel warp side transition
-                if (pacman.position.x > 56) pacman.position.x = -56;
-                else if (pacman.position.x < -56) pacman.position.x = 56;
+            // Pac-Man hyper charge sequence when eating Mega Pellet
+            if (isChargingBoss && giantBossGroup) {
+                const bossTarget = giantBossGroup.position.clone();
+                const chargeVec = bossTarget.clone().sub(pacman.position);
+                chargeVec.y = 0;
+                if (chargeVec.length() > 1.0) {
+                    chargeVec.normalize().multiplyScalar(0.8);
+                    pacman.position.add(chargeVec);
+                    pacman.rotation.y = Math.atan2(chargeVec.x, chargeVec.z);
+                } else {
+                    // Boss Defeated!
+                    isChargingBoss = false;
+                    scene.remove(giantBossGroup); giantBossGroup = null;
+                    audioBossfight.pause();
+                    audioBossdefeated.currentTime = 0;
+                    audioBossdefeated.play().catch(e=>e);
+                    
+                    addScore(10000, pacman.position);
+                    showFloatingText("BOSS DEFEATED! +10000", pacman.position);
+                    
+                    setTimeout(() => {
+                        level++;
+                        checkAndUpdateStats();
+                        document.getElementById('level').innerText = level;
+                        buildMap();
+                        resetPositions();
+                        playCurrentAudioBGM();
+                    }, 2500);
+                }
             } else {
-                topHalf.rotation.x = 0; bottomHalf.rotation.x = 0;
+                const v = new THREE.Vector3(moveS, 0, moveF).applyAxisAngle(new THREE.Vector3(0,1,0), camAngleY).normalize().multiplyScalar(curSpeed);
+                isMoving = (moveS !== 0 || moveF !== 0);
+
+                if(isMoving) {
+                    const npX = pacman.position.clone(); npX.x += v.x; if(!checkCol(npX)) pacman.position.x = npX.x;
+                    const npZ = pacman.position.clone(); npZ.z += v.z; if(!checkCol(npZ)) pacman.position.z = npZ.z;
+                    
+                    pacman.rotation.y = Math.atan2(v.x, v.z);
+                    
+                    mouthTimer += 0.25 * (speedMode ? 1.5 : 1);
+                    const mouthAngle = (Math.sin(mouthTimer) + 1) * 0.3;
+                    topHalf.rotation.x = -mouthAngle; bottomHalf.rotation.x = mouthAngle;
+                } else {
+                    topHalf.rotation.x = 0; bottomHalf.rotation.x = 0;
+                }
             }
+
+            // Pac-Man side wrap tunnel teleportation fix
+            if (pacman.position.x > 56) pacman.position.x = -56;
+            else if (pacman.position.x < -56) pacman.position.x = 56;
 
             camera.position.x = pacman.position.x + camRadius * Math.sin(camAngleY) * Math.cos(camAngleX);
             camera.position.y = pacman.position.y + camRadius * Math.sin(camAngleX);
@@ -1694,7 +1608,7 @@
             camera.lookAt(pacman.position);
             light.position.copy(pacman.position).add(new THREE.Vector3(0, 3, 0));
 
-            // Compass Line of sight scan
+            // Line of sight scanner
             const pacmanGridPos = worldToGrid(pacman.position);
             wasPacmanSeenThisFrame = false;
             
@@ -1716,21 +1630,18 @@
                 lastPacmanSeenPos.copy(pacman.position);
             }
 
-            // Powerup Timers
+            // Powerup Decrements
             if(powerUp) powerTimeLeft -= deltaMs;
             if(laserMode) { laserTimeLeft -= deltaMs; laserCooldown -= deltaMs; }
             if(speedMode) speedTimeLeft -= deltaMs;
             if(freezeMode) freezeTimeLeft -= deltaMs;
 
-            // Aura Light and UI Updates
+            // Aura Visuals
             if (powerUp || laserMode || speedMode || freezeMode) {
-                auraMesh.visible = true;
-                auraLight.intensity = 65; 
-                
+                auraMesh.visible = true; auraLight.intensity = 65; 
                 let currentAuraColor = new THREE.Color();
                 if (powerUp) {
-                    const hue = (now % 2000) / 2000;
-                    currentAuraColor.setHSL(hue, 1.0, 0.5);
+                    currentAuraColor.setHSL((now % 2000) / 2000, 1.0, 0.5);
                 } else if (freezeMode) {
                     currentAuraColor.setHex(0x00ffff);
                 } else if (speedMode) {
@@ -1738,17 +1649,13 @@
                 } else if (laserMode) {
                     currentAuraColor.setHex(0xff6400); 
                 }
-                
-                auraMat.color.copy(currentAuraColor);
-                auraLight.color.copy(currentAuraColor);
+                auraMat.color.copy(currentAuraColor); auraLight.color.copy(currentAuraColor);
             } else {
-                auraMesh.visible = false;
-                auraLight.intensity = 0;
+                auraMesh.visible = false; auraLight.intensity = 0;
             }
 
             if(powerUp) {
                 document.getElementById('powerBar').style.width = (powerTimeLeft / 8000 * 100) + '%';
-                
                 let activeGhostColor = 0x2121ff;
                 if (powerTimeLeft <= 3000) {
                     const isWhiteFlash = Math.floor(powerTimeLeft / 200) % 2 === 0;
@@ -1756,13 +1663,11 @@
                 }
 
                 ghosts.forEach(g => {
-                    if (!g.isDead) g.bodyGroup.children[0].material.color.setHex(activeGhostColor);
+                    if (!g.isDead) g.bodyGroup.children[0].material.color.setHex(bossEnrageActive ? 0xff0000 : activeGhostColor);
                 });
 
                 if(powerTimeLeft <= 0) { 
-                    powerUp = false; 
-                    document.getElementById('powerBarContainer').style.display = 'none'; 
-                    ghostCombo = 0; 
+                    powerUp = false; document.getElementById('powerBarContainer').style.display = 'none'; ghostCombo = 0; 
                     ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(g.baseColor); }); 
                 }
             }
@@ -1780,15 +1685,11 @@
                 if(freezeTimeLeft <= 0) { freezeMode = false; document.getElementById('freezeBarContainer').style.display = 'none'; }
             }
 
-            // Fruits spawn logic
+            // Fruits logic
             fruitTimer += deltaMs;
-            if (fruitTimer > 15000 && !fruitMesh) {
-                spawnFruit();
-                fruitTimer = 0;
-            }
+            if (fruitTimer > 15000 && !fruitMesh) { spawnFruit(); fruitTimer = 0; }
             if (fruitMesh) {
-                fruitMesh.rotation.y += 0.05;
-                fruitActiveTime -= deltaMs;
+                fruitMesh.rotation.y += 0.05; fruitActiveTime -= deltaMs;
                 if(fruitActiveTime <= 0) {
                     scene.remove(fruitMesh); fruitMesh = null;
                     document.getElementById('fruitIndicator').style.display = 'none';
@@ -1800,9 +1701,8 @@
                 }
             }
 
-            // --- GHOST DIGITAL NEURAL PREDICTION CONTROL SYSTEM ---
+            // --- GHOST DIGITAL NEURAL AI & WRAP / WALL COLLISION SYSTEM ---
             const centerBox = new THREE.Vector3(0, 0.3, -4);
-            const pacVel = v.clone(); 
             
             ghosts.forEach(g => {
                 let gGrid = worldToGrid(g.position);
@@ -1816,7 +1716,6 @@
                         g.aStarPath = [];
                     } else {
                         let targetGrid = { x: 14, z: 15 };
-                        
                         g.pathUpdateTimer -= deltaMs;
                         if (g.pathUpdateTimer <= 0 || !g.aStarPath || g.aStarPath.length === 0) {
                             g.pathUpdateTimer = 150; 
@@ -1824,7 +1723,6 @@
                         }
                         
                         let eyeSpeed = 0.4 * levelSpeedFactor;
-                        
                         if (g.aStarPath && g.aStarPath.length > 1) {
                             let nextNode = g.aStarPath[1];
                             let worldNext = gridToWorld(nextNode.x, nextNode.z);
@@ -1834,20 +1732,14 @@
                             let stepDist = moveVec.length();
                             
                             if (stepDist < eyeSpeed) {
-                                g.position.copy(worldNext);
-                                g.aStarPath.shift();
+                                g.position.copy(worldNext); g.aStarPath.shift();
                             } else {
-                                moveVec.normalize();
-                                g.position.add(moveVec.multiplyScalar(eyeSpeed));
-                                g.dir.copy(moveVec);
+                                moveVec.normalize(); g.position.add(moveVec.multiplyScalar(eyeSpeed)); g.dir.copy(moveVec);
                             }
                         } else {
-                            let fallbackVec = toCenter.clone();
-                            fallbackVec.y = 0;
+                            let fallbackVec = toCenter.clone(); fallbackVec.y = 0;
                             if(fallbackVec.length() > 0.1) {
-                                fallbackVec.normalize();
-                                g.position.add(fallbackVec.multiplyScalar(eyeSpeed));
-                                g.dir.copy(fallbackVec);
+                                fallbackVec.normalize(); g.position.add(fallbackVec.multiplyScalar(eyeSpeed)); g.dir.copy(fallbackVec);
                             }
                         }
                         g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
@@ -1857,68 +1749,62 @@
 
                 if(freezeMode) return;
 
-                // Ghost movement speed calculated directly with level scale
-                let gSpeed = g.baseSpeed * ghostSpeedFactor * levelSpeedFactor;
-                if(powerUp) gSpeed *= 0.5;
+                // Ghost Speed without deleted Ghostspeedmult
+                let gSpeed = g.baseSpeed * ghostSpeedFactor * levelSpeedFactor * (bossEnrageActive ? 1.3 : 1.0);
+                if(powerUp && !bossEnrageActive) gSpeed *= 0.5;
 
-                // 1. RE-EVALUATE NEURAL TARGET PREDICTION AT PATH NODES
-                g.pathUpdateTimer -= deltaMs;
-                if (g.pathUpdateTimer <= 0 || g.aStarPath.length === 0) {
-                    g.pathUpdateTimer = 200 + Math.random() * 150;
-                    
-                    // Run Simulated Neural Matrix Prediction
-                    let predictedTargetCell = g.neuralEngine.predictOptimalTarget(
-                        g.position, 
-                        pacman.position, 
-                        pacVel, 
-                        powerUp
-                    );
-
-                    g.currentTargetCell = predictedTargetCell;
-                    g.aStarPath = computeAStarPath(gGrid, predictedTargetCell, g.isDead);
+                if (bossEnrageActive) {
+                    g.bodyGroup.children[0].material.color.setHex(0xff0000);
+                    g.currentAIState = 'chase';
+                } else if (powerUp) {
+                    g.currentAIState = 'scared';
+                } else {
+                    g.currentAIState = 'chase';
                 }
 
-                // 2. MOVE SMOOTHLY ALONG PATHWAY WITH SEAMLESS TUNNEL WRAP & WALL COLLISION GUARD
+                g.pathUpdateTimer -= deltaMs;
+                if (g.pathUpdateTimer <= 0 || g.aStarPath.length === 0) {
+                    g.pathUpdateTimer = 180 + Math.random() * 150;
+                    
+                    let targetGrid = getNeuralPredictedTarget(g, pacmanGridPos);
+                    if (g.currentAIState === 'scared') {
+                        targetGrid = { x: 27 - pacmanGridPos.x, z: 30 - pacmanGridPos.z };
+                    }
+                    
+                    g.currentTargetCell = targetGrid;
+                    g.aStarPath = computeAStarPath(gGrid, targetGrid, g.isDead);
+                }
+
                 if (g.aStarPath.length > 1) {
                     let nextNode = g.aStarPath[1];
+                    let worldNext = gridToWorld(nextNode.x, nextNode.z);
+                    worldNext.y = g.position.y; 
                     
-                    // Handle Tunnel Wrapping (Row 14)
-                    let isTunnelWrapStep = (gGrid.z === 14 && nextNode.z === 14 && Math.abs(nextNode.x - gGrid.x) > 1);
+                    let moveVec = worldNext.clone().sub(g.position);
+                    let stepDist = moveVec.length();
                     
-                    if (isTunnelWrapStep) {
-                        let wrapDirection = (gGrid.x === 0 && nextNode.x === 27) ? -1 : 1;
-                        g.position.x += wrapDirection * gSpeed * 4;
-                        g.dir.set(wrapDirection, 0, 0);
-
-                        if (g.position.x > 56) { g.position.x = -56; g.aStarPath.shift(); }
-                        else if (g.position.x < -56) { g.position.x = 56; g.aStarPath.shift(); }
+                    // Smooth wrap tunnel transition logic
+                    if (Math.abs(worldNext.x - g.position.x) > 20) {
+                        if (g.position.x > 50) g.position.x = -52;
+                        else if (g.position.x < -50) g.position.x = 52;
+                        g.aStarPath.shift();
+                    } else if (stepDist < gSpeed) {
+                        g.position.copy(worldNext);
+                        g.aStarPath.shift();
                     } else {
-                        let worldNext = gridToWorld(nextNode.x, nextNode.z);
-                        worldNext.y = g.position.y; 
+                        moveVec.normalize();
                         
-                        let moveVec = worldNext.clone().sub(g.position);
-                        let stepDist = moveVec.length();
-                        
-                        if (stepDist < gSpeed) {
-                            g.position.copy(worldNext);
-                            g.aStarPath.shift();
+                        // Corridor axis alignment fix to prevent ghost wall collisions
+                        if (Math.abs(moveVec.x) > Math.abs(moveVec.z)) {
+                            let laneZ = gridToWorld(gGrid.x, gGrid.z).z;
+                            g.position.z += (laneZ - g.position.z) * 0.2; // Lerp center
                         } else {
-                            moveVec.normalize();
-                            let stepPos = g.position.clone().add(moveVec.clone().multiplyScalar(gSpeed));
-                            
-                            // Wall Collision Protection Guard against Clipping
-                            if (!checkGhostWallCollision(stepPos)) {
-                                g.position.copy(stepPos);
-                            } else {
-                                // Sliding collision fallback
-                                let stepPosX = g.position.clone(); stepPosX.x += moveVec.x * gSpeed;
-                                if (!checkGhostWallCollision(stepPosX)) g.position.x = stepPosX.x;
-                                
-                                let stepPosZ = g.position.clone(); stepPosZ.z += moveVec.z * gSpeed;
-                                if (!checkGhostWallCollision(stepPosZ)) g.position.z = stepPosZ.z;
-                            }
-                            g.dir.copy(moveVec);
+                            let laneX = gridToWorld(gGrid.x, gGrid.z).x;
+                            g.position.x += (laneX - g.position.x) * 0.2; // Lerp center
                         }
+
+                        g.position.add(moveVec.clone().multiplyScalar(gSpeed));
+                        g.dir.copy(moveVec);
                     }
                 } else {
                     let targetWorld = gridToWorld(g.currentTargetCell.x, g.currentTargetCell.z);
@@ -1926,25 +1812,26 @@
                     fallbackVec.y = 0;
                     if(fallbackVec.length() > 0.1) {
                         fallbackVec.normalize();
-                        let nextP = g.position.clone().add(fallbackVec.clone().multiplyScalar(gSpeed));
-                        if (!checkGhostWallCollision(nextP)) {
-                            g.position.copy(nextP);
-                        }
+                        g.position.add(fallbackVec.multiplyScalar(gSpeed));
                         g.dir.copy(fallbackVec);
                     }
                 }
 
-                // Tunnel side coordinate bounds check
+                // Wrap tunnels crossing
                 if (g.position.x > 56) g.position.x = -56;
                 else if (g.position.x < -56) g.position.x = 56;
 
                 g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
 
-                // Check collision with Pac-Man
+                // Collision with Pacman
                 if(pacman.position.distanceTo(g.position) < 1.6) {
-                    if(powerUp) {
+                    if(powerUp && !bossEnrageActive) {
                         killGhost(g);
                     } else if(!isJumping) {
+                        if (bossEnrageActive) {
+                            lives = Math.max(0, lives - 1); // Enrage takes 2 lives total (-1 extra here + -1 on standard death transition)
+                            showFloatingText("-2 LIVES!", pacman.position);
+                        }
                         gameState = 'dying';
                         deathTimer = 1.0;
                         playSfx(200, 1.0, 'sawtooth');
@@ -1952,7 +1839,7 @@
                 }
             });
 
-            // Dots Collision
+            // Dots & Mega Pellet Collision
             dots.forEach(d => {
                 if(d.visible && pacman.position.distanceTo(d.position) < 1.8) {
                     d.visible = false; 
@@ -1964,14 +1851,27 @@
                         document.getElementById('remaining').innerText = remainingDots;
                     } else {
                         addScore(40);
-                        if(d.type === 2) { powerUp = true; powerTimeLeft = 8000; ghostCombo = 0; document.getElementById('powerBarContainer').style.display = 'block'; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x2121ff); }); }
-                        if(d.type === 4) { laserMode = true; laserTimeLeft = 10000; laserCooldown=0; document.getElementById('laserBarContainer').style.display = 'block'; }
-                        if(d.type === 5) { speedMode = true; speedTimeLeft = 6000; document.getElementById('speedBarContainer').style.display = 'block'; }
-                        if(d.type === 6) { freezeMode = true; freezeTimeLeft = 5000; document.getElementById('freezeBarContainer').style.display = 'block'; }
+                        if(d.type === 2 && !bossEnrageActive) { powerUp = true; powerTimeLeft = 8000; ghostCombo = 0; document.getElementById('powerBarContainer').style.display = 'block'; ghosts.forEach(g => { if(!g.isDead) g.bodyGroup.children[0].material.color.set(0x2121ff); }); }
+                        if(d.type === 4 && !bossEnrageActive) { laserMode = true; laserTimeLeft = 10000; laserCooldown=0; document.getElementById('laserBarContainer').style.display = 'block'; }
+                        if(d.type === 5 && !bossEnrageActive) { speedMode = true; speedTimeLeft = 6000; document.getElementById('speedBarContainer').style.display = 'block'; }
+                        if(d.type === 6 && !bossEnrageActive) { freezeMode = true; freezeTimeLeft = 5000; document.getElementById('freezeBarContainer').style.display = 'block'; }
                         showFloatingText("+50", d.position);
                     }
 
-                    if(remainingDots <= 0) { 
+                    // --- MEGA PELLET SPAWN ON BOSS STAGE ---
+                    if (remainingDots <= 0 && isBossStage && !isMegaPelletSpawned) {
+                        isMegaPelletSpawned = true;
+                        megaPelletMesh = new THREE.Mesh(
+                            new THREE.SphereGeometry(1.2, 32, 32),
+                            new THREE.MeshPhongMaterial({ color: 0xffff00, emissive: 0xffaa00, shininess: 100 })
+                        );
+                        megaPelletMesh.position.set(0, 0.8, -4);
+                        scene.add(megaPelletMesh);
+                        playSfx(1500, 0.8, 'sine');
+                        showFloatingText("MEGA PELLET SPAWNED!", megaPelletMesh.position);
+                    }
+
+                    if(remainingDots <= 0 && !isBossStage) { 
                         if (level >= 256) {
                             gameState = 'victory256';
                             checkAndUpdateStats();
@@ -1999,45 +1899,26 @@
                             
                             hideAllCSActors();
 
-                            csPacman.visible = true;
-                            csPacman.scale.setScalar(1);
-                            csPacman.position.y = 0.8;
-                            csPacman.rotation.y = -Math.PI/2;
+                            csPacman.visible = true; csPacman.scale.setScalar(1);
+                            csPacman.position.y = 0.8; csPacman.rotation.y = -Math.PI/2;
                             
                             switch(interType) {
                                 case 0:
                                     csPacman.position.set(20, 0.8, 0);
-                                    csBlinky.visible = true;
-                                    csBlinky.position.set(30, 0.8, 0);
-                                    csBlinky.rotation.y = -Math.PI/2;
-                                    csBlinky.mat.color.setHex(0xff0000); 
-                                    csBlinky.body.visible = true; 
-                                    csPellet.visible = true;
-                                    csPellet.position.set(-15, 0.8, 0);
-                                    csPellet.material.color.setHex(0xffff00);
+                                    csBlinky.visible = true; csBlinky.position.set(30, 0.8, 0); csBlinky.rotation.y = -Math.PI/2; csBlinky.mat.color.setHex(0xff0000); csBlinky.body.visible = true; 
+                                    csPellet.visible = true; csPellet.position.set(-15, 0.8, 0); csPellet.material.color.setHex(0xffff00);
                                     break;
                                 case 1:
                                     csPacman.position.set(25, 0.8, 0);
-                                    csPinky.visible = true;
-                                    csPinky.position.set(35, 0.8, 0);
-                                    csPinky.rotation.y = -Math.PI/2;
-                                    csPinky.body.visible = true;
-                                    csBlock.position.set(0, -5, 0); 
+                                    csPinky.visible = true; csPinky.position.set(35, 0.8, 0); csPinky.rotation.y = -Math.PI/2; csPinky.body.visible = true; csBlock.position.set(0, -5, 0); 
                                     break;
                                 case 2:
                                     csPacman.position.set(20, 0.8, 0);
-                                    csInky.visible = true;
-                                    csInky.position.set(30, 0.8, 0);
-                                    csInky.rotation.y = -Math.PI/2;
-                                    csInky.body.visible = true;
-                                    csLaser.visible = false;
+                                    csInky.visible = true; csInky.position.set(30, 0.8, 0); csInky.rotation.y = -Math.PI/2; csInky.body.visible = true; csLaser.visible = false;
                                     break;
                                 case 3:
                                     csPacman.position.set(25, 0.8, 0);
-                                    csClyde.visible = true;
-                                    csClyde.position.set(35, 0.8, 0);
-                                    csClyde.rotation.y = -Math.PI/2;
-                                    csClyde.body.visible = true;
+                                    csClyde.visible = true; csClyde.position.set(35, 0.8, 0); csClyde.rotation.y = -Math.PI/2; csClyde.body.visible = true;
                                     break;
                                 case 4:
                                     csPacman.position.set(25, 0.8, 0);
@@ -2045,19 +1926,11 @@
                                     csPinky.visible = true; csPinky.position.set(39, 0.8, 0); csPinky.rotation.y = -Math.PI/2; csPinky.body.visible = true; csPinky.mat.color.setHex(0xffb8ff);
                                     csInky.visible = true; csInky.position.set(43, 0.8, 0); csInky.rotation.y = -Math.PI/2; csInky.body.visible = true; csInky.mat.color.setHex(0x00ffff);
                                     csClyde.visible = true; csClyde.position.set(47, 0.8, 0); csClyde.rotation.y = -Math.PI/2; csClyde.body.visible = true; csClyde.mat.color.setHex(0xffb852);
-                                    csPellet.visible = true;
-                                    csPellet.position.set(-15, 0.8, 0);
-                                    csPellet.material.color.setHex(0x00ffff);
+                                    csPellet.visible = true; csPellet.position.set(-15, 0.8, 0); csPellet.material.color.setHex(0x00ffff);
                                     break;
                                 case 5:
                                     csPacman.position.set(20, 0.8, 0);
-                                    csBlinky.visible = true;
-                                    csBlinky.position.set(30, 0.8, 0);
-                                    csBlinky.rotation.y = -Math.PI/2;
-                                    csBlinky.mat.color.setHex(0xff0000); 
-                                    csBlinky.body.visible = true; 
-                                    csBlinky.position.y = 0.8; 
-                                    csGalaxian.visible = false;
+                                    csBlinky.visible = true; csBlinky.position.set(30, 0.8, 0); csBlinky.rotation.y = -Math.PI/2; csBlinky.mat.color.setHex(0xff0000); csBlinky.body.visible = true; csBlinky.position.y = 0.8; csGalaxian.visible = false;
                                     break;
                             }
                         } else {
@@ -2066,16 +1939,23 @@
                             document.getElementById('level').innerText = level;
                             buildMap();
                             resetPositions();
+                            playCurrentAudioBGM();
                             playSfx(1000, 1.0, 'square');
                         }
                     }
                 }
             });
 
+            // Mega Pellet Touch Check to Defeat Boss
+            if (megaPelletMesh && megaPelletMesh.visible && pacman.position.distanceTo(megaPelletMesh.position) < 2.0) {
+                scene.remove(megaPelletMesh); megaPelletMesh = null;
+                isChargingBoss = true;
+                playSfx(2000, 0.5, 'sine');
+            }
+
             renderer.render(scene, camera);
         }
 
-        // Initialize elements
         buildMap();
         initGhosts();
         resetPositions();
@@ -2083,4 +1963,4 @@
 
     </script>
 </body>
-    </html>
+</html>
