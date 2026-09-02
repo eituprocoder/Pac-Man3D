@@ -67,14 +67,6 @@ Instalación
 
 ---
 
-🌐 Versión Web
-
-También puedes jugar Pac-Man 3D directamente desde el navegador:
-
-https://eituprocoder.github.io/Pac-Man3D/
-
----
-
 🛠️ Tecnologías utilizadas
 
 El proyecto utiliza tecnologías web modernas para crear una experiencia de juego tridimensional:
@@ -84,8 +76,9 @@ El proyecto utiliza tecnologías web modernas para crear una experiencia de jueg
 - JavaScript
 - Three.js
 - IndexedDB
-- PWA
+- APK
 - Web Audio API
+- MP3
 
 La versión Android fue creada empaquetando la experiencia web como una aplicación APK.
 
