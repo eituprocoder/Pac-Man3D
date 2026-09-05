@@ -1,0 +1,2490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pac-Showdown 3D</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000411; font-family: 'Courier New', monospace; touch-action: none; user-select: none; -webkit-user-select: none; color: #fff; }
+        
+        /* Game UI Overlay */
+        #ui { display: none; position: absolute; top: 10px; width: 100%; text-align: center; color: #00f2ff; font-size: 15px; pointer-events: none; z-index: 10; font-weight: bold; text-shadow: 2px 2px 0 #000; }
+        #timer-box { font-size: 24px; color: #ffff00; margin-bottom: 4px; text-shadow: 0 0 10px #ffff00; }
+        
+        /* Live Leaderboard Top-Left */
+        #leaderboard-overlay { display: none; position: absolute; top: 10px; left: 10px; background: rgba(0, 0, 15, 0.75); border: 2px solid #00f2ff; border-radius: 8px; padding: 8px 12px; pointer-events: none; z-index: 25; text-align: left; min-width: 150px; box-shadow: 0 0 10px rgba(0,242,255,0.3); }
+        #leaderboard-overlay h3 { margin: 0 0 6px 0; font-size: 13px; color: #ffff00; text-transform: uppercase; border-bottom: 1px solid rgba(0,242,255,0.4); padding-bottom: 2px; }
+        .lb-item { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-bottom: 3px; gap: 8px; }
+        .lb-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+        .lb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90px; }
+        .lb-dead { text-decoration: line-through; opacity: 0.5; }
+
+        #joystick-container { display: none; position: absolute; bottom: 30px; left: 30px; width: 100px; height: 100px; background: rgba(0, 242, 255, 0.1); border: 2px solid #00f2ff; border-radius: 50%; align-items: center; justify-content: center; z-index: 30; }
+        #joystick-knob { width: 40px; height: 40px; background: #00f2ff; border-radius: 50%; box-shadow: 0 0 10px #00f2ff; }
+        
+        #controls-right { display: none; position: absolute; bottom: 30px; right: 30px; flex-direction: column; gap: 12px; align-items: center; z-index: 30; }
+        .btn { width: 75px; height: 75px; background: rgba(0, 255, 0, 0.3); border: 2px solid #00ff00; border-radius: 50%; color: #00ff00; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; -webkit-tap-highlight-color: transparent; box-shadow: 0 0 15px #00ff00; cursor: pointer; user-select: none; position: relative; overflow: hidden; }
+        .btn-dash { background: rgba(255, 200, 0, 0.3); border-color: #ffcc00; color: #ffcc00; box-shadow: 0 0 15px #ffcc00; }
+        .btn-dash.cooldown { opacity: 0.5; cursor: not-allowed; border-color: #777; color: #aaa; box-shadow: none; }
+        
+        /* Minimap */
+        #minimap { display: none; position: absolute; top: 10px; right: 10px; border: 2px solid rgba(0, 242, 255, 0.5); background: rgba(0,0,0,0.8); z-index: 20; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
+
+        /* Screens & Modals */
+        .modal-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #000411 0%, #001133 100%); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 1000; text-align: center; color: #ffff00; overflow-y: auto; padding: 20px 10px; box-sizing: border-box; }
+        .modal-screen h1 { font-size: 42px; text-shadow: 0 0 20px #ffff00; margin: 10px 0 5px 0; letter-spacing: 4px; }
+        .modal-screen h2 { font-size: 18px; color: #00f2ff; margin-bottom: 15px; text-shadow: 0 0 10px #00f2ff; }
+        
+        .card-box { background: rgba(0, 0, 0, 0.6); border: 2px solid #0033ff; border-radius: 10px; padding: 15px; width: 95%; max-width: 500px; margin-bottom: 15px; box-sizing: border-box; color: #fff; position: relative; }
+        .input-field { background: rgba(0, 242, 255, 0.1); border: 2px solid #00f2ff; color: #ffff00; font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; padding: 10px; border-radius: 8px; text-align: center; width: 80%; outline: none; margin: 8px 0; }
+        
+        .menu-btn { padding: 12px 30px; font-weight: bold; cursor: pointer; border: 3px solid #00f2ff; background: rgba(0,242,255,0.1); color: #00f2ff; font-size: 18px; border-radius: 12px; font-family: 'Courier New', monospace; box-shadow: 0 0 15px rgba(0,242,255,0.4); transition: all 0.3s ease; flex-shrink: 0; margin: 5px; }
+        .menu-btn:hover { background: #00f2ff; color: #000; box-shadow: 0 0 30px #00f2ff; }
+        .menu-btn:disabled { border-color: #555; color: #555; box-shadow: none; cursor: not-allowed; background: transparent; }
+
+        .trophy-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 20px; font-size: 16px; font-weight: bold; margin: 3px; }
+
+        .player-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-bottom: 1px dashed rgba(0,242,255,0.3); font-size: 14px; }
+        .player-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+
+        /* Lobby 3D Canvas */
+        #lobby-canvas-container { width: 100%; height: 180px; border-radius: 8px; overflow: hidden; margin-bottom: 10px; background: #000511; border: 1px solid #00f2ff; position: relative; }
+
+        /* Powerup Bars & Cooldowns */
+        .bar-container { display: none; width: 250px; height: 12px; border: 2px solid white; border-radius: 6px; margin: 4px auto; overflow: hidden; background: #000; position: relative; }
+        .bar-label { font-size: 10px; position: absolute; width: 250px; text-align: center; margin-top: -1px; color: #fff; text-shadow: 1px 1px 0 #000; z-index: 2; font-weight: bold; }
+        #powerBar { width: 100%; height: 100%; background: #ffff00; }
+        #laserBar { width: 100%; height: 100%; background: #ff6400; }
+        #speedBar { width: 100%; height: 100%; background: #00ff00; }
+        #freezeBar { width: 100%; height: 100%; background: #00ffff; }
+        #multBar { width: 100%; height: 100%; background: #ff00ff; }
+        #magnetBar { width: 100%; height: 100%; background: #ff0055; }
+        #dashBarContainer { display: block; width: 200px; height: 10px; border-color: #ffcc00; }
+        #dashBar { width: 100%; height: 100%; background: #ffcc00; }
+
+        #glitch-alert { display: none; color: #ff0055; font-size: 22px; font-weight: bold; animation: pulse 0.8s infinite alternate; text-shadow: 0 0 10px #ff0055; margin-top: 5px; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.1); opacity: 1; } }
+
+        #camera-hint { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); color: rgba(255,255,255,0.4); font-size: 12px; pointer-events: none; text-align: center; }
+        
+        /* Leaderboard Modal */
+        #gameover-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 15, 0.95); flex-direction: column; align-items: center; justify-content: center; z-index: 2000; text-align: center; }
+        .podium-box { display: flex; justify-content: center; align-items: flex-end; gap: 15px; margin: 20px 0; width: 90%; max-width: 500px; }
+        .podium-step { background: rgba(0, 242, 255, 0.15); border: 2px solid #00f2ff; border-radius: 10px 10px 0 0; padding: 15px 10px; width: 30%; text-align: center; font-size: 14px; }
+        .podium-1 { height: 120px; border-color: #ffd700; background: rgba(255, 215, 0, 0.2); }
+        .podium-2 { height: 95px; border-color: #c0c0c0; background: rgba(192, 192, 192, 0.2); }
+        .podium-3 { height: 75px; border-color: #cd7f32; background: rgba(205, 127, 50, 0.2); }
+        
+        #ready-go-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center; z-index: 200; pointer-events: none; font-size: 60px; font-weight: bold; color: #ffff00; text-shadow: 4px 4px 0 #ff0000; letter-spacing: 5px; }
+
+        /* Age Verification Modal */
+        #age-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; }
+        .age-box { background: #001133; border: 3px solid #00f2ff; border-radius: 12px; padding: 25px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 0 25px #00f2ff; }
+
+        /* Custom Notification Toast Banner (Replaces popup alerts) */
+        #notification-banner { position: fixed; top: -70px; left: 50%; transform: translateX(-50%); background: rgba(0, 5, 25, 0.95); border: 2px solid #ff0055; color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 14px; font-weight: bold; z-index: 4000; transition: top 0.4s ease, opacity 0.4s ease; opacity: 0; box-shadow: 0 0 20px rgba(255, 0, 85, 0.6); pointer-events: none; text-align: center; max-width: 90%; }
+        #notification-banner.show { top: 20px; opacity: 1; }
+    </style>
+
+    <script type="importmap">
+        { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+    </script>
+</head>
+<body>
+
+    <!-- Notification Toast Element -->
+    <div id="notification-banner">NOTIFICATION</div>
+
+    <!-- Audio files (with fallbacks) -->
+    <audio id="ostGameplay" src="Pac-Showdown - Gameplay OST.mp3" loop preload="auto"></audio>
+    <audio id="ostSuddenDeath" src="Pac-Showdown - Sudden death OST.mp3" loop preload="auto"></audio>
+    <audio id="audioWin" src="Pac-Showdown OST - Victory.mp3" preload="auto"></audio>
+    <audio id="audioLose" src="Pac-Showdown OST - Game Over.mp3" preload="auto"></audio>
+
+    <!-- MAIN MENU SCREEN -->
+    <div id="menu-screen" class="modal-screen">
+        <h1>PAC-SHOWDOWN</h1>
+        <h2>3D MULTIPLAYER BATTLE ROYALE</h2>
+
+        <div class="card-box">
+            <div style="font-size:14px; color:#00f2ff; margin-bottom:5px;">YOUR TROPHY CABINET</div>
+            <div class="trophy-badge">🥇 GOLD: <span id="trophy-gold">0</span></div>
+            <div class="trophy-badge">🥈 SILVER: <span id="trophy-silver">0</span></div>
+            <div class="trophy-badge">🥉 BRONZE: <span id="trophy-bronze">0</span></div>
+            <div style="font-size:10px;color:#9ddcff;margin-top:8px;">SERVER PLAYER ID: <span id="server-player-id">CONNECTING...</span></div>
+            <div id="showdown-ticket-status" style="font-size:11px;color:#ff8fd5;margin-top:7px;">MONTHLY MATCH TICKETS: LOADING...</div>
+        </div>
+
+        <div class="card-box">
+            <label style="font-size:14px; color:#ffff00;">PLAYER NAME</label><br>
+            <input type="text" id="playerNameInput" class="input-field" maxlength="12" value="PAC-HERO"><br>
+
+            <div style="margin-top:15px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                <button class="menu-btn" onclick="createRoom()">CREATE GAME</button>
+                <button class="menu-btn" onclick="showJoinInput()">JOIN GAME</button>
+            </div>
+
+            <div id="join-section" style="display:none; margin-top:15px;">
+                <input type="text" id="roomCodeInput" class="input-field" placeholder="ENTER 6-DIGIT CODE" maxlength="6" style="text-transform:uppercase;"><br>
+                <button class="menu-btn" onclick="joinRoom()">CONNECT</button>
+            </div>
+        </div>
+
+        <div class="card-box" style="font-size:12px; line-height:1.4; color:#aaa;">
+            <strong style="color:#00f2ff;">GAME RULES:</strong><br>
+            • 2-10 Players enter the labyrinth (2 Min Limit).<br>
+            • Eat dots, fruits & power pellets.<br>
+            • ⚡ <strong>DASH ABILITY:</strong> Press SHIFT / DASH (10s Recharge) for a super speed burst!<br>
+            • Use side portals to wrap around the maze.<br>
+            • 🚨 <strong>30 SEC REMAINING: GLITCH 256</strong> shrinks the arena!<br>
+            • Be the last survivor or hold the highest score to win trophies!
+        </div>
+
+        <button class="menu-btn" style="border-color:#ff6688;color:#ffb0c0;" onclick="exitPacShowdown()">BACK TO PAC-MAN 3D</button>
+    </div>
+
+    <!-- LOBBY WAITING SCREEN WITH 3D PREVIEW & VOICE CHAT -->
+    <div id="lobby-screen" class="modal-screen" style="display:none;">
+        <h1>SHOWDOWN LOBBY</h1>
+        <h2>ROOM CODE: <span id="lobby-code-display" style="color:#ffff00; font-size:28px;">------</span></h2>
+
+        <div class="card-box">
+            <div style="font-size:16px; color:#00f2ff; margin-bottom:10px;">PLAYERS IN LOBBY (<span id="player-count">1</span>/10)</div>
+            
+            <div id="lobby-canvas-container"></div>
+            <div id="player-list"></div>
+
+        </div>
+
+        <button id="btnStartGame" class="menu-btn" onclick="hostStartMatch()" disabled>WAITING FOR PLAYERS (MIN 2)</button>
+        <button class="menu-btn" style="border-color:#ff0055; color:#ff0055;" onclick="location.reload()">LEAVE</button>
+    </div>
+
+    <!-- GAMEPLAY HUD -->
+    <canvas id="minimap" width="150" height="150"></canvas>
+    
+    <div id="leaderboard-overlay">
+        <h3>🏆 RANKINGS</h3>
+        <div id="lb-list"></div>
+    </div>
+
+    <div id="ui">
+        <div id="timer-box">⏱️ <span id="match-timer">02:00</span></div>
+        SCORE: <span id="score">0</span> | ALIVE: <span id="alive-count">0</span>/10<br>
+        
+        <div id="dashBarContainer" class="bar-container"><div class="bar-label">⚡ DASH RECHARGE (10S)</div><div id="dashBar"></div></div>
+        <div id="powerBarContainer" class="bar-container"><div class="bar-label">POWER PELLET</div><div id="powerBar"></div></div>
+        <div id="multBarContainer" class="bar-container"><div class="bar-label">2X MULTIPLIER</div><div id="multBar"></div></div>
+        <div id="magnetBarContainer" class="bar-container"><div class="bar-label">MAGNET RANGE</div><div id="magnetBar"></div></div>
+        <div id="laserBarContainer" class="bar-container"><div class="bar-label">LASER</div><div id="laserBar"></div></div>
+        <div id="speedBarContainer" class="bar-container"><div class="bar-label">SPEED BOOST</div><div id="speedBar"></div></div>
+        <div id="freezeBarContainer" class="bar-container"><div class="bar-label">GHOST FREEZE</div><div id="freezeBar"></div></div>
+        
+        <div id="glitch-alert">🚨 GLITCH 256 INVASION! ARENA SHRINKING! 🚨</div>
+    </div>
+
+    <!-- MATCH OVER PODIUM SCREEN -->
+    <div id="gameover-screen">
+        <h1 style="color:#ffff00; text-shadow:0 0 20px #ffff00; margin-bottom:5px;">MATCH FINISHED</h1>
+        <h2 id="match-outcome-title" style="color:#00f2ff; margin-bottom:10px;">SHOWDOWN FINAL</h2>
+
+        <div class="podium-box">
+            <div class="podium-step podium-2">
+                <div>🥈 2ND</div>
+                <strong id="p2-name">-</strong><br>
+                <span id="p2-score" style="color:#ffff00;">0 pts</span>
+            </div>
+            <div class="podium-step podium-1">
+                <div>🥇 1ST</div>
+                <strong id="p1-name">-</strong><br>
+                <span id="p1-score" style="color:#ffff00;">0 pts</span>
+            </div>
+            <div class="podium-step podium-3">
+                <div>🥉 3RD</div>
+                <strong id="p3-name">-</strong><br>
+                <span id="p3-score" style="color:#ffff00;">0 pts</span>
+            </div>
+        </div>
+
+        <button class="menu-btn" onclick="location.reload()">MAIN MENU</button>
+    </div>
+
+    <div id="ready-go-screen"><span id="ready-go-text">READY?</span></div>
+    <div id="joystick-container"><div id="joystick-knob"></div></div>
+    <div id="camera-hint">↕ Drag screen ↔<br>to rotate view</div>
+    <div id="controls-right">
+        <div id="btnDash" class="btn btn-dash">DASH</div>
+        <div id="btnJump" class="btn">JUMP</div>
+    </div>
+
+    <script>
+        window.__pacShowdownModuleBooted = false;
+        setTimeout(() => {
+            if (window.__pacShowdownModuleBooted) return;
+            const fail = document.createElement('div');
+            fail.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#000411;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;font-family:Courier New,monospace;';
+            fail.innerHTML = '<div style="font-size:30px;color:#ff0055;margin-bottom:12px">PAC-SHOWDOWN COULD NOT START</div><div style="max-width:620px;line-height:1.5">Internet or the multiplayer engine could not be loaded.<br>Check your connection and try again.</div><button style="margin-top:20px;padding:12px 24px;border:2px solid #00f2ff;background:#001133;color:#00f2ff;font:bold 16px Courier New,monospace;border-radius:10px" onclick="window.parent&&window.parent!==window?window.parent.postMessage({type:\'PAC_SHOWDOWN_EXIT\'},\'*\'):location.reload()">BACK</button>';
+            document.body.appendChild(fail);
+        }, 3500);
+        window.addEventListener('offline', () => {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type:'PAC_SHOWDOWN_OFFLINE' }, '*');
+            }
+        });
+    </script>
+    <script type="module">
+        window.__pacShowdownModuleBooted = true;
+        import * as THREE from 'three';
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+        // Custom Toast Notification System (Replaces popup alerts)
+        function showNotification(msg, borderColor = '#ff0055') {
+            const banner = document.getElementById('notification-banner');
+            banner.innerText = msg;
+            banner.style.borderColor = borderColor;
+            banner.classList.add('show');
+            setTimeout(() => { banner.classList.remove('show'); }, 3500);
+        }
+
+        // --- PLAYER COLOR PALETTE ---
+        const PLAYER_COLORS = [
+            { name: "Yellow", hex: 0xffff00, css: "#ffff00" },
+            { name: "Cyan", hex: 0x00f2ff, css: "#00f2ff" },
+            { name: "Magenta", hex: 0xff00ff, css: "#ff00ff" },
+            { name: "Green", hex: 0x00ff00, css: "#00ff00" },
+            { name: "Orange", hex: 0xff6400, css: "#ff6400" },
+            { name: "Purple", hex: 0xa000ff, css: "#a000ff" },
+            { name: "Lime", hex: 0xaaff00, css: "#aaff00" },
+            { name: "Pink", hex: 0xffb8ff, css: "#ffb8ff" },
+            { name: "White", hex: 0xffffff, css: "#ffffff" },
+            { name: "Red", hex: 0xff0033, css: "#ff0033" }
+        ];
+
+        // Dynamic Maze Color Palettes
+        const MAZE_COLOR_PALETTES = [
+            0x0033ff, 0x8800ff, 0xff0055, 0x00ffaa, 
+            0xffaa00, 0x00d8ff, 0xff00aa, 0xe6005c
+        ];
+        let currentMazeColorHex = 0x0033ff;
+
+        // --- SERVER IDENTITY & SQL-BACKED TROPHIES ---
+        // The player name is display-only. Identity is the authenticated Supabase user UUID.
+        // Anonymous sign-in creates a server-issued UUID; trophies and match records live in SQL.
+        let trophies = { gold: 0, silver: 0, bronze: 0 };
+        let supabaseIdentityPromise = null;
+        let authenticatedPlayerId = null;
+        const recordedResultIds = new Set();
+
+        function renderTrophies() {
+            document.getElementById('trophy-gold').innerText = Math.max(0, Number(trophies.gold) || 0);
+            document.getElementById('trophy-silver').innerText = Math.max(0, Number(trophies.silver) || 0);
+            document.getElementById('trophy-bronze').innerText = Math.max(0, Number(trophies.bronze) || 0);
+        }
+
+        function applyServerProfile(profile) {
+            if (!profile) return;
+            trophies = {
+                gold: Math.max(0, Number(profile.gold) || 0),
+                silver: Math.max(0, Number(profile.silver) || 0),
+                bronze: Math.max(0, Number(profile.bronze) || 0)
+            };
+            renderTrophies();
+        }
+
+        async function ensurePlayerIdentity() {
+            if (authenticatedPlayerId) return authenticatedPlayerId;
+            if (supabaseIdentityPromise) return supabaseIdentityPromise;
+            supabaseIdentityPromise = (async () => {
+                const current = await supabase.auth.getSession();
+                if (current.error) throw current.error;
+                let user = current.data?.session?.user || null;
+                if (!user) {
+                    const signed = await supabase.auth.signInAnonymously();
+                    if (signed.error) throw signed.error;
+                    user = signed.data?.user || signed.data?.session?.user || null;
+                }
+                if (!user?.id) throw new Error('Supabase anonymous identity is unavailable.');
+                authenticatedPlayerId = user.id;
+                localPlayerId = user.id;
+                const idLabel = document.getElementById('server-player-id');
+                if (idLabel) idLabel.innerText = user.id;
+                return user.id;
+            })().finally(() => { supabaseIdentityPromise = null; });
+            return supabaseIdentityPromise;
+        }
+
+        async function claimPacShowdownMonthlyAccess() {
+            try {
+                const playerId = await ensurePlayerIdentity();
+                const { data, error } = await supabase.rpc('claim_monthly_mode_access', {
+                    p_mode: 'pac_showdown',
+                    p_player_id: playerId
+                });
+                if (error) throw error;
+                const result = data && typeof data === 'object' ? data : null;
+                if (!result?.accepted) {
+                    if (result?.reason === 'MONTHLY_LIMIT_REACHED') {
+                        showNotification('PAC-SHOWDOWN FULL: 100/100 monthly players. Try again next month.', '#ff0055');
+                    } else {
+                        showNotification('Pac-Showdown monthly access could not be verified.', '#ff0055');
+                    }
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                showNotification('Pac-Showdown requires online monthly access verification.', '#ff0055');
+                return false;
+            }
+        }
+
+        async function loadPacShowdownTicketStatus() {
+            const label = document.getElementById('showdown-ticket-status');
+            if (label) label.textContent = 'MONTHLY MATCH TICKETS: LOADING...';
+            try {
+                await ensurePlayerIdentity();
+                const { data, error } = await supabase.rpc('get_monthly_mode_ticket_status', {
+                    p_mode: 'pac_showdown'
+                });
+                if (error) throw error;
+                const info = data && typeof data === 'object' ? data : {};
+                const remaining = Math.max(0, Number(info.remaining) || 0);
+                const limit = Math.max(0, Number(info.limit) || 15);
+                if (label) label.textContent = `MONTHLY MATCH TICKETS: ${remaining}/${limit}`;
+                return info;
+            } catch (e) {
+                if (label) label.textContent = 'MONTHLY MATCH TICKETS: OFFLINE';
+                return null;
+            }
+        }
+
+        async function consumePacShowdownMatchTicket(actionId) {
+            try {
+                const playerId = await ensurePlayerIdentity();
+                const { data, error } = await supabase.rpc('consume_monthly_mode_ticket', {
+                    p_mode: 'pac_showdown',
+                    p_player_id: playerId,
+                    p_action_id: String(actionId || '').slice(0, 120)
+                });
+                if (error) throw error;
+                const result = data && typeof data === 'object' ? data : null;
+                await loadPacShowdownTicketStatus();
+                if (!result?.accepted) {
+                    if (result?.reason === 'NO_TICKETS_LEFT') {
+                        showNotification('PAC-SHOWDOWN monthly match tickets are sold out. More tickets arrive next month.', '#ff0055');
+                    } else {
+                        showNotification('Could not validate a Pac-Showdown match ticket.', '#ff0055');
+                    }
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                showNotification('Pac-Showdown requires an online ticket to start the match.', '#ff0055');
+                return false;
+            }
+        }
+
+        // --- LOCAL TROPHIES (device-only, independent from Supabase) ---
+        const LOCAL_TROPHIES_KEY = 'pac_showdown_trophies_v1';
+        const LOCAL_TROPHY_MATCHES_KEY = 'pac_showdown_trophy_matches_v1';
+
+        function readLocalTrophies() {
+            try {
+                const raw = localStorage.getItem(LOCAL_TROPHIES_KEY);
+                const value = raw ? JSON.parse(raw) : null;
+                return {
+                    gold: Math.max(0, Number(value?.gold) || 0),
+                    silver: Math.max(0, Number(value?.silver) || 0),
+                    bronze: Math.max(0, Number(value?.bronze) || 0)
+                };
+            } catch (_) {
+                return { gold: 0, silver: 0, bronze: 0 };
+            }
+        }
+
+        function writeLocalTrophies(next) {
+            trophies = {
+                gold: Math.max(0, Number(next?.gold) || 0),
+                silver: Math.max(0, Number(next?.silver) || 0),
+                bronze: Math.max(0, Number(next?.bronze) || 0)
+            };
+            try {
+                localStorage.setItem(LOCAL_TROPHIES_KEY, JSON.stringify(trophies));
+            } catch (_) {}
+            renderTrophies();
+        }
+
+        function readLocalAwardedMatches() {
+            try {
+                const raw = localStorage.getItem(LOCAL_TROPHY_MATCHES_KEY);
+                const list = raw ? JSON.parse(raw) : [];
+                return new Set(Array.isArray(list) ? list.map(String) : []);
+            } catch (_) {
+                return new Set();
+            }
+        }
+
+        function saveLocalAwardedMatches(set) {
+            try {
+                // Keep only the latest 250 match ids so storage stays small.
+                const list = Array.from(set).slice(-250);
+                localStorage.setItem(LOCAL_TROPHY_MATCHES_KEY, JSON.stringify(list));
+            } catch (_) {}
+        }
+
+        async function loadTrophies() {
+            trophies = readLocalTrophies();
+            renderTrophies();
+        }
+
+        async function updateServerPlayerName() {
+            // Player name continues to be used normally by multiplayer.
+            // Trophy storage is local and does not need a server profile.
+        }
+
+        async function recordPacShowdownResult(matchId, rank, score) {
+            const stableMatchId = String(matchId || '').slice(0, 120);
+            if (!stableMatchId || recordedResultIds.has(stableMatchId)) return;
+
+            const locallyAwarded = readLocalAwardedMatches();
+            if (locallyAwarded.has(stableMatchId)) {
+                recordedResultIds.add(stableMatchId);
+                return;
+            }
+
+            recordedResultIds.add(stableMatchId);
+
+            const next = readLocalTrophies();
+            const finalRank = Math.max(1, Math.min(10, Number(rank) || 10));
+
+            if (finalRank === 1) next.gold += 1;
+            else if (finalRank === 2) next.silver += 1;
+            else if (finalRank === 3) next.bronze += 1;
+
+            writeLocalTrophies(next);
+            locallyAwarded.add(stableMatchId);
+            saveLocalAwardedMatches(locallyAwarded);
+        }
+
+        // --- SUPABASE REALTIME / ROOM VARS ---
+        const supabase = createClient(
+            'https://gtedvztwsrgxwbiyznkm.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0ZWR2enR3c3JneHdiaXl6bmttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MDk3MzIsImV4cCI6MjA5MzE4NTczMn0.fEgkFdx1rMHQNuXZOFIPsfemQxcfVVET-c1OarsHJG8'
+        );
+        queueMicrotask(async () => {
+            renderTrophies();
+            await loadTrophies();
+            await loadPacShowdownTicketStatus();
+        });
+        document.getElementById('playerNameInput')?.addEventListener('change', updateServerPlayerName);
+
+        let roomChannel = null;
+        let myRoomCode = null;
+        let isHost = false;
+        let hostPlayerId = null;
+        let joinRequestTimer = null;
+        
+        let localPlayerId = null;
+        let localPlayerName = "PAC-HERO";
+        let players = {}; 
+
+        // --- GAME TIMING & STATE ---
+        let gameState = 'lobby'; 
+        let matchTimerSeconds = 120; 
+        let matchTimerInterval = null;
+        let glitchActive = false;
+        let glitchRingLevel = 0; 
+        let lastNetworkSyncTime = 0;
+        // 10 Hz network traffic + full-frame interpolation for smooth motion.
+        const NET_VISUAL_SMOOTHING_RATE = 16;
+        const NET_LOCAL_HARD_SNAP_DISTANCE = 7;
+
+        // LOW-LAG scheduling: visual motion remains full-speed, heavy work is throttled.
+        const NET_SYNC_INTERVAL_MS = 100;
+        const HUD_UPDATE_INTERVAL_MS = 100;
+        const MINIMAP_UPDATE_INTERVAL_MS = 80;
+        const GHOST_COLOR_INTERVAL_MS = 90;
+        let lastHudRenderAt = 0;
+        let lastMinimapRenderAt = 0;
+        let lastGhostColorRenderAt = 0;
+
+        // Audio System Setup
+        const ostGameplay = document.getElementById('ostGameplay');
+        const ostSuddenDeath = document.getElementById('ostSuddenDeath');
+        const audioWin = document.getElementById('audioWin');
+        const audioLose = document.getElementById('audioLose');
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSfx(f, d=0.1, t='sine', vol=0.05) {
+            try {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
+                g.gain.setValueAtTime(vol, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + d);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(); o.stop(audioCtx.currentTime + d);
+            } catch(e){}
+        }
+
+        function playSynthWinFanfare() {
+            try {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((f, idx) => {
+                    setTimeout(() => playSfx(f, 0.25, 'triangle', 0.1), idx * 150);
+                });
+            } catch(e){}
+        }
+
+        function playSynthLoseSound() {
+            try {
+                const notes = [400, 350, 300, 250];
+                notes.forEach((f, idx) => {
+                    setTimeout(() => playSfx(f, 0.3, 'sawtooth', 0.1), idx * 200);
+                });
+            } catch(e){}
+        }
+
+        function resetAndPlayMp3(audio, fallback = null) {
+            if (!audio) { if (fallback) fallback(); return; }
+            try {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.volume = 0.8;
+                const playPromise = audio.play();
+                if (playPromise && typeof playPromise.catch === 'function') {
+                    playPromise.catch(() => { if (fallback) fallback(); });
+                }
+            } catch (e) {
+                if (fallback) fallback();
+            }
+        }
+
+        function playResultAudio(myRank) {
+            stopMusic();
+            if (myRank <= 3) resetAndPlayMp3(audioWin, playSynthWinFanfare);
+            else resetAndPlayMp3(audioLose, playSynthLoseSound);
+        }
+
+        function playMusic(track) {
+            try {
+                ostGameplay.pause();
+                ostSuddenDeath.pause();
+                if (track === 'gameplay') resetAndPlayMp3(ostGameplay);
+                else if (track === 'suddendeath') resetAndPlayMp3(ostSuddenDeath);
+            } catch(e){}
+        }
+
+        function stopMusic() {
+            try { ostGameplay.pause(); ostSuddenDeath.pause(); } catch(e){}
+        }
+
+        // --- THREE.JS SCENE SETUP ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0x505050));
+        const dirLight = new THREE.PointLight(0xffffff, 40, 80);
+        scene.add(dirLight);
+
+        const floorMat = new THREE.MeshPhongMaterial({ color: 0x000a22 });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // --- LOBBY 3D PREVIEW SCENE SETUP ---
+        const lobbyScene = new THREE.Scene();
+        const lobbyCamera = new THREE.PerspectiveCamera(60, 2, 0.1, 100);
+        lobbyCamera.position.set(0, 3, 10);
+        lobbyCamera.lookAt(0, 0, 0);
+
+        const lobbyRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        lobbyScene.add(new THREE.AmbientLight(0x808080));
+        const lobbyLight = new THREE.DirectionalLight(0xffffff, 2);
+        lobbyLight.position.set(2, 5, 5);
+        lobbyScene.add(lobbyLight);
+
+        const lobbyPacmanGroup = new THREE.Group();
+        lobbyScene.add(lobbyPacmanGroup);
+        let lobbyMeshes = [];
+
+        function initLobbyCanvas() {
+            const container = document.getElementById('lobby-canvas-container');
+            if (!container) return;
+            lobbyRenderer.setSize(container.clientWidth, container.clientHeight);
+            container.innerHTML = '';
+            container.appendChild(lobbyRenderer.domElement);
+        }
+
+        function updateLobby3DModels() {
+            lobbyMeshes.forEach(m => lobbyPacmanGroup.remove(m));
+            lobbyMeshes = [];
+
+            const playerList = Object.values(players);
+            const count = playerList.length;
+            if (count === 0) return;
+
+            const radius = count > 1 ? Math.min(3.5, 1.2 + count * 0.4) : 0;
+            playerList.forEach((p, idx) => {
+                const angle = (idx / count) * Math.PI * 2;
+                const colorObj = PLAYER_COLORS[p.colorIdx % PLAYER_COLORS.length];
+                
+                const group = new THREE.Group();
+                const pmMaterial = new THREE.MeshPhongMaterial({ color: colorObj.hex });
+                
+                const topGeo = new THREE.SphereGeometry(0.7, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+                const topHalf = new THREE.Mesh(topGeo, pmMaterial);
+                const bottomGeo = new THREE.SphereGeometry(0.7, 24, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+                const bottomHalf = new THREE.Mesh(bottomGeo, pmMaterial);
+
+                const eyeGeo = new THREE.SphereGeometry(0.1, 12, 12);
+                const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                const rEye = new THREE.Mesh(eyeGeo, eyeMat); rEye.position.set(0.3, 0.35, 0.5);
+                const lEye = new THREE.Mesh(eyeGeo, eyeMat); lEye.position.set(-0.3, 0.35, 0.5);
+                topHalf.add(rEye, lEye);
+
+                group.add(topHalf, bottomHalf);
+                group.position.set(Math.sin(angle) * radius, 0, Math.cos(angle) * radius);
+                group.rotation.y = angle + Math.PI / 2;
+
+                group.userData = { topHalf, bottomHalf };
+                lobbyPacmanGroup.add(group);
+                lobbyMeshes.push(group);
+            });
+        }
+
+        function animateLobby3D() {
+            if (gameState === 'lobby') {
+                const time = performance.now() * 0.003;
+                lobbyPacmanGroup.rotation.y += 0.01;
+                lobbyMeshes.forEach((m, idx) => {
+                    const mouth = (Math.sin(time * 3 + idx) + 1) * 0.25;
+                    m.userData.topHalf.rotation.x = -mouth;
+                    m.userData.bottomHalf.rotation.x = mouth;
+                });
+                lobbyRenderer.render(lobbyScene, lobbyCamera);
+            }
+        }
+
+        // Map template (31x28 grid)
+        const mapTemplate = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,2,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,2,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+            [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+            [1,7,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,10,0,1],
+            [1,1,1,1,1,1,0,1,1,1,1,1,3,1,1,3,1,1,1,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,1,1,1,3,1,1,3,1,1,1,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,2,3,3,3,3,3,3,3,3,2,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,1,1,1,8,8,1,1,1,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1],
+            [3,3,3,3,3,3,0,3,3,3,1,9,9,9,9,9,9,1,3,3,3,0,3,3,3,3,3,3],
+            [1,1,1,1,1,1,0,1,1,3,1,9,9,9,9,9,9,1,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,2,3,3,3,3,3,3,3,3,2,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,3,1,1,1,1,1,1,1,1,3,1,1,0,1,1,1,1,1,1],
+            [1,5,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,5,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,2,0,0,1,1,0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,0,1,1,0,0,2,1],
+            [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
+            [1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1],
+            [1,7,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,10,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let walls = [];
+        let dots = []; 
+        let centerFruits = []; 
+        let glitchBlocks = [];
+        let wallMaterial = null;
+        let portalVisuals = [];
+        
+        // Lag optimization: Pre-rendered Offscreen Minimap Canvas
+        let minimapWallCanvas = document.createElement('canvas');
+        minimapWallCanvas.width = 150;
+        minimapWallCanvas.height = 150;
+
+        const FRUIT_TYPES = [
+            { name: "CHERRY", color: 0xff0033, pts: 100, shape: 'cherry' },
+            { name: "STRAWBERRY", color: 0xff3366, pts: 300, shape: 'strawberry' },
+            { name: "ORANGE", color: 0xff8800, pts: 500, shape: 'orange' },
+            { name: "APPLE", color: 0x33cc33, pts: 700, shape: 'apple' },
+            { name: "MELON", color: 0x00ff88, pts: 1000, shape: 'melon' },
+            { name: "GALAXIAN", color: 0xffff00, pts: 2000, shape: 'galaxian' },
+            { name: "BELL", color: 0xffd700, pts: 3000, shape: 'bell' },
+            { name: "KEY", color: 0x00f2ff, pts: 5000, shape: 'key' }
+        ];
+
+        function createFruitMesh(fruitDef) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshPhongMaterial({ color: fruitDef.color, shininess: 80 });
+
+            if (fruitDef.shape === 'cherry' || fruitDef.shape === 'strawberry' || fruitDef.shape === 'orange' || fruitDef.shape === 'apple') {
+                const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), mat);
+                group.add(sphere);
+                const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.4), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+                stem.position.set(0, 0.45, 0);
+                group.add(stem);
+            } else if (fruitDef.shape === 'melon') {
+                const melonMesh = new THREE.Mesh(new THREE.SphereGeometry(0.65, 16, 16), mat);
+                melonMesh.scale.set(1.2, 0.9, 0.9);
+                group.add(melonMesh);
+            } else if (fruitDef.shape === 'galaxian') {
+                const body = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.8, 4), mat);
+                body.rotation.x = Math.PI;
+                group.add(body);
+            } else if (fruitDef.shape === 'bell') {
+                const bell = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.7, 16), mat);
+                group.add(bell);
+            } else if (fruitDef.shape === 'key') {
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.08, 8, 16), mat);
+                ring.position.y = 0.3;
+                const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.6), mat);
+                shaft.position.y = -0.1;
+                group.add(ring, shaft);
+            }
+            return group;
+        }
+
+        function preRenderMinimapWalls() {
+            const ctx = minimapWallCanvas.getContext('2d');
+            ctx.clearRect(0, 0, 150, 150);
+            const mapX = (x) => ((x + 56) / 112) * 150;
+            const mapY = (z) => ((z + 62) / 124) * 150;
+
+            ctx.fillStyle = '#' + currentMazeColorHex.toString(16).padStart(6, '0');
+            walls.forEach(w => {
+                ctx.fillRect(mapX(w.mesh.position.x) - 1.5, mapY(w.mesh.position.z) - 1.5, 3, 3);
+            });
+        }
+
+        function buildMap() {
+            currentMazeColorHex = MAZE_COLOR_PALETTES[Math.floor(Math.random() * MAZE_COLOR_PALETTES.length)];
+            wallMaterial = new THREE.MeshPhongMaterial({ color: currentMazeColorHex, shininess: 40 });
+
+            walls.forEach(w => scene.remove(w.mesh));
+            dots.forEach(d => scene.remove(d.mesh));
+            centerFruits.forEach(f => scene.remove(f.group));
+            glitchBlocks.forEach(g => scene.remove(g));
+            portalVisuals.forEach(p => scene.remove(p));
+
+            walls = []; dots = []; centerFruits = []; glitchBlocks = []; portalVisuals = [];
+
+            let dotId = 0;
+            mapTemplate.forEach((row, z) => {
+                row.forEach((cell, x) => {
+                    const pos = [(x - 13.5) * 4, 0, (z - 15) * 4];
+
+                    if (cell === 1) {
+                        const wall = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), wallMaterial);
+                        wall.position.set(...pos); 
+                        scene.add(wall);
+                        walls.push({ box: new THREE.Box3().setFromObject(wall), mesh: wall, gridX: x, gridZ: z });
+                    } 
+                    else if (cell === 8) {
+                        const gateGeo = new THREE.BoxGeometry(4, 1.5, 0.8);
+                        const gateMat = new THREE.MeshPhongMaterial({ 
+                            color: 0xff007f, 
+                            transparent: true, 
+                            opacity: 0.7, 
+                            emissive: 0xff007f,
+                            emissiveIntensity: 0.6 
+                        });
+                        const gateMesh = new THREE.Mesh(gateGeo, gateMat);
+                        gateMesh.position.set(pos[0], 0.75, pos[2]);
+                        scene.add(gateMesh);
+                        walls.push({ box: new THREE.Box3().setFromObject(gateMesh), mesh: gateMesh, isGhostGate: true });
+                    } 
+                    else if (cell !== 3 && cell !== 9) {
+                        let color = 0xffffff, scale = 0.2;
+                        if (cell === 2) { color = 0xffff00; scale = 0.6; } 
+                        else if (cell === 4) { color = 0xff6400; scale = 0.6; } 
+                        else if (cell === 5) { color = 0x00ff00; scale = 0.6; } 
+                        else if (cell === 6) { color = 0x00ffff; scale = 0.6; } 
+                        else if (cell === 7) { color = 0xff00ff; scale = 0.7; } 
+                        else if (cell === 10) { color = 0xff0055; scale = 0.7; } 
+
+                        const dotMesh = new THREE.Mesh(new THREE.SphereGeometry(scale, 12, 12), new THREE.MeshPhongMaterial({ color, emissive: color, emissiveIntensity: 0.3 }));
+                        dotMesh.position.set(...pos);
+                        scene.add(dotMesh);
+                        dots.push({ mesh: dotMesh, id: dotId++, type: cell, active: true, respawnTimer: 0, x: pos[0], z: pos[2] });
+                    }
+                });
+            });
+
+            const fruitSpawnOffsets = [
+                [-12, -16], [-4, -16], [4, -16], [12, -16],
+                [-12, 8],  [-4, 8],  [4, 8],  [12, 8]
+            ];
+            FRUIT_TYPES.forEach((fDef, idx) => {
+                const fGroup = createFruitMesh(fDef);
+                const fx = fruitSpawnOffsets[idx][0];
+                const fz = fruitSpawnOffsets[idx][1];
+                fGroup.position.set(fx, 0.8, fz);
+                scene.add(fGroup);
+                centerFruits.push({
+                    id: idx,
+                    def: fDef,
+                    group: fGroup,
+                    active: true,
+                    respawnTimer: 0,
+                    x: fx,
+                    z: fz
+                });
+            });
+
+            const createPortalArch = (px, pz) => {
+                const arch = new THREE.Mesh(
+                    new THREE.TorusGeometry(2.0, 0.25, 12, 24),
+                    new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true })
+                );
+                arch.position.set(px, 2.0, pz);
+                arch.rotation.y = Math.PI / 2;
+                scene.add(arch);
+                portalVisuals.push(arch);
+            };
+            createPortalArch(-54, -4); 
+            createPortalArch(54, -4);  
+
+            preRenderMinimapWalls();
+        }
+        buildMap();
+
+        // --- GHOST SYSTEM & A* PATHFINDING INTEGRATION ---
+        function worldToGrid(pos) {
+            let cx = Math.round(pos.x / 4 + 13.5);
+            let cz = Math.round(pos.z / 4 + 15);
+            return { x: Math.max(0, Math.min(27, cx)), z: Math.max(0, Math.min(30, cz)) };
+        }
+        
+        function gridToWorld(gx, gz) {
+            return new THREE.Vector3((gx - 13.5) * 4, 0.3, (gz - 15) * 4);
+        }
+
+        function checkGhostColGrid(gx, gz) {
+            if (gx < 0 || gx >= 28 || gz < 0 || gz >= 31) return true;
+            const cellVal = mapTemplate[gz][gx];
+            if (cellVal === 1) return true; 
+            return false; 
+        }
+
+        function computeAStarPath(startGrid, targetGrid) {
+            if (checkGhostColGrid(targetGrid.x, targetGrid.z)) {
+                let bestNode = { x: 14, z: 15 };
+                let minDist = Infinity;
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dz = -1; dz <= 1; dz++) {
+                        let nx = targetGrid.x + dx, nz = targetGrid.z + dz;
+                        if (!checkGhostColGrid(nx, nz)) {
+                            let d = Math.abs(nx - startGrid.x) + Math.abs(nz - startGrid.z);
+                            if (d < minDist) { minDist = d; bestNode = { x: nx, z: nz }; }
+                        }
+                    }
+                }
+                targetGrid = bestNode;
+            }
+
+            let openList = [];
+            let closedSet = new Set();
+            
+            function nodeKey(g) { return g.x + "_" + g.z; }
+            
+            let startNode = {
+                x: startGrid.x, z: startGrid.z,
+                g: 0, h: Math.abs(startGrid.x - targetGrid.x) + Math.abs(startGrid.z - targetGrid.z),
+                parent: null
+            };
+            startNode.f = startNode.g + startNode.h;
+            openList.push(startNode);
+            
+            let maxIterations = 200; 
+            while (openList.length > 0 && maxIterations-- > 0) {
+                openList.sort((a, b) => a.f - b.f);
+                let current = openList.shift();
+                
+                if (current.x === targetGrid.x && current.z === targetGrid.z) {
+                    let path = [];
+                    let curr = current;
+                    while (curr !== null) {
+                        path.push({ x: curr.x, z: curr.z });
+                        curr = curr.parent;
+                    }
+                    path.reverse();
+                    return path; 
+                }
+                
+                closedSet.add(nodeKey(current));
+                
+                let dirs = [{x:0, z:1}, {x:0, z:-1}, {x:1, z:0}, {x:-1, z:0}];
+                for (let i = 0; i < dirs.length; i++) {
+                    let nx = current.x + dirs[i].x;
+                    let nz = current.z + dirs[i].z;
+                    
+                    if (nz === 14) {
+                        if (nx < 0) nx = 27;
+                        if (nx > 27) nx = 0;
+                    }
+                    
+                    if (nx < 0 || nx >= 28 || nz < 0 || nz >= 31) continue;
+                    if (checkGhostColGrid(nx, nz)) continue;
+                    
+                    let neighborNode = { x: nx, z: nz };
+                    if (closedSet.has(nodeKey(neighborNode))) continue;
+                    
+                    let tentativeG = current.g + 1;
+                    let existingOpen = openList.find(o => o.x === nx && o.z === nz);
+                    
+                    if (!existingOpen) {
+                        let h = Math.abs(nx - targetGrid.x) + Math.abs(nz - targetGrid.z);
+                        let nNode = { x: nx, z: nz, g: tentativeG, h: h, f: tentativeG + h, parent: current };
+                        openList.push(nNode);
+                    } else if (tentativeG < existingOpen.g) {
+                        existingOpen.g = tentativeG;
+                        existingOpen.f = tentativeG + existingOpen.h;
+                        existingOpen.parent = current;
+                    }
+                }
+            }
+            return []; 
+        }
+
+
+        function clampGhostGridTarget(target){
+            return {
+                x:Math.max(0,Math.min(27,Math.round(Number(target?.x)||14))),
+                z:Math.max(0,Math.min(30,Math.round(Number(target?.z)||15)))
+            };
+        }
+
+        function getAliveShowdownPlayers(){
+            return Object.values(players).filter(p=>p&&p.isAlive);
+        }
+
+        function getClosestAlivePlayerForGhost(g,alivePlayers=null){
+            let best=null, bestD=Infinity;
+            const list=alivePlayers||getAliveShowdownPlayers();
+            for(const p of list){
+                const dx=p.x-g.x, dz=p.z-g.z;
+                const d=dx*dx+dz*dz;
+                if(d<bestD){bestD=d;best=p;}
+            }
+            return best;
+        }
+
+        function getShowdownGhostTarget(g, player){
+            if(!player)return {x:14,z:15};
+
+            const pGrid=worldToGrid(new THREE.Vector3(player.x,0.8,player.z));
+            const facingX=Math.sin(Number(player.rotY)||0);
+            const facingZ=Math.cos(Number(player.rotY)||0);
+            const ahead=(cells)=>clampGhostGridTarget({
+                x:pGrid.x+Math.round(facingX*cells),
+                z:pGrid.z+Math.round(facingZ*cells)
+            });
+
+            switch(g.ghostName){
+                case 'BLINKY':
+                    return ahead(1);
+                case 'PINKY':
+                    return ahead(4);
+                case 'INKY': {
+                    const blinky=ghosts.find(x=>x.ghostName==='BLINKY'&&!x.isDead);
+                    if(!blinky)return ahead(3);
+                    const a=ahead(2);
+                    const b=worldToGrid(new THREE.Vector3(blinky.x,0.3,blinky.z));
+                    return clampGhostGridTarget({x:a.x+(a.x-b.x),z:a.z+(a.z-b.z)});
+                }
+                case 'CLYDE': {
+                    const dx=player.x-g.x,dz=player.z-g.z;
+                    return (dx*dx+dz*dz)>196 ? pGrid : {x:1,z:29};
+                }
+                case 'TIM':
+                    return ahead(5);
+                case 'SPIKE': {
+                    const side=(ghosts.indexOf(g)%2===0)?1:-1;
+                    return clampGhostGridTarget({
+                        x:pGrid.x+Math.round(facingX*4-facingZ*side*3),
+                        z:pGrid.z+Math.round(facingZ*4+facingX*side*3)
+                    });
+                }
+                case 'GOLDY': {
+                    const corners=[{x:1,z:1},{x:26,z:1},{x:1,z:29},{x:26,z:29}];
+                    return corners[ghosts.indexOf(g)%corners.length];
+                }
+                case 'WHITY':
+                default:
+                    return clampGhostGridTarget({
+                        x:pGrid.x-Math.round(facingX*3),
+                        z:pGrid.z-Math.round(facingZ*3)
+                    });
+            }
+        }
+
+        function getShowdownFleeTarget(g,alivePlayers=null){
+            const alive=alivePlayers||getAliveShowdownPlayers();
+            if(!alive.length)return {x:14,z:15};
+
+            // Move toward the navigable corner farthest from all powered players,
+            // mirroring Pac-Man 3D's scared behavior while avoiding walls.
+            const powered=alive.filter(p=>p.powerUp);
+            const threats=powered.length?powered:alive;
+            const candidates=[
+                {x:1,z:1},{x:26,z:1},{x:1,z:29},{x:26,z:29},
+                {x:1,z:15},{x:26,z:15},{x:14,z:1},{x:14,z:29}
+            ];
+            let best=candidates[0],bestScore=-Infinity;
+            for(const c of candidates){
+                if(checkGhostColGrid(c.x,c.z))continue;
+                const w=gridToWorld(c.x,c.z);
+                let nearest=Infinity;
+                for(const p of threats){
+                    const dx=w.x-p.x,dz=w.z-p.z;
+                    nearest=Math.min(nearest,dx*dx+dz*dz);
+                }
+                if(nearest>bestScore){bestScore=nearest;best=c;}
+            }
+            return best;
+        }
+
+        function getDistributedShowdownGhostTarget(g, fallback){
+            const index=Math.max(0,ghosts.indexOf(g));
+            const candidates=[
+                fallback,
+                {x:27-fallback.x,z:fallback.z},
+                {x:fallback.x,z:30-fallback.z},
+                {
+                    x:Math.max(0,Math.min(27,fallback.x+(index%3-1)*3)),
+                    z:Math.max(0,Math.min(30,fallback.z+((index+1)%3-1)*3))
+                }
+            ].map(clampGhostGridTarget);
+            const used=ghosts
+                .filter(x=>x!==g&&!x.isDead)
+                .map(x=>x.currentTargetCell)
+                .filter(Boolean);
+            candidates.sort((a,b)=>{
+                const ca=used.filter(u=>Math.abs(u.x-a.x)+Math.abs(u.z-a.z)<5).length;
+                const cb=used.filter(u=>Math.abs(u.x-b.x)+Math.abs(u.z-b.z)<5).length;
+                return ca-cb;
+            });
+            return candidates[0];
+        }
+
+        function keepShowdownGhostRouteSeparate(g,start,path){
+            if(!path||path.length<2)return path||[];
+            const key=n=>`${n.x},${n.z}`;
+            const claimed=new Set();
+            ghosts.forEach(other=>{
+                if(other===g||other.isDead)return;
+                (other.aStarPath||[]).slice(1,5).forEach(n=>claimed.add(key(n)));
+            });
+            if(!claimed.has(key(path[1])))return path;
+
+            const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+            const index=Math.max(0,ghosts.indexOf(g));
+            for(let off=0;off<dirs.length;off++){
+                const [dx,dz]=dirs[(index+off)%dirs.length];
+                let nx=start.x+dx,nz=start.z+dz;
+                if(nz===14){
+                    if(nx<0)nx=27;
+                    if(nx>27)nx=0;
+                }
+                const candidate={x:nx,z:nz};
+                if(nx<0||nx>=28||nz<0||nz>=31)continue;
+                if(claimed.has(key(candidate))||checkGhostColGrid(nx,nz))continue;
+                return [start,candidate];
+            }
+            return path;
+        }
+
+        function moveShowdownGhostAlongPath(g, step){
+            if(!g.aStarPath||g.aStarPath.length<=1)return false;
+            const nextNode=g.aStarPath[1];
+            const worldNext=gridToWorld(nextNode.x,nextNode.z);
+            worldNext.y=g.y;
+
+            let dx=worldNext.x-g.x,dz=worldNext.z-g.z;
+            const dist=Math.hypot(dx,dz);
+            if(dist<0.0001){g.aStarPath.shift();return true;}
+
+            if(Math.abs(dx)>20 && nextNode.z===14){
+                g.x = g.x>0 ? -54 : 54;
+                g.z = -4;
+                g.aStarPath.shift();
+                return true;
+            }
+
+            if(dist<=step){
+                g.x=worldNext.x; g.z=worldNext.z;
+                g.aStarPath.shift();
+            }else{
+                dx/=dist;dz/=dist;
+                g.dirX=dx;g.dirZ=dz;
+                g.x+=dx*step;g.z+=dz*step;
+            }
+            return true;
+        }
+
+        function defeatShowdownGhost(g, scoringPlayer){
+            if(!g||g.isDead)return;
+            g.isDead=true;
+            g.bodyGroup.visible=false;
+            g.eyesGroup.visible=true;
+            g.aStarPath=[];
+            g.pathUpdateTimer=0;
+            g.houseRespawnWaitMs=450;
+            g.currentAIState='eyes';
+            if(scoringPlayer){
+                scoringPlayer.score += 200 * (scoringPlayer.multiplierMode ? 2 : 1);
+            }
+            playSfx(1200,0.2,'square');
+        }
+
+        const ghostTypes = [
+            { name: 'BLINKY', c: 0xff0000, t: 'chase', s: 1.05 },   
+            { name: 'PINKY',  c: 0xffb8ff, t: 'ambush', s: 0.95 },  
+            { name: 'INKY',   c: 0x00ffff, t: 'flank', s: 0.9 },    
+            { name: 'CLYDE',  c: 0xffb852, t: 'wander', s: 0.85 },  
+            { name: 'TIM',    c: 0x800080, t: 'chase', s: 1.10 },    
+            { name: 'SPIKE',  c: 0x00ff00, t: 'ambush', s: 1.00 },   
+            { name: 'GOLDY',  c: 0xffff00, t: 'wander', s: 0.80 },   
+            { name: 'WHITY',  c: 0xffffff, t: 'flank', s: 0.95 }    
+        ];
+
+        let ghosts = [];
+        function initGhosts() {
+            ghosts.forEach(g => scene.remove(g.group));
+            ghosts = ghostTypes.map((config, index) => {
+                const group = new THREE.Group();
+                const bodyGroup = new THREE.Group();
+                const bodyMat = new THREE.MeshPhongMaterial({ color: config.c });
+                const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.5, 4, 8), bodyMat);
+                body.position.y = 0.5;
+                bodyGroup.add(body);
+                group.add(bodyGroup);
+
+                const eyesGroup = new THREE.Group();
+                const eGeo = new THREE.SphereGeometry(0.12, 8, 8), pGeo = new THREE.SphereGeometry(0.05, 8, 8);
+                const eMat = new THREE.MeshBasicMaterial({color: 0xffffff}), pMat = new THREE.MeshBasicMaterial({color: 0x000000});
+                const lE = new THREE.Mesh(eGeo, eMat); lE.position.set(0.2, 0.8, 0.4);
+                const lP = new THREE.Mesh(pGeo, pMat); lP.position.set(0.2, 0.8, 0.5);
+                const rE = new THREE.Mesh(eGeo, eMat); rE.position.set(-0.2, 0.8, 0.4);
+                const rP = new THREE.Mesh(pGeo, pMat); rP.position.set(-0.2, 0.8, 0.5);
+                eyesGroup.add(lE, lP, rE, rP);
+                group.add(eyesGroup);
+
+                scene.add(group);
+
+                return {
+                    id: index,
+                    group,
+                    bodyGroup,
+                    eyesGroup,
+                    bodyMat,
+                    ghostName: config.name,
+                    baseColor: config.c,
+                    baseSpeed: config.s,
+                    isDead: false,
+                    x: (Math.random()-0.5)*4,
+                    y: 0.3,
+                    z: -4 + (Math.random()-0.5)*2,
+                    dirX: 0, dirZ: 1,
+                    aStarPath: [],
+                    pathUpdateTimer: 0,
+                    currentTargetCell: { x:14, z:15 },
+                    currentAIState: 'chase',
+                    houseRespawnWaitMs: 0
+                };
+            });
+        }
+        initGhosts();
+
+        // --- MULTIPLAYER PLAYER MESH & NAME TAG MANAGEMENT ---
+        const playerMeshes = {}; 
+
+        function createPlayerNameSprite(nameStr) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+            ctx.fillRect(0, 0, 256, 64);
+            ctx.strokeStyle = "#00f2ff";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(2, 2, 252, 60);
+            ctx.font = "Bold 26px Courier New";
+            ctx.fillStyle = "#ffff00";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(nameStr, 128, 32);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(3.5, 0.875, 1);
+            sprite.position.set(0, 1.5, 0);
+            return sprite;
+        }
+
+        function createPlayerMesh(pId, colorIdx) {
+            const group = new THREE.Group();
+            const colorObj = PLAYER_COLORS[colorIdx % PLAYER_COLORS.length];
+            const pmMaterial = new THREE.MeshPhongMaterial({ color: colorObj.hex, side: THREE.DoubleSide });
+            
+            const topGeo = new THREE.SphereGeometry(0.8, 18, 9, 0, Math.PI * 2, 0, Math.PI / 2);
+            const topHalf = new THREE.Mesh(topGeo, pmMaterial);
+            const bottomGeo = new THREE.SphereGeometry(0.8, 18, 9, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+            const bottomHalf = new THREE.Mesh(bottomGeo, pmMaterial);
+
+            const eyeGeo = new THREE.SphereGeometry(0.12, 8, 6);
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.35, 0.4, 0.6);
+            const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(-0.35, 0.4, 0.6);
+            topHalf.add(rightEye); topHalf.add(leftEye);
+
+            const auraGeo = new THREE.SphereGeometry(1.2, 10, 8);
+            const auraMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, wireframe: true });
+            const auraMesh = new THREE.Mesh(auraGeo, auraMat);
+            auraMesh.visible = false;
+
+            const pName = players[pId] ? players[pId].name : "PAC-HERO";
+            const nameSprite = createPlayerNameSprite(pName);
+
+            group.add(topHalf); group.add(bottomHalf); group.add(auraMesh); group.add(nameSprite);
+            scene.add(group);
+
+            playerMeshes[pId] = {
+                group, topHalf, bottomHalf, auraMesh, nameSprite,
+                deathTimer: 0, isDyingAnim: false, netVisualReady: false
+            };
+        }
+
+        function removePlayerMesh(pId) {
+            if (playerMeshes[pId]) {
+                scene.remove(playerMeshes[pId].group);
+                delete playerMeshes[pId];
+            }
+        }
+
+        // --- NETWORKING LOGIC (SUPABASE REALTIME & DELTA SYNC) ---
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+            return code;
+        }
+
+        function createDefaultPlayerState(id, name, colorIdx) {
+            const spawnX = (colorIdx % 2 === 0 ? 1 : -1) * (10 + colorIdx * 2);
+            return {
+                id: id,
+                name: name,
+                colorIdx: colorIdx,
+                x: spawnX, y: 0.8, z: 32,
+                rotY: Math.PI,
+                mouthAngle: 0,
+                score: 0,
+                isAlive: true,
+                powerUp: false, laserMode: false, speedMode: false, freezeMode: false, multiplierMode: false, magnetMode: false,
+                powerTimeLeft: 0, laserTimeLeft: 0, speedTimeLeft: 0, freezeTimeLeft: 0, multTimeLeft: 0, magnetTimeLeft: 0,
+                dashCooldown: 0, isDashing: false, dashTimeLeft: 0,
+                jumpY: 0
+            };
+        }
+
+        function makePlayerId() {
+            return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        }
+
+        function safePlayerName(name) {
+            return String(name || 'PAC-HERO').replace(/[<>]/g, '').trim().slice(0, 20) || 'PAC-HERO';
+        }
+
+        function broadcastRoom(type, data = {}) {
+            if (!roomChannel || !localPlayerId) return;
+            const sendPromise=roomChannel.send({
+                type:'broadcast',
+                event:'game',
+                payload:{type,sender:localPlayerId,...data}
+            });
+            if(sendPromise&&typeof sendPromise.catch==='function'){
+                if(type==='SYNC'||type==='INPUT')sendPromise.catch(()=>{});
+                else sendPromise.catch(()=>showNotification('Network message could not be sent.','#ff0055'));
+            }
+        }
+
+        function closeRoomConnection() {
+            clearTimeout(joinRequestTimer);
+            if (roomChannel) supabase.removeChannel(roomChannel);
+            roomChannel = null;
+        }
+
+        function updateRoomPresence() {
+            if (!roomChannel) return;
+            const onlineIds = new Set(Object.values(roomChannel.presenceState()).flat().map(entry => entry.playerId));
+            const hostEntry = Object.values(roomChannel.presenceState()).flat().find(entry => entry.isHost);
+            hostPlayerId = hostEntry ? hostEntry.playerId : (isHost ? localPlayerId : null);
+            if (isHost) {
+                Object.keys(players).forEach(id => {
+                    if (id !== localPlayerId && !onlineIds.has(id)) handlePlayerDisconnect(id);
+                });
+            }
+        }
+
+        function handleRoomPacket(packet) {
+            if (!packet || typeof packet !== 'object' || typeof packet.type !== 'string' || typeof packet.sender !== 'string') return;
+            if (packet.sender === localPlayerId) return;
+            if (packet.target && packet.target !== localPlayerId) return;
+            if (isHost && (packet.type === 'JOIN' || packet.type === 'INPUT')) return handleHostReceiveData(packet.sender, packet);
+            if (!isHost && (!hostPlayerId || packet.sender === hostPlayerId)) handleClientReceiveData(packet);
+        }
+
+        async function connectToRoom(code, hosting) {
+            closeRoomConnection();
+            myRoomCode = code;
+            isHost = hosting;
+            try {
+                localPlayerId = await ensurePlayerIdentity();
+                await updateServerPlayerName();
+            } catch (e) {
+                showNotification('A secure server player ID could not be created.', '#ff0055');
+                return;
+            }
+            players = {};
+            roomChannel = supabase.channel(`pac-showdown:${code}`, { config: { broadcast: { self: false }, presence: { key: localPlayerId } } })
+                .on('broadcast', { event: 'game' }, ({ payload }) => handleRoomPacket(payload))
+                .on('presence', { event: 'sync' }, updateRoomPresence);
+
+            roomChannel.subscribe(async status => {
+                if (status !== 'SUBSCRIBED') {
+                    if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) showNotification('Could not establish the game connection.', '#ff0055');
+                    return;
+                }
+                await roomChannel.track({ playerId: localPlayerId, isHost: hosting });
+                if (hosting) {
+                    hostPlayerId = localPlayerId;
+                    players[localPlayerId] = createDefaultPlayerState(localPlayerId, localPlayerName, 0);
+                    createPlayerMesh(localPlayerId, 0);
+                    showLobbyUI();
+                } else {
+                    broadcastRoom('JOIN', { name: localPlayerName });
+                    joinRequestTimer = setTimeout(() => {
+                        if (gameState === 'lobby' && !players[localPlayerId]) {
+                            showNotification('Room not found or host unavailable.', '#ff0055');
+                            closeRoomConnection();
+                        }
+                    }, 7000);
+                }
+            });
+        }
+
+        window.createRoom = async function() {
+            if(!await claimPacShowdownMonthlyAccess()) return;
+            localPlayerName = safePlayerName(document.getElementById('playerNameInput').value);
+            connectToRoom(generateRoomCode(), true);
+        };
+
+        window.showJoinInput = function() {
+            document.getElementById('join-section').style.display = 'block';
+        };
+
+        window.joinRoom = async function() {
+            const code = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+            if (code.length !== 6) return showNotification("Please enter a valid 6-digit room code!", "#ff0055");
+            if(!await claimPacShowdownMonthlyAccess()) return;
+
+            localPlayerName = safePlayerName(document.getElementById('playerNameInput').value);
+            connectToRoom(code, false);
+        };
+
+        function showLobbyUI() {
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('lobby-screen').style.display = 'flex';
+            document.getElementById('lobby-code-display').innerText = myRoomCode || document.getElementById('roomCodeInput').value.toUpperCase();
+            
+            initLobbyCanvas();
+            updateLobbyPlayerList();
+        }
+
+        function updateLobbyPlayerList() {
+            const listDiv = document.getElementById('player-list');
+            listDiv.innerHTML = '';
+            
+            const pKeys = Object.keys(players);
+            document.getElementById('player-count').innerText = pKeys.length;
+
+            pKeys.forEach((pId) => {
+                const p = players[pId];
+                const colorObj = PLAYER_COLORS[p.colorIdx % PLAYER_COLORS.length];
+                listDiv.innerHTML += `
+                    <div class="player-item">
+                        <div>
+                            <span class="player-dot" style="background:${colorObj.css}"></span>
+                            <strong>${p.name}</strong> ${pId === localPlayerId ? ' (YOU)' : ''}
+                        </div>
+                        <span style="color:#00f2ff;">READY</span>
+                    </div>
+                `;
+            });
+
+            updateLobby3DModels();
+
+            if (isHost) {
+                const btn = document.getElementById('btnStartGame');
+                if (pKeys.length >= 2) {
+                    btn.disabled = false;
+                    btn.innerText = "START SHOWDOWN";
+                } else {
+                    btn.disabled = true;
+                    btn.innerText = "WAITING FOR PLAYERS (MIN 2)";
+                }
+            }
+        }
+
+        function handleHostReceiveData(fromPeerId, data) {
+            if (data.type === 'JOIN') {
+                if (Object.keys(players).length >= 10 || gameState !== 'lobby') {
+                    broadcastRoom('REJECT', { target: fromPeerId });
+                    return;
+                }
+                const colorIdx = Object.keys(players).length;
+                players[fromPeerId] = createDefaultPlayerState(fromPeerId, safePlayerName(data.name), colorIdx);
+                createPlayerMesh(fromPeerId, colorIdx);
+                broadcastLobbyState();
+            } else if (data.type === 'INPUT') {
+                if (players[fromPeerId] && players[fromPeerId].isAlive) {
+                    if (Number.isFinite(data.moveS)) players[fromPeerId].inputMoveS = Math.max(-1, Math.min(1, data.moveS));
+                    if (Number.isFinite(data.moveF)) players[fromPeerId].inputMoveF = Math.max(-1, Math.min(1, data.moveF));
+                    if (Number.isFinite(data.camAngleY)) players[fromPeerId].camAngleY = data.camAngleY;
+                    if (data.jump && !players[fromPeerId].isJumping) {
+                        players[fromPeerId].velocityY = 0.25;
+                        players[fromPeerId].isJumping = true;
+                    }
+                    if (data.dash) {
+                        triggerPlayerDash(players[fromPeerId]);
+                    }
+                }
+            }
+        }
+
+        function handleClientReceiveData(data) {
+            if (data.type === 'LOBBY_STATE') {
+                if (!data.players || typeof data.players !== 'object' || !data.players[localPlayerId]) return;
+                clearTimeout(joinRequestTimer);
+                players = data.players;
+                Object.keys(players).forEach(pId => {
+                    if (!playerMeshes[pId]) createPlayerMesh(pId, players[pId].colorIdx);
+                });
+                if (document.getElementById('lobby-screen').style.display !== 'flex') showLobbyUI();
+                updateLobbyPlayerList();
+            } else if (data.type === 'REJECT') {
+                showNotification('This room is full or the match has already started.', '#ff0055');
+                closeRoomConnection();
+            } else if (data.type === 'GAME_START') {
+                startGameplay();
+            } else if (data.type === 'SYNC' && data.players && typeof data.players === 'object' && Array.isArray(data.ghosts)) {
+                matchTimerSeconds = data.timer;
+                glitchActive = data.glitchActive;
+                glitchRingLevel = data.glitchRingLevel;
+
+                // Sync dot eating state changes (Lag Fix: Delta update instead of 300 arrays per tick)
+                if (data.eatenDotIds) {
+                    data.eatenDotIds.forEach(id => {
+                        if (dots[id]) { dots[id].active = false; dots[id].mesh.visible = false; }
+                    });
+                }
+                if (data.respawnDotIds) {
+                    data.respawnDotIds.forEach(id => {
+                        if (dots[id]) { dots[id].active = true; dots[id].mesh.visible = true; }
+                    });
+                }
+
+                if (data.fruits) {
+                    data.fruits.forEach(fSync => {
+                        const localF = centerFruits[fSync.id];
+                        if (localF) {
+                            localF.active = fSync.active;
+                            localF.group.visible = fSync.active;
+                        }
+                    });
+                }
+
+                Object.keys(data.players).forEach(pId => {
+                    const pSync = data.players[pId];
+                    if (!pSync || typeof pSync !== 'object') return;
+                    const wasAliveBefore = players[pId] ? players[pId].isAlive : true;
+
+                    if (!players[pId]) {
+                        players[pId] = { ...pSync };
+                    } else if (pId === localPlayerId && !isHost) {
+                        const p = players[pId];
+                        const oldX = Number(p.x) || 0;
+                        const oldY = Number(p.y) || 0.8;
+                        const oldZ = Number(p.z) || 0;
+                        const dx = (Number(pSync.x) || 0) - oldX;
+                        const dy = (Number(pSync.y) || 0.8) - oldY;
+                        const dz = (Number(pSync.z) || 0) - oldZ;
+                        const error = Math.hypot(dx, dy, dz);
+                        const keepRot = p.rotY;
+                        const keepMouth = p.mouthAngle;
+                        Object.assign(p, pSync);
+                        if (error > NET_LOCAL_HARD_SNAP_DISTANCE) {
+                            p.x = Number(pSync.x) || 0;
+                            p.y = Number(pSync.y) || 0.8;
+                            p.z = Number(pSync.z) || 0;
+                        } else {
+                            p.x = oldX + dx * 0.18;
+                            p.y = oldY + dy * 0.18;
+                            p.z = oldZ + dz * 0.18;
+                        }
+                        p.rotY = keepRot;
+                        p.mouthAngle = keepMouth;
+                    } else {
+                        Object.assign(players[pId], pSync);
+                    }
+                    if (!playerMeshes[pId]) createPlayerMesh(pId, pSync.colorIdx);
+                    if (wasAliveBefore && !pSync.isAlive && playerMeshes[pId]) triggerDeathAnimation(pId);
+                });
+
+                data.ghosts.forEach((gSync, idx) => {
+                    if (!gSync || !Number.isFinite(gSync.x) || !Number.isFinite(gSync.y) || !Number.isFinite(gSync.z)) return;
+                    const g = ghosts[idx];
+                    if (g) {
+                        g.x = gSync.x; g.y = gSync.y; g.z = gSync.z;
+                        g.netTargetX = gSync.x;
+                        g.netTargetY = gSync.y;
+                        g.netTargetZ = gSync.z;
+                        g.isDead = !!gSync.isDead;
+                        g.currentAIState = gSync.ai || (g.isDead?'eyes':'chase');
+                        g.houseRespawnWaitMs = Math.max(0,Number(gSync.houseRespawnWaitMs)||0);
+                        if (!g.netVisualReady) {
+                            g.group.position.set(gSync.x, gSync.y, gSync.z);
+                            g.netVisualReady = true;
+                        }
+                        g.bodyGroup.visible = !g.isDead;
+                        g.eyesGroup.visible = true;
+                        if(!g.isDead)g.bodyMat.color.setHex(g.baseColor);
+                    }
+                });
+
+                updateHUD();
+            } else if (data.type === 'GAME_OVER') {
+                showMatchFinishedScreen(data.results, data.matchId);
+            }
+        }
+
+        function broadcastLobbyState() {
+            const payload = { type: 'LOBBY_STATE', players };
+            broadcastRoom(payload.type, { players: payload.players });
+            updateLobbyPlayerList();
+        }
+
+        function handlePlayerDisconnect(pId) {
+            delete players[pId];
+            removePlayerMesh(pId);
+            if (gameState === 'lobby') broadcastLobbyState();
+        }
+
+        window.hostStartMatch = async function() {
+            if (!isHost) return;
+            const ticketActionId = `PACSHOWDOWN:${myRoomCode || 'ROOM'}:${Date.now()}`;
+            if (!await consumePacShowdownMatchTicket(ticketActionId)) return;
+            broadcastRoom('GAME_START');
+            startGameplay();
+        };
+
+        // --- DASH ABILITY MECHANICS (10S COOLDOWN) ---
+        function triggerPlayerDash(p) {
+            if (!p || !p.isAlive || p.dashCooldown > 0) return;
+
+            p.isDashing = true;
+            p.dashTimeLeft = 300; // Dash burst duration in ms
+            p.dashCooldown = 10000; // 10-second recharge
+            playSfx(750, 0.25, 'triangle', 0.1);
+        }
+
+        function triggerLocalDash() {
+            const me = players[localPlayerId];
+            if (me && me.isAlive && me.dashCooldown <= 0) {
+                triggerPlayerDash(me);
+                if (!isHost) broadcastRoom('INPUT', { dash: true });
+            }
+        }
+
+        // --- START GAMEPLAY ---
+        function startGameplay() {
+            document.getElementById('lobby-screen').style.display = 'none';
+            document.getElementById('ui').style.display = 'block';
+            document.getElementById('leaderboard-overlay').style.display = 'block';
+            document.getElementById('joystick-container').style.display = 'flex';
+            document.getElementById('controls-right').style.display = 'flex';
+            document.getElementById('minimap').style.display = 'block';
+
+            matchTimerSeconds = 120;
+            buildMap();
+
+            gameState = 'ready';
+            const readyGoScreen = document.getElementById('ready-go-screen');
+            const readyGoText = document.getElementById('ready-go-text');
+            readyGoScreen.style.display = 'flex';
+            readyGoText.innerText = "READY?";
+
+            playSfx(440, 0.5, 'square');
+
+            setTimeout(() => {
+                readyGoText.innerText = "SHOWDOWN!";
+                readyGoText.style.color = "#00ff00";
+                playSfx(880, 0.8, 'square');
+                setTimeout(() => {
+                    readyGoScreen.style.display = 'none';
+                    gameState = 'playing';
+                    playMusic('gameplay');
+                    if (isHost) startHostMatchLoop();
+                }, 1000);
+            }, 1500);
+        }
+
+        // --- PAC-MAN DEATH GAMEPLAY ANIMATION ---
+        function triggerDeathAnimation(pId) {
+            const mObj = playerMeshes[pId];
+            if (mObj) {
+                mObj.isDyingAnim = true;
+                mObj.deathTimer = 1.0; 
+                playSfx(200, 0.8, 'sawtooth', 0.1);
+            }
+        }
+
+        // --- HOST MATCH LOGIC LOOP ---
+        function startHostMatchLoop() {
+            matchTimerInterval = setInterval(() => {
+                if (gameState !== 'playing') return;
+                matchTimerSeconds--;
+
+                if (matchTimerSeconds === 30 && !glitchActive) {
+                    glitchActive = true;
+                    playMusic('suddendeath');
+                    document.getElementById('glitch-alert').style.display = 'block';
+                }
+
+                if (glitchActive && matchTimerSeconds % 3 === 0 && glitchRingLevel < 10) {
+                    glitchRingLevel++;
+                    expandGlitchRing();
+                }
+
+                const alivePlayers = Object.values(players).filter(p => p.isAlive);
+                if (matchTimerSeconds <= 0 || alivePlayers.length <= 1) {
+                    endMatchHost();
+                }
+            }, 1000);
+        }
+
+        function expandGlitchRing() {
+            mapTemplate.forEach((row, z) => {
+                row.forEach((cell, x) => {
+                    if (x < glitchRingLevel || x >= 28 - glitchRingLevel || z < glitchRingLevel || z >= 31 - glitchRingLevel) {
+                        if (cell !== 1) {
+                            const pos = [(x - 13.5) * 4, 0, (z - 15) * 4];
+                            const gMesh = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), new THREE.MeshPhongMaterial({ color: 0xff0055, wireframe: true }));
+                            gMesh.position.set(...pos);
+                            scene.add(gMesh);
+                            glitchBlocks.push(gMesh);
+                        }
+                    }
+                });
+            });
+        }
+
+        function endMatchHost() {
+            clearInterval(matchTimerInterval);
+            gameState = 'finished';
+
+            const results = Object.values(players).sort((a, b) => {
+                if (a.isAlive !== b.isAlive) return b.isAlive ? 1 : -1;
+                return b.score - a.score;
+            });
+            const matchId = `${myRoomCode || 'ROOM'}:${Date.now()}`;
+
+            broadcastRoom('GAME_OVER', { results, matchId });
+            showMatchFinishedScreen(results, matchId);
+        }
+
+        async function showMatchFinishedScreen(results, matchId) {
+            stopMusic();
+            document.getElementById('ui').style.display = 'none';
+            document.getElementById('leaderboard-overlay').style.display = 'none';
+            document.getElementById('minimap').style.display = 'none';
+            document.getElementById('joystick-container').style.display = 'none';
+            document.getElementById('controls-right').style.display = 'none';
+            document.getElementById('gameover-screen').style.display = 'flex';
+
+            let myRank = 999;
+
+            if (results[0]) {
+                document.getElementById('p1-name').innerText = results[0].name;
+                document.getElementById('p1-score').innerText = `${results[0].score} pts`;
+                if (results[0].id === localPlayerId) myRank = 1;
+            }
+            if (results[1]) {
+                document.getElementById('p2-name').innerText = results[1].name;
+                document.getElementById('p2-score').innerText = `${results[1].score} pts`;
+                if (results[1].id === localPlayerId) myRank = 2;
+            }
+            if (results[2]) {
+                document.getElementById('p3-name').innerText = results[2].name;
+                document.getElementById('p3-score').innerText = `${results[2].score} pts`;
+                if (results[2].id === localPlayerId) myRank = 3;
+            }
+
+            results.forEach((r, idx) => {
+                if (r.id === localPlayerId && myRank === 999) myRank = idx + 1;
+            });
+
+            const myResult = results.find(r => r.id === localPlayerId);
+            await recordPacShowdownResult(matchId, myRank, myResult?.score || 0);
+            playResultAudio(myRank);
+        }
+
+        // --- LOCAL CONTROLS & INPUT ---
+        let lastClientInputSyncTime = 0;
+        let lastClientInputKeepAlive = 0;
+        let lastSentMoveS = NaN;
+        let lastSentMoveF = NaN;
+        let lastSentCamAngleY = NaN;
+        const CLIENT_INPUT_SYNC_INTERVAL_MS = 100;
+        const CLIENT_INPUT_KEEPALIVE_MS = 500;
+        let moveF = 0, moveS = 0;
+        let camAngleY = Math.PI / 2, camAngleX = 0.4, camRadius = 16;
+        let touchStartX = 0, touchStartY = 0, isDraggingCamera = false;
+
+        document.getElementById('btnJump').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            triggerLocalJump();
+        });
+
+        document.getElementById('btnDash').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            triggerLocalDash();
+        });
+        document.getElementById('btnDash').addEventListener('click', (e) => {
+            triggerLocalDash();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (gameState !== 'playing') return;
+            if (e.code === 'KeyW' || e.code === 'ArrowUp') moveF = -1;
+            if (e.code === 'KeyS' || e.code === 'ArrowDown') moveF = 1;
+            if (e.code === 'KeyA' || e.code === 'ArrowLeft') moveS = -1;
+            if (e.code === 'KeyD' || e.code === 'ArrowRight') moveS = 1;
+            if (e.code === 'Space') triggerLocalJump();
+            if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyE') triggerLocalDash();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'KeyW' || e.code === 'KeyS' || e.code === 'ArrowUp' || e.code === 'ArrowDown') moveF = 0;
+            if (e.code === 'KeyA' || e.code === 'KeyD' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') moveS = 0;
+        });
+
+        function triggerLocalJump() {
+            const me = players[localPlayerId];
+            if (me && me.isAlive && !me.isJumping) {
+                me.velocityY = 0.25;
+                me.isJumping = true;
+                playSfx(300, 0.2, 'square');
+                if (!isHost) broadcastRoom('INPUT', { jump: true });
+            }
+        }
+
+        window.addEventListener('touchstart', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.clientX > window.innerWidth / 2 && !e.target.closest('.btn')) {
+                    isDraggingCamera = true; touchStartX = t.clientX; touchStartY = t.clientY;
+                }
+            }
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (gameState !== 'playing') return;
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.clientX < window.innerWidth / 2) {
+                    const r = document.getElementById('joystick-container').getBoundingClientRect();
+                    let dx = t.clientX - (r.left + 50), dy = t.clientY - (r.top + 50);
+                    const d = Math.sqrt(dx * dx + dy * dy) || 1;
+                    moveS = (dx / d); moveF = (dy / d);
+                    document.getElementById('joystick-knob').style.transform = `translate(${(dx / d) * Math.min(d, 40) / 2}px, ${(dy / d) * Math.min(d, 40) / 2}px)`;
+                } else if (isDraggingCamera) {
+                    let deltaX = t.clientX - touchStartX, deltaY = t.clientY - touchStartY;
+                    camAngleY -= deltaX * 0.01; camAngleX -= deltaY * 0.01;
+                    camAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, camAngleX));
+                    touchStartX = t.clientX; touchStartY = t.clientY;
+                }
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.clientX < window.innerWidth / 2) {
+                    moveF = moveS = 0;
+                    document.getElementById('joystick-knob').style.transform = 'translate(0,0)';
+                } else { isDraggingCamera = false; }
+            }
+        });
+
+        // --- COLLISION HELPER & SIDE PORTAL WRAPPER ---
+        function checkCol(checkP, size = 1.6) {
+            checkP.y = 0.8;
+            return walls.some(w => new THREE.Box3().setFromCenterAndSize(checkP, new THREE.Vector3(size, size, size)).intersectsBox(w.box));
+        }
+
+        function checkSidePortals(entity) {
+            if (entity.x < -55) {
+                entity.x = 53;
+                playSfx(600, 0.15, 'sine');
+            } else if (entity.x > 55) {
+                entity.x = -53;
+                playSfx(600, 0.15, 'sine');
+            }
+        }
+
+        // Track eaten dot delta updates for bandwidth efficiency
+        let lastEatenDotIds = [];
+        let lastRespawnDotIds = [];
+
+        // --- MAIN ANIMATION & GAME LOOP ---
+        let lastTime = performance.now();
+        let leaderboardTimer = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const now = performance.now();
+            const deltaMs = now - lastTime;
+            lastTime = now;
+
+            if (gameState === 'lobby') {
+                animateLobby3D();
+                return;
+            }
+
+            if (gameState === 'playing') {
+                // 1. Process Local Movement & Camera
+                const me = players[localPlayerId];
+                if (me && me.isAlive) {
+                    // Update dash cooldown
+                    if (me.dashCooldown > 0) me.dashCooldown = Math.max(0, me.dashCooldown - deltaMs);
+                    if (me.isDashing) {
+                        me.dashTimeLeft -= deltaMs;
+                        if (me.dashTimeLeft <= 0) me.isDashing = false;
+                    }
+
+                    let speedMultiplier = (me.speedMode ? 1.8 : 1.0) * (me.isDashing ? 3.2 : 1.0);
+                    let curSpeed = 0.22 * speedMultiplier;
+                    const v = new THREE.Vector3(moveS, 0, moveF).applyAxisAngle(new THREE.Vector3(0, 1, 0), camAngleY).normalize().multiplyScalar(curSpeed);
+                    
+                    if (moveS !== 0 || moveF !== 0) {
+                        const npX = new THREE.Vector3(me.x + v.x, me.y, me.z);
+                        if (!checkCol(npX)) me.x = npX.x;
+                        const npZ = new THREE.Vector3(me.x, me.y, me.z + v.z);
+                        if (!checkCol(npZ)) me.z = npZ.z;
+                        me.rotY = Math.atan2(v.x, v.z);
+                        me.mouthAngle = (Math.sin(now * 0.01) + 1) * 0.3;
+                    }
+
+                    checkSidePortals(me);
+
+                    if (me.isJumping) {
+                        me.y += me.velocityY; me.velocityY -= 0.015;
+                        if (me.y <= 0.8) { me.y = 0.8; me.isJumping = false; }
+                    }
+
+                    // Camera position update
+                    camera.position.x = me.x + camRadius * Math.sin(camAngleY) * Math.cos(camAngleX);
+                    camera.position.y = me.y + camRadius * Math.sin(camAngleX);
+                    camera.position.z = me.z + camRadius * Math.cos(camAngleY) * Math.cos(camAngleX);
+                    camera.lookAt(me.x, me.y, me.z);
+                    dirLight.position.set(me.x, me.y + 10, me.z);
+
+                    if (!isHost && now-lastClientInputSyncTime>=CLIENT_INPUT_SYNC_INTERVAL_MS) {
+                        const changed=
+                            moveS!==lastSentMoveS ||
+                            moveF!==lastSentMoveF ||
+                            Math.abs(camAngleY-lastSentCamAngleY)>.012;
+                        const keepAlive=now-lastClientInputKeepAlive>=CLIENT_INPUT_KEEPALIVE_MS;
+                        if(changed||keepAlive){
+                            lastClientInputSyncTime=now;
+                            lastClientInputKeepAlive=now;
+                            lastSentMoveS=moveS;
+                            lastSentMoveF=moveF;
+                            lastSentCamAngleY=camAngleY;
+                            broadcastRoom('INPUT',{moveS,moveF,camAngleY});
+                        }
+                    }
+                }
+
+                // 2. Host Updates Logic
+                if (isHost) {
+                    updateHostPhysicsAndLogic(deltaMs, now);
+                } else {
+                    const ghostAlpha = 1 - Math.exp(-NET_VISUAL_SMOOTHING_RATE * Math.min(0.05, deltaMs / 1000));
+                    ghosts.forEach(g => {
+                        if (!g || !g.group || !g.netVisualReady) return;
+                        if (!Number.isFinite(g.netTargetX) || !Number.isFinite(g.netTargetY) || !Number.isFinite(g.netTargetZ)) return;
+                        g.group.position.x += (g.netTargetX - g.group.position.x) * ghostAlpha;
+                        g.group.position.y += (g.netTargetY - g.group.position.y) * ghostAlpha;
+                        g.group.position.z += (g.netTargetZ - g.group.position.z) * ghostAlpha;
+                    });
+                }
+
+                if(now-lastGhostColorRenderAt>=GHOST_COLOR_INTERVAL_MS){
+                    lastGhostColorRenderAt=now;
+                    const renderPlayers=Object.values(players);
+                    let anyPowerActive=false,maxPowerTimeLeft=0;
+                    for(const p of renderPlayers){
+                        if(p.isAlive&&p.powerUp){
+                            anyPowerActive=true;
+                            if(p.powerTimeLeft>maxPowerTimeLeft)maxPowerTimeLeft=p.powerTimeLeft;
+                        }
+                    }
+                    ghosts.forEach(g=>{
+                        if(anyPowerActive&&!g.isDead){
+                            g.bodyMat.color.setHex(
+                                maxPowerTimeLeft<2000&&Math.floor(now/150)%2===0
+                                    ?0xffffff:0x0000ff
+                            );
+                        }else{
+                            g.bodyMat.color.setHex(g.baseColor);
+                        }
+                    });
+                }
+
+                // 3. Render 3D Player Meshes, Animations & Dynamic Aura
+                Object.keys(players).forEach(pId => {
+                    const p = players[pId];
+                    const meshObj = playerMeshes[pId];
+                    if (meshObj) {
+                        if (meshObj.isDyingAnim) {
+                            meshObj.group.visible = true;
+                            meshObj.deathTimer -= deltaMs / 1000;
+                            
+                            meshObj.topHalf.rotation.x -= 0.08;
+                            meshObj.bottomHalf.rotation.x += 0.08;
+                            meshObj.group.rotation.y += 0.2;
+                            const scale = Math.max(0.01, meshObj.deathTimer);
+                            meshObj.group.scale.setScalar(scale);
+
+                            if (meshObj.deathTimer <= 0) {
+                                meshObj.isDyingAnim = false;
+                                meshObj.group.visible = false;
+                                meshObj.group.scale.setScalar(1);
+                            }
+                        } else {
+                            meshObj.group.visible = p.isAlive;
+                            if (p.isAlive) {
+                                if (pId === localPlayerId) {
+                                    meshObj.group.position.set(p.x, p.y, p.z);
+                                    meshObj.netVisualReady = true;
+                                } else {
+                                    const alpha = 1 - Math.exp(-NET_VISUAL_SMOOTHING_RATE * Math.min(0.05, deltaMs / 1000));
+                                    if (!meshObj.netVisualReady) {
+                                        meshObj.group.position.set(p.x, p.y, p.z);
+                                        meshObj.netVisualReady = true;
+                                    } else {
+                                        meshObj.group.position.x += (p.x - meshObj.group.position.x) * alpha;
+                                        meshObj.group.position.y += (p.y - meshObj.group.position.y) * alpha;
+                                        meshObj.group.position.z += (p.z - meshObj.group.position.z) * alpha;
+                                    }
+                                }
+                                meshObj.group.rotation.y = p.rotY;
+                                meshObj.topHalf.rotation.x = -p.mouthAngle;
+                                meshObj.bottomHalf.rotation.x = p.mouthAngle;
+
+                                if (meshObj.nameSprite) {
+                                    meshObj.nameSprite.quaternion.copy(camera.quaternion);
+                                }
+
+                                if (p.powerUp || p.laserMode || p.speedMode || p.freezeMode || p.multiplierMode || p.magnetMode || p.isDashing) {
+                                    meshObj.auraMesh.visible = true;
+                                    if (p.isDashing) meshObj.auraMesh.material.color.setHex(0xffcc00);
+                                    else if (p.powerUp) meshObj.auraMesh.material.color.setHSL((now % 2000) / 2000, 1.0, 0.5);
+                                    else if (p.multiplierMode) meshObj.auraMesh.material.color.setHex(0xff00ff);
+                                    else if (p.magnetMode) meshObj.auraMesh.material.color.setHex(0xff0055);
+                                    else if (p.freezeMode) meshObj.auraMesh.material.color.setHex(0x00ffff);
+                                    else if (p.speedMode) meshObj.auraMesh.material.color.setHex(0x00ff00);
+                                    else if (p.laserMode) meshObj.auraMesh.material.color.setHex(0xff6400);
+                                } else {
+                                    meshObj.auraMesh.visible = false;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                centerFruits.forEach(f => {
+                    if (f.group && f.active) f.group.rotation.y += 0.03;
+                });
+
+                drawMinimap(now);
+
+                // Throttled leaderboard DOM updates (Lag Fix: 4 times/sec instead of 60)
+                leaderboardTimer += deltaMs;
+                if (leaderboardTimer > 250) {
+                    updateLeaderboardOverlay();
+                    leaderboardTimer = 0;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // --- HOST AUTHORITATIVE PHYSICS & NETWORK DELTA SYNC ---
+        function updateHostPhysicsAndLogic(deltaMs, now) {
+            const hostPlayers=Object.values(players);
+            const aliveHostPlayers=hostPlayers.filter(p=>p&&p.isAlive);
+
+            hostPlayers.forEach(p => {
+                if (p.dashCooldown > 0) p.dashCooldown = Math.max(0, p.dashCooldown - deltaMs);
+                if (p.isDashing) {
+                    p.dashTimeLeft -= deltaMs;
+                    if (p.dashTimeLeft <= 0) p.isDashing = false;
+                }
+
+                if (p.id !== localPlayerId && p.isAlive && (p.inputMoveS || p.inputMoveF)) {
+                    let speedMultiplier = (p.speedMode ? 1.8 : 1.0) * (p.isDashing ? 3.2 : 1.0);
+                    let curSpeed = 0.22 * speedMultiplier;
+                    const v = new THREE.Vector3(p.inputMoveS, 0, p.inputMoveF).applyAxisAngle(new THREE.Vector3(0, 1, 0), p.camAngleY || 0).normalize().multiplyScalar(curSpeed);
+                    
+                    const npX = new THREE.Vector3(p.x + v.x, p.y, p.z);
+                    if (!checkCol(npX)) p.x = npX.x;
+                    const npZ = new THREE.Vector3(p.x, p.y, p.z + v.z);
+                    if (!checkCol(npZ)) p.z = npZ.z;
+                    p.rotY = Math.atan2(v.x, v.z);
+                    p.mouthAngle = (Math.sin(now * 0.01) + 1) * 0.3;
+                }
+
+                checkSidePortals(p);
+
+                if (p.isJumping && p.id !== localPlayerId) {
+                    p.y += p.velocityY; p.velocityY -= 0.015;
+                    if (p.y <= 0.8) { p.y = 0.8; p.isJumping = false; }
+                }
+
+                if (p.powerUp) { p.powerTimeLeft -= deltaMs; if (p.powerTimeLeft <= 0) p.powerUp = false; }
+                if (p.speedMode) { p.speedTimeLeft -= deltaMs; if (p.speedTimeLeft <= 0) p.speedMode = false; }
+                if (p.freezeMode) { p.freezeTimeLeft -= deltaMs; if (p.freezeTimeLeft <= 0) p.freezeMode = false; }
+                if (p.laserMode) { p.laserTimeLeft -= deltaMs; if (p.laserTimeLeft <= 0) p.laserMode = false; }
+                if (p.multiplierMode) { p.multTimeLeft -= deltaMs; if (p.multTimeLeft <= 0) p.multiplierMode = false; }
+                if (p.magnetMode) { p.magnetTimeLeft -= deltaMs; if (p.magnetTimeLeft <= 0) p.magnetMode = false; }
+            });
+
+            // Dot collision and respawn tracking
+            dots.forEach(d => {
+                if (!d.active) {
+                    d.respawnTimer -= deltaMs;
+                    if (d.respawnTimer <= 0) {
+                        d.active = true;
+                        d.mesh.visible = true;
+                        lastRespawnDotIds.push(d.id);
+                    }
+                } else {
+                    for(const p of aliveHostPlayers){
+                        const pickupRange=p.magnetMode?4.5:1.8;
+                        const dx=p.x-d.x,dy=p.y-0.8,dz=p.z-d.z;
+                        if(dx*dx+dy*dy+dz*dz<pickupRange*pickupRange){
+                            d.active = false;
+                            d.mesh.visible = false;
+                            d.respawnTimer = 10000; 
+                            lastEatenDotIds.push(d.id);
+
+                            let pts = 10;
+                            if (d.type === 0) pts = 10;
+                            else {
+                                pts = 50;
+                                if (d.type === 2) { p.powerUp = true; p.powerTimeLeft = 8000; }
+                                else if (d.type === 4) { p.laserMode = true; p.laserTimeLeft = 10000; }
+                                else if (d.type === 5) { p.speedMode = true; p.speedTimeLeft = 6000; }
+                                else if (d.type === 6) { p.freezeMode = true; p.freezeTimeLeft = 5000; }
+                                else if (d.type === 7) { p.multiplierMode = true; p.multTimeLeft = 8000; }
+                                else if (d.type === 10) { p.magnetMode = true; p.magnetTimeLeft = 8000; }
+                            }
+                            p.score += pts * (p.multiplierMode ? 2 : 1);
+                            break;
+                        }
+                    }
+                }
+            });
+
+            centerFruits.forEach(f => {
+                if (!f.active) {
+                    f.respawnTimer -= deltaMs;
+                    if (f.respawnTimer <= 0) {
+                        f.active = true;
+                        f.group.visible = true;
+                    }
+                } else {
+                    for(const p of aliveHostPlayers){
+                        const pickupRange=p.magnetMode?4.8:2.0;
+                        const dx=p.x-f.x,dy=p.y-0.8,dz=p.z-f.z;
+                        if(dx*dx+dy*dy+dz*dz<pickupRange*pickupRange){
+                            f.active = false;
+                            f.group.visible = false;
+                            f.respawnTimer = 15000; 
+
+                            let gainedPts = f.def.pts * (p.multiplierMode ? 2 : 1);
+                            p.score += gainedPts;
+                            playSfx(900, 0.25, 'triangle');
+                            break;
+                        }
+                    }
+                }
+            });
+
+            if (glitchActive) {
+                aliveHostPlayers.forEach(p => {
+                    if (p.isAlive) {
+                        let gx = Math.round(p.x / 4 + 13.5);
+                        let gz = Math.round(p.z / 4 + 15);
+                        if (gx < glitchRingLevel || gx >= 28 - glitchRingLevel || gz < glitchRingLevel || gz >= 31 - glitchRingLevel) {
+                            p.isAlive = false;
+                            triggerDeathAnimation(p.id);
+                        }
+                    }
+                });
+            }
+
+            // --- PAC-MAN 3D GHOST AI / EYES / REVIVE ---
+            ghosts.forEach(g => {
+                checkSidePortals(g);
+
+                // EYES MODE: defeated ghosts pathfind back to Ghost House without crossing walls.
+                if(g.isDead){
+                    g.bodyGroup.visible=false;
+                    g.eyesGroup.visible=true;
+                    g.currentAIState='eyes';
+
+                    const gGrid=worldToGrid(new THREE.Vector3(g.x,g.y,g.z));
+                    const home={x:14,z:15};
+                    const homeWorld=gridToWorld(home.x,home.z);
+                    const distHome=Math.hypot(homeWorld.x-g.x,homeWorld.z-g.z);
+
+                    if(distHome<0.65){
+                        g.x=homeWorld.x;g.y=0.3;g.z=homeWorld.z;
+                        g.aStarPath=[];
+
+                        if(g.houseRespawnWaitMs>0){
+                            g.houseRespawnWaitMs=Math.max(0,g.houseRespawnWaitMs-deltaMs);
+                        }else{
+                            g.isDead=false;
+                            g.bodyGroup.visible=true;
+                            g.eyesGroup.visible=true;
+                            g.bodyMat.color.setHex(g.baseColor);
+                            g.currentAIState='chase';
+                            g.pathUpdateTimer=0;
+                        }
+                    }else{
+                        g.pathUpdateTimer-=deltaMs;
+                        if(g.pathUpdateTimer<=0||!g.aStarPath||g.aStarPath.length===0){
+                            g.pathUpdateTimer=180;
+                            g.aStarPath=computeAStarPath(gGrid,home);
+                        }
+
+                        // Eyes return faster than a living ghost.
+                        if(!moveShowdownGhostAlongPath(g,0.16)){
+                            const dx=homeWorld.x-g.x,dz=homeWorld.z-g.z;
+                            const len=Math.hypot(dx,dz)||1;
+                            const tryX=g.x+dx/len*0.08;
+                            const tryZ=g.z+dz/len*0.08;
+                            const tryGrid=worldToGrid(new THREE.Vector3(tryX,0.3,tryZ));
+                            if(!checkGhostColGrid(tryGrid.x,tryGrid.z)){
+                                g.x=tryX;g.z=tryZ;
+                            }
+                        }
+                    }
+
+                    g.group.position.set(g.x,g.y,g.z);
+                    return;
+                }
+
+                g.bodyGroup.visible=true;
+                g.eyesGroup.visible=true;
+                g.bodyMat.color.setHex(g.baseColor);
+
+                const closestP=getClosestAlivePlayerForGhost(g,aliveHostPlayers);
+                if(!closestP){
+                    g.group.position.set(g.x,g.y,g.z);
+                    return;
+                }
+
+                const anyPowerActive=aliveHostPlayers.some(p=>p.powerUp);
+                g.currentAIState=anyPowerActive?'scared':'chase';
+
+                const gGrid=worldToGrid(new THREE.Vector3(g.x,g.y,g.z));
+                g.pathUpdateTimer-=deltaMs;
+
+                if(g.pathUpdateTimer<=0||!g.aStarPath||g.aStarPath.length===0){
+                    g.pathUpdateTimer=220+(ghosts.indexOf(g)%4)*35;
+
+                    let targetGrid;
+                    if(anyPowerActive){
+                        targetGrid=getShowdownFleeTarget(g,aliveHostPlayers);
+                    }else{
+                        targetGrid=getShowdownGhostTarget(g,closestP);
+                        targetGrid=getDistributedShowdownGhostTarget(g,targetGrid);
+                    }
+
+                    g.currentTargetCell=targetGrid;
+                    g.aStarPath=keepShowdownGhostRouteSeparate(
+                        g,
+                        gGrid,
+                        computeAStarPath(gGrid,targetGrid)
+                    );
+                }
+
+                let step=0.08*g.baseSpeed;
+                if(anyPowerActive)step*=0.62;
+
+                if(!moveShowdownGhostAlongPath(g,step)){
+                    // Safe grid-valid fallback only; never walk directly through walls.
+                    g.aStarPath=[];
+                    g.pathUpdateTimer=0;
+                }
+
+                g.group.position.set(g.x,g.y,g.z);
+
+                // Ghost vs Player Collisions
+                for(const p of aliveHostPlayers){
+                    if(g.isDead)break;
+                    const dx=p.x-g.x,dy=p.y-g.y,dz=p.z-g.z;
+                    if(dx*dx+dy*dy+dz*dz>=2.25)continue;
+                    if(p.powerUp)defeatShowdownGhost(g,p);
+                    else{
+                        p.isAlive=false;
+                        triggerDeathAnimation(p.id);
+                    }
+                }
+            });
+
+            // Player vs Player Collisions
+            const pList = aliveHostPlayers;
+            for (let i = 0; i < pList.length; i++) {
+                for (let j = i + 1; j < pList.length; j++) {
+                    let p1 = pList[i], p2 = pList[j];
+                    const dx=p1.x-p2.x,dy=p1.y-p2.y,dz=p1.z-p2.z;
+                    if(dx*dx+dy*dy+dz*dz<2.56){
+                        if (p1.powerUp && !p2.powerUp) {
+                            p2.isAlive = false;
+                            triggerDeathAnimation(p2.id);
+                            p1.score += 500 * (p1.multiplierMode ? 2 : 1);
+                        } else if (p2.powerUp && !p1.powerUp) {
+                            p1.isAlive = false;
+                            triggerDeathAnimation(p1.id);
+                            p2.score += 500 * (p2.multiplierMode ? 2 : 1);
+                        }
+                    }
+                }
+            }
+
+            const netPlayers={};
+            for(const p of hostPlayers){
+                netPlayers[p.id]={
+                    id:p.id,name:p.name,colorIdx:p.colorIdx,
+                    x:p.x,y:p.y,z:p.z,rotY:p.rotY,mouthAngle:p.mouthAngle,
+                    score:p.score,isAlive:p.isAlive,
+                    powerUp:p.powerUp,laserMode:p.laserMode,speedMode:p.speedMode,
+                    freezeMode:p.freezeMode,multiplierMode:p.multiplierMode,magnetMode:p.magnetMode,
+                    powerTimeLeft:p.powerTimeLeft,laserTimeLeft:p.laserTimeLeft,
+                    speedTimeLeft:p.speedTimeLeft,freezeTimeLeft:p.freezeTimeLeft,
+                    multTimeLeft:p.multTimeLeft,magnetTimeLeft:p.magnetTimeLeft,
+                    dashCooldown:p.dashCooldown,isDashing:p.isDashing,dashTimeLeft:p.dashTimeLeft,
+                    isJumping:!!p.isJumping
+                };
+            }
+
+            // NETWORK BANDWIDTH OPTIMIZATION: 10 Hz authoritative sync + full-frame interpolation
+            if (now-lastNetworkSyncTime>=NET_SYNC_INTERVAL_MS) {
+                lastNetworkSyncTime = now;
+                const syncData = {
+                    type: 'SYNC',
+                    timer: matchTimerSeconds,
+                    glitchActive,
+                    glitchRingLevel,
+                    eatenDotIds: lastEatenDotIds.length > 0 ? [...lastEatenDotIds] : null,
+                    respawnDotIds: lastRespawnDotIds.length > 0 ? [...lastRespawnDotIds] : null,
+                    fruits: centerFruits.map(f => ({ id: f.id, active: f.active })),
+                    players: netPlayers,
+                    ghosts: ghosts.map(g => ({
+                        x:g.x,y:g.y,z:g.z,
+                        isDead:g.isDead,
+                        ai:g.currentAIState,
+                        houseRespawnWaitMs:g.houseRespawnWaitMs
+                    }))
+                };
+                broadcastRoom(syncData.type, {
+                    timer: syncData.timer,
+                    glitchActive: syncData.glitchActive,
+                    glitchRingLevel: syncData.glitchRingLevel,
+                    eatenDotIds: syncData.eatenDotIds,
+                    respawnDotIds: syncData.respawnDotIds,
+                    fruits: syncData.fruits,
+                    players: syncData.players,
+                    ghosts: syncData.ghosts
+                });
+
+                lastEatenDotIds = [];
+                lastRespawnDotIds = [];
+            }
+
+            updateHUD();
+        }
+
+        function updateHUD(force=false) {
+            const hudNow=performance.now();
+            if(!force&&hudNow-lastHudRenderAt<HUD_UPDATE_INTERVAL_MS)return;
+            lastHudRenderAt=hudNow;
+            const me = players[localPlayerId];
+            if (me) {
+                document.getElementById('score').innerText = me.score;
+                
+                // Dash Cooldown Bar & Button overlay
+                const dashBar = document.getElementById('dashBar');
+                const btnDash = document.getElementById('btnDash');
+                if (me.dashCooldown > 0) {
+                    const remainingPct = (1 - me.dashCooldown / 10000) * 100;
+                    dashBar.style.width = remainingPct + '%';
+                    btnDash.classList.add('cooldown');
+                    btnDash.innerText = `${Math.ceil(me.dashCooldown / 1000)}s`;
+                } else {
+                    dashBar.style.width = '100%';
+                    btnDash.classList.remove('cooldown');
+                    btnDash.innerText = 'DASH';
+                }
+
+                document.getElementById('powerBarContainer').style.display = me.powerUp ? 'block' : 'none';
+                if (me.powerUp) document.getElementById('powerBar').style.width = (me.powerTimeLeft / 8000 * 100) + '%';
+
+                document.getElementById('multBarContainer').style.display = me.multiplierMode ? 'block' : 'none';
+                if (me.multiplierMode) document.getElementById('multBar').style.width = (me.multTimeLeft / 8000 * 100) + '%';
+
+                document.getElementById('magnetBarContainer').style.display = me.magnetMode ? 'block' : 'none';
+                if (me.magnetMode) document.getElementById('magnetBar').style.width = (me.magnetTimeLeft / 8000 * 100) + '%';
+
+                document.getElementById('speedBarContainer').style.display = me.speedMode ? 'block' : 'none';
+                if (me.speedMode) document.getElementById('speedBar').style.width = (me.speedTimeLeft / 6000 * 100) + '%';
+
+                document.getElementById('freezeBarContainer').style.display = me.freezeMode ? 'block' : 'none';
+                if (me.freezeMode) document.getElementById('freezeBar').style.width = (me.freezeTimeLeft / 5000 * 100) + '%';
+
+                document.getElementById('laserBarContainer').style.display = me.laserMode ? 'block' : 'none';
+                if (me.laserMode) document.getElementById('laserBar').style.width = (me.laserTimeLeft / 10000 * 100) + '%';
+            }
+
+            const mins = Math.floor(matchTimerSeconds / 60);
+            const secs = matchTimerSeconds % 60;
+            document.getElementById('match-timer').innerText = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            document.getElementById('alive-count').innerText = Object.values(players).filter(p => p.isAlive).length;
+        }
+
+        function updateLeaderboardOverlay() {
+            const lbList = document.getElementById('lb-list');
+            if (!lbList) return;
+
+            const sorted = Object.values(players).sort((a, b) => {
+                if (a.isAlive !== b.isAlive) return b.isAlive ? 1 : -1;
+                return b.score - a.score;
+            });
+
+            let html = '';
+            sorted.forEach((p, rank) => {
+                const colorObj = PLAYER_COLORS[p.colorIdx % PLAYER_COLORS.length];
+                html += `
+                    <div class="lb-item ${!p.isAlive ? 'lb-dead' : ''}">
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <span class="lb-dot" style="background:${colorObj.css}"></span>
+                            <span class="lb-name">${rank + 1}. ${p.name}</span>
+                        </div>
+                        <span style="color:#ffff00; font-weight:bold;">${p.score}</span>
+                    </div>
+                `;
+            });
+            lbList.innerHTML = html;
+        }
+
+        function drawMinimap(now=performance.now()) {
+            if(now-lastMinimapRenderAt<MINIMAP_UPDATE_INTERVAL_MS)return;
+            lastMinimapRenderAt=now;
+            const canvas = document.getElementById('minimap');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const mapX = (x) => ((x + 56) / 112) * canvas.width;
+            const mapY = (z) => ((z + 62) / 124) * canvas.height;
+
+            // Lag Fix: Rapid pre-rendered wall draw call
+            ctx.drawImage(minimapWallCanvas, 0, 0);
+
+            if (glitchActive) {
+                ctx.fillStyle = 'rgba(255, 0, 85, 0.4)';
+                ctx.fillRect(0, 0, canvas.width * (glitchRingLevel / 28), canvas.height);
+                ctx.fillRect(canvas.width * (1 - glitchRingLevel / 28), 0, canvas.width * (glitchRingLevel / 28), canvas.height);
+            }
+
+            dots.forEach(d => {
+                if (!d.active) return;
+                ctx.fillStyle = d.type === 0 ? '#ffffff' : '#ffff00';
+                ctx.fillRect(mapX(d.x) - 1, mapY(d.z) - 1, 2, 2);
+            });
+
+            centerFruits.forEach(f => {
+                if (!f.active) return;
+                ctx.fillStyle = '#' + f.def.color.toString(16).padStart(6, '0');
+                ctx.fillRect(mapX(f.x) - 2, mapY(f.z) - 2, 4, 4);
+            });
+
+            ctx.fillStyle = '#00ffff';
+            ctx.fillRect(mapX(-54) - 2, mapY(-4) - 2, 4, 4);
+            ctx.fillRect(mapX(54) - 2, mapY(-4) - 2, 4, 4);
+
+            ghosts.forEach(g => {
+                if (g.isDead) return;
+                ctx.fillStyle = '#' + g.baseColor.toString(16).padStart(6, '0');
+                ctx.beginPath(); ctx.arc(mapX(g.x), mapY(g.z), 2, 0, Math.PI * 2); ctx.fill();
+            });
+
+            Object.values(players).forEach(p => {
+                if (!p.isAlive) return;
+                const colorObj = PLAYER_COLORS[p.colorIdx % PLAYER_COLORS.length];
+                ctx.fillStyle = colorObj.css;
+                ctx.beginPath(); ctx.arc(mapX(p.x), mapY(p.z), p.id === localPlayerId ? 3.5 : 2.5, 0, Math.PI * 2); ctx.fill();
+            });
+        }
+
+        window.exitPacShowdown = function() {
+            try {
+                clearInterval(matchTimerInterval);
+                stopMusic();
+                audioWin.pause();
+                audioLose.pause();
+                closeRoomConnection();
+            } catch (e) {}
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'PAC_SHOWDOWN_EXIT' }, '*');
+            } else {
+                location.reload();
+            }
+        };
+
+        animate();
+        buildMap();
+    </script>
+</body>
+    </html>
