@@ -142,9 +142,6 @@
         #score-attack-replay-hud { display:none; position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:2300; padding:7px 10px; border:2px solid #ffff00; border-radius:8px; background:rgba(0,0,15,.82); color:#fff; font:700 11px 'Courier New',monospace; box-shadow:0 0 12px rgba(255,255,0,.45); align-items:center; gap:10px; }
         #score-attack-replay-hud button { border:1px solid #ff6688; background:#21000a; color:#ff9fb5; border-radius:5px; padding:5px 8px; font:700 10px 'Courier New',monospace; }
         #score-attack-replay-hud { flex-wrap:wrap; max-width:min(96vw,760px); justify-content:center; }
-        #score-attack-replay-timeline-wrap { display:flex; align-items:center; gap:7px; width:min(72vw,520px); }
-        #score-attack-replay-timeline { flex:1 1 auto; min-width:140px; accent-color:#ffff00; touch-action:pan-x; }
-        #score-attack-replay-time { min-width:92px; text-align:center; color:#ffff66; font:700 10px 'Courier New',monospace; }
         @keyframes bossPulse { 0% { transform: scale(0.98); box-shadow: 0 0 10px #ff0000; } 100% { transform: scale(1.05); box-shadow: 0 0 25px #ff0000; } }
         #outcome-predictor { display:none; margin:6px auto 0; padding:6px 10px; width:fit-content; max-width:92%; border:1px solid rgba(0,242,255,.55); border-radius:8px; background:rgba(0,0,0,.55); color:#fff; font-size:11px; text-shadow:1px 1px 0 #000; box-shadow:0 0 10px rgba(0,242,255,.15); }
         /* Outcome predictor intentionally disabled/hidden; implementation retained for compatibility. */
@@ -321,10 +318,12 @@
     <link rel="preload" as="audio" type="audio/mpeg" href="Pac Connection (5 Minutes) - Pac-Man CE 2 Plus Music - Ray Koopa (64k).mp3">
     <link rel="preload" as="audio" type="audio/mpeg" href="Pac Twin Attack (5 Minutes) - Pac-Man CE 2 Plus Music - Ray Koopa (64k).mp3">
     <link rel="preload" as="audio" type="audio/mpeg" href="Pac Oi Oi Oi (3 Minutes) - Pac-Man CE 2 Music - Ray Koopa (64k).mp3">
+    <link rel="preload" as="audio" type="audio/mpeg" href="pac-menu.mp3">
     <link rel="preload" as="audio" type="audio/mpeg" href="PAC JUMP UP! - PAC-MAN - Topic (64k).mp3">
 </head>
 <body>
     <!-- Audio Elements bound to local folder assets -->
+    <audio id="bgm-menu" preload="metadata" loop src="pac-menu.mp3"></audio>
     <audio id="bgm-gameplay" preload="metadata" loop src="Pac-Man 3D ost.mp3"></audio>
     <audio id="bgm-normal-level-1" preload="metadata" loop src="Pacman's Park (Japan Version) - PAC-MAN - Topic (64k).mp3"></audio>
     <audio id="bgm-normal-level-2" preload="metadata" loop src="Sandbox Land - PAC-MAN - Topic (64k).mp3"></audio>
@@ -391,6 +390,7 @@
 
         <button id="btnPlay" class="menu-btn" onclick="startGame()">PLAY</button>
         <button id="btnScoreAttack" class="menu-btn" onclick="startScoreAttack()" style="border-color:#ffff00;color:#ffff00;box-shadow:0 0 15px rgba(255,255,0,.4)">BOSS RUSH SCORE ATTACK</button>
+        <button id="btnClassicScoreAttack" class="menu-btn" onclick="startScoreAttack('score_attack')" style="border-color:#85ffad;color:#85ffad">SCORE ATTACK</button>
         <button id="btnPacShowdown" class="menu-btn" onclick="openPacShowdownMode()" style="border-color:#ff46b8;color:#ff8fd5;box-shadow:0 0 15px rgba(255,70,184,.45)">PAC-SHOWDOWN</button>
         <a id="btnMineChaos" class="menu-btn" href="Mine-Chaos.html" style="display:block;text-decoration:none;border-color:#39ff14;color:#39ff14;box-shadow:0 0 15px rgba(57,255,20,.45)">MINE CHAOS • PEERJS</a>
         <div id="score-attack-panel">
@@ -406,7 +406,7 @@
             <div id="score-attack-ticket-status" style="margin-top:4px;color:#ffff88;font-size:10px;">ONLINE SCORE TICKETS: LOADING...</div>
             <div id="score-attack-replay-panel">
                 <div id="score-attack-replay-head"><span>LOCAL REPLAYS <span id="score-attack-replay-count">0/10</span></span><button id="score-attack-delete-all-replays" class="score-replay-btn delete" type="button">DELETE ALL</button></div>
-                <div id="score-attack-replay-list">No local Boss Rush replays yet.</div>
+                <div id="score-attack-replay-list">No local replays yet.</div>
             </div>
         </div>
                 <a id="github-follow-btn" href="https://github.com/eituprocoder" target="_blank" rel="noopener noreferrer" hidden aria-hidden="true" tabindex="-1">Do you want to see more Fan Games &amp; awesome projects made by me? Follow Me on: https://github.com/eituprocoder</a>
@@ -454,7 +454,7 @@
         DOTS LEFT: <span id="remaining">0</span>
         <button id="pause-btn" onclick="pauseGame()">⏸ PAUSE</button>
         <div id="boss-banner">⚠️ GIANT GHOST BOSS STAGE ⚠️<br>TIME LEFT: <span id="boss-timer">10:00</span></div>
-        <div id="score-attack-banner"><strong>BOSS RUSH SCORE ATTACK</strong> • TIME: <span id="score-attack-timer">05:00</span><br>BEST: <span id="score-attack-best">0</span> • RANK: <span id="score-attack-rank">ROOKIE</span><div id="score-attack-rank-progress" style="font-size:10px;color:#ffd966;margin-top:2px"></div><div id="score-attack-ost-name"></div></div>
+        <div id="score-attack-banner"><strong id="score-attack-mode-title">BOSS RUSH SCORE ATTACK</strong> • TIME: <span id="score-attack-timer">05:00</span><br>BEST: <span id="score-attack-best">0</span> • RANK: <span id="score-attack-rank">ROOKIE</span><div id="score-attack-rank-progress" style="font-size:10px;color:#ffd966;margin-top:2px"></div><div id="score-attack-ost-name"></div></div>
         <div id="powerBarContainer" class="bar-container"><div class="bar-label">POWER PELLET</div><div id="powerBar"></div></div>
         <div id="laserBarContainer" class="bar-container"><div class="bar-label">LASER</div><div id="laserBar"></div></div>
         <div id="speedBarContainer" class="bar-container"><div class="bar-label">SPEED BOOST</div><div id="speedBar"></div></div>
@@ -501,10 +501,6 @@
     </div>
     <div id="score-attack-replay-hud">
         <span id="score-attack-replay-hud-text">LOCAL REPLAY</span>
-        <div id="score-attack-replay-timeline-wrap">
-            <input id="score-attack-replay-timeline" type="range" min="0" max="1" step="1" value="0" aria-label="Replay timeline">
-            <span id="score-attack-replay-time">0:00 / 0:00</span>
-        </div>
         <button type="button" onclick="stopScoreAttackReplay(true)">EXIT REPLAY</button>
     </div>
 
@@ -575,6 +571,7 @@
         import * as THREE from 'three';
 
         // --- STREAMING_CHUNK:Audio Initialization & Setup ---
+        const bgmMenu = document.getElementById('bgm-menu');
         const bgmGameplay = document.getElementById('bgm-gameplay');
         const bgmCoffeeBreak = document.getElementById('bgm-coffeebreak');
         const bgmPacCity = document.getElementById('bgm-pac-city');
@@ -597,6 +594,7 @@
         // Coffee Break, Pac-City and every boss sequence. HTMLMediaElement remains an
         // automatic fallback for ordinary browsers or if a device rejects one asset.
         const nativeOstAssetByElement = new Map([
+            [bgmMenu,'pac-menu.mp3'],
             [bgmGameplay,'Pac-Man 3D ost.mp3'],
             [document.getElementById('bgm-normal-level-1'),"Pacman's Park (Japan Version) - PAC-MAN - Topic (64k).mp3"],
             [document.getElementById('bgm-normal-level-2'),'Sandbox Land - PAC-MAN - Topic (64k).mp3'],
@@ -707,11 +705,9 @@
                 if(!audio.paused)audio.pause();
                 const resumePosition=(nativeOstPausedAudio===audio&&nativeOstPausedLevel===Number(level))?nativeOstPausedPositionMs:0;
                 activeNativeOstAudio=audio;
-                if(audio===scoreAttackBgm&&scoreAttackActive&&typeof window.NativeAudio.playScoreAttackOst==='function'){
-                    window.NativeAudio.playScoreAttackOst(assetName,!!audio.loop,MASTER_AUDIO_VOLUME);
-                }else{
-                    window.NativeAudio.playOst(assetName,!!audio.loop,MASTER_AUDIO_VOLUME);
-                }
+                // Timed runs are session-only. The legacy score transport restores an old
+                // native playlist position; use the fresh transport and ordinary pause/resume.
+                window.NativeAudio.playOst(assetName,!!audio.loop,MASTER_AUDIO_VOLUME);
                 // Some NativeAudio bridges expose a seek method even when they do not expose
                 // pause/resume. Use it when available; otherwise keep native playback reliable.
                 if(resumePosition>0)trySeekNativeOstMs(resumePosition);
@@ -733,7 +729,7 @@
         const finiteBossOstAudioElements = [audioBossintro,audioBossdefeated,audioVictory].filter(Boolean);
         // OST/BGM playback speed is never modified by the game. The browser plays every
         // soundtrack at the MP3's own natural rate; no playbackRate correction is applied.
-        const allOstAudioElements = [...new Set([...allStageBgmAudioElements,...finiteBossOstAudioElements,bgmCoffeeBreak,bgmPacCity])].filter(Boolean);
+        const allOstAudioElements = [...new Set([...allStageBgmAudioElements,...finiteBossOstAudioElements,bgmCoffeeBreak,bgmPacCity,bgmMenu])].filter(Boolean);
         // Keep passive timeline diagnostics for every MP3 without ever forcing currentTime.
         // Android/WebView media clocks can advance in coarse steps while decoding; writing
         // currentTime from the render loop can therefore create false seeks or stop playback.
@@ -769,7 +765,7 @@
         // pools, replay intervals, and no-duplicate rules for each effect.
         const stableSfxAudioElements = [audioWaka,audioGhostSiren,audioPowerSiren,audioLose,audioGhostDefeated,audioFruitCollect,audioOneUp,audioMegaFruitAppear].filter(Boolean);
         stableSfxAudioElements.forEach(audio=>{audio._nativeStableSfx=true;audio.volume=MASTER_AUDIO_VOLUME;audio.preload='auto';});
-        const allMp3AudioElements = [...allStageBgmAudioElements,bgmCoffeeBreak,bgmPacCity,audioBossdefeated,audioVictory,audioBossintro,...stableSfxAudioElements].filter(Boolean);
+        const allMp3AudioElements = [bgmMenu,...allStageBgmAudioElements,bgmCoffeeBreak,bgmPacCity,audioBossdefeated,audioVictory,audioBossintro,...stableSfxAudioElements].filter(Boolean);
         allMp3AudioElements.forEach(protectOstTimeline);
         // Long tracks initially fetch metadata only. Loading every complete soundtrack at
         // startup competes with rendering and can stall lower-memory/mobile browsers.
@@ -1022,8 +1018,9 @@
         }
         // Ghost defeats use a bounded set of independent reusable voices. A newly
         // defeated ghost never pauses, seeks or restarts a defeat cue already sounding.
-        // Its own pitch combo is independent from gameplay speed and from the score combo.
-        // The fourth consecutive defeat reaches exactly 1.5x pitch and every later one stays capped.
+        // Automatic train/boss chains have their own pitch ramp, independent from game speed.
+        // Ordinary contact, lasers and other single defeats always use the natural pitch.
+        // Inside a chain the fourth defeat reaches 1.5x, matching the boss animation.
         const GHOST_DEFEATED_MAX_VOICES = 16;
         const GHOST_DEFEATED_MAX_PITCH = 1.5;
         let ghostDefeatedPitchCombo = 0;
@@ -1031,6 +1028,7 @@
             ghostDefeatedPitchCombo = 0;
         }
         function nextGhostDefeatedPitchRate(){
+            if(!ghostTrainAttack&&!isBossDefeatSequence)return 1;
             const rate = Math.min(GHOST_DEFEATED_MAX_PITCH, 1 + ghostDefeatedPitchCombo / 6);
             ghostDefeatedPitchCombo++;
             return rate;
@@ -1297,12 +1295,14 @@
             if(Number.isFinite(seconds)&&seconds>=0)localStorage.setItem(scoreAttackOstPositionKey(),String(seconds));
         }
         function clearScoreAttackOstPosition(){
-            localStorage.removeItem(scoreAttackOstPositionKey());
+            try{localStorage.removeItem(scoreAttackOstPositionKey());}catch(e){}
+            nativeOstPausedAudio=null;nativeOstPausedLevel=-1;nativeOstPausedPositionMs=0;
             try{if(window.NativeAudio&&typeof window.NativeAudio.clearScoreAttackOst==='function')window.NativeAudio.clearScoreAttackOst();}catch(e){}
             try{if(scoreAttackBgm)scoreAttackBgm.currentTime=0;}catch(e){}
             scoreAttackAudioRestorePending=false;
         }
         function playScoreAttackBgm(){
+            stopMenuMusic();
             if(!scoreAttackActive||!scoreAttackBgm)return;
             ensureMp3AudioMastering();
             stopPacCityBgm(true);
@@ -1423,6 +1423,7 @@
         }
 
         function playPacCityBgm(){
+            stopMenuMusic();
             pauseAllStageBgm(true);
             stopCoffeeBreakAudio();
             // Repeated calls are intentionally idempotent: never pause or restart an OST
@@ -1803,7 +1804,7 @@
         const SAVE_STORE = 'game';
         const PAC_CITY_STORE = 'pacCity';
         const BACKUP_STORE = 'backups';
-        const BACKUP_SCOPED_GAME_KEYS = new Set(['activeGame','scoreAttackGame','scoreAttackStats','pacCitizens']);
+        const BACKUP_SCOPED_GAME_KEYS = new Set(['activeGame','scoreAttackGame','scoreAttackStats','classicScoreAttackStats','pacCitizens']);
         let activeBackupId = localStorage.getItem('pacman3d_active_backup') || '';
         let backupRecords = [];
         let saveDB = null;
@@ -1879,7 +1880,7 @@
             const playerId=getScoreAttackPlayerId();
             if(stats)stats.textContent=`LOCAL • RUNS ${scoreAttackStats.runs||0} • BEST ${scoreAttackStats.bestScore||0} • BEST ROUND ${scoreAttackStats.bestRound||0} • TOTAL ${scoreAttackStats.totalScore||0}`;
             if(idLabel)idLabel.textContent=`PLAYER ID: ${playerId}`;
-            if(best)best.textContent=String(scoreAttackStats.bestScore||0);
+            if(best)best.textContent=String(scoreAttackActive&&scoreAttackVariant==='score_attack'?classicScoreAttackBest:(scoreAttackStats.bestScore||0));
             if(name&&document.activeElement!==name)name.value=normalizedScoreAttackPlayerName(localStorage.getItem(scoreAttackPlayerNameKey()));
         }
         async function loadScoreAttackStats(){
@@ -2782,8 +2783,8 @@
             pacCitizenActors.forEach(a=>{if(a?.userData?.aura)a.userData.aura.visible=false;});
         }
         let energyUICache='',energyUILastUpdate=0;
-        function updateEnergyUI(force=false){const stamp=performance.now();if(!force&&stamp-energyUILastUpdate<100)return;energyUILastUpdate=stamp;let e=document.getElementById('pac-energy-ui');if(!e){e=document.createElement('div');e.id='pac-energy-ui';e.style.cssText='color:#00ff99;font-weight:bold;margin-top:4px;font-size:11px';const u=document.getElementById('ui');if(u)u.appendChild(e);}const energyValue=v=>Math.max(0,Math.min(3,Number.isFinite(Number(v))?Number(v):3));const squad=scoreAttackActive?'':pacCitizenRoster.filter(c=>c.rescued&&c.active&&c.lives>0).slice(0,10).map(c=>{const energy=energyValue(c.energy);return `${c.name}:${'▰'.repeat(energy)}${'▱'.repeat(3-energy)}`;}).join('  '),pacDisplayEnergy=energyValue(pacEnergy),html=`PAC-MAN ENERGY: ${'▰'.repeat(pacDisplayEnergy)}${'▱'.repeat(3-pacDisplayEnergy)}${squad?'<br>SQUAD ENERGY: '+squad:''}`;if(e&&(force||html!==energyUICache)){energyUICache=html;e.innerHTML=html;}}
-        function applyPacmanGhostHit(position){if(pacHitCooldown>0||pacShieldTimer>0||gameState!=='playing')return;const damage=getGhostContactDamage();pacEnergy=Math.max(0,pacEnergy-damage);pacShieldTimer=500;pacHitCooldown=500;updateEnergyUI();showFloatingText(`-${damage} ENERGY`,position||pacman.position);playSfx(180,.25,'sawtooth',.18);if(pacEnergy<=0){beginGhostHouseReturnSequence();pendingDamage=1;gameState='dying';deathTimer=1;stopLoopAudio(true);playLoseAudio();}}
+        function updateEnergyUI(force=false){const stamp=performance.now();if(!force&&stamp-energyUILastUpdate<100)return;energyUILastUpdate=stamp;let e=document.getElementById('pac-energy-ui');if(!e){e=document.createElement('div');e.id='pac-energy-ui';e.style.cssText='color:#00ff99;font-weight:bold;margin-top:4px;font-size:11px';const u=document.getElementById('ui');if(u)u.appendChild(e);}const energyValue=v=>Math.max(0,Math.min(3,Number.isFinite(Number(v))?Number(v):3));const squad=scoreAttackActive?'':pacCitizenRoster.filter(c=>c.rescued&&c.active&&c.lives>0).slice(0,10).map(c=>{const energy=energyValue(c.energy);return `${c.name}:${'▰'.repeat(energy)}${'▱'.repeat(3-energy)}`;}).join('  '),pacDisplayEnergy=energyValue(pacEnergy),html=`PAC-MAN ENERGY: ${energyCells(pacDisplayEnergy)}${squad?'<br>SQUAD ENERGY: '+squad:''}`;if(e&&(force||html!==energyUICache)){energyUICache=html;e.innerHTML=html;}}
+        function applyPacmanGhostHit(position,damageOverride=null){if(pacHitCooldown>0||pacShieldTimer>0||gameState!=='playing')return;const damage=damageOverride===null?getGhostContactDamage():Math.max(0,Number(damageOverride)||0);pacEnergy=Math.max(0,pacEnergy-damage);pacShieldTimer=500;pacHitCooldown=500;updateEnergyUI();showFloatingText(`-${damage} ENERGY`,position||pacman.position);playSfx(180,.25,'sawtooth',.18);if(pacEnergy<=0){beginGhostHouseReturnSequence();pendingDamage=1;gameState='dying';deathTimer=1;stopLoopAudio(true);playLoseAudio();}}
         function hideCitizenLaserBeam(id){
             try{
                 const beam=pooledLaserBeams?.get?.(`citizen-${id}`);
@@ -4344,14 +4345,24 @@
         let scoreAttackReplayPlaybackFrameIndex=0;
         let scoreAttackReplayPlaybackDotSignature='';
         let scoreAttackReplayPlaybackSfxIndex=0;
-        let scoreAttackReplayTimelineSeeking=false;
         const scoreAttackReplaySfxPools=new Map();
         const scoreAttackReplayLoopSfx=new Map();
         const scoreAttackReplayVisualPools={clones:[],blueGhosts:[],particles:[]};
         let scoreAttackLastResult=null;
         const SCORE_ATTACK_PAC_SPEED_MULTIPLIER=1.85;
         const SCORE_ATTACK_GHOST_SPEED_MULTIPLIER=1.7;
-        const SCORE_ATTACK_FIXED_MAZE_INDEX=9;
+        const SCORE_ATTACK_FIRST_MAZE_INDEX=9;
+        let scoreAttackVariant='boss_rush';
+        let scoreAttackStarting=false;
+        let scoreAttackReplayMazeOverride=null;
+        let scoreAttackReplayMapIndex=-1;
+        let classicScoreAttackBest=0;
+        function isBossRushScoreAttack(){return scoreAttackActive&&scoreAttackVariant==='boss_rush';}
+        function scoreAttackModeName(mode=scoreAttackVariant){return mode==='score_attack'?'SCORE ATTACK':'BOSS RUSH SCORE ATTACK';}
+        function getScoreAttackMazeIndex(round=scoreAttackRound){
+            if(scoreAttackReplayMazeOverride!==null)return scoreAttackReplayMazeOverride;
+            return (SCORE_ATTACK_FIRST_MAZE_INDEX+Math.max(1,Math.floor(Number(round)||1))-1)%FIXED_MAZES.length;
+        }
         let scoreAttackActive=false;
         let scoreAttackTimeLeft=scoreAttackRunDurationMs;
         let scoreAttackRound=1;
@@ -5111,7 +5122,7 @@
 
         function beginScoreAttackReplayRecording(){
             scoreAttackReplayRecording={
-                id:`bossrush-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+                id:`${scoreAttackVariant}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,mode:scoreAttackVariant,mazeVersion:2,
                 createdAt:Date.now(),ostAsset:scoreAttackSelectedOstAsset,ostTitle:scoreAttackSelectedOstTitle,
                 durationMs:scoreAttackRunDurationMs,frames:[],sfx:[]
             };
@@ -5126,6 +5137,9 @@
             const bodyColor=g=>{try{return getMainGhostBodyMaterial(g)?.color?.getHex?.()??g.baseColor??0;}catch(e){return g.baseColor||0;}};
             const frame={
                 t:Math.max(0,Math.round(scoreAttackPlayedMs)),
+                m:getScoreAttackMazeIndex(),
+                mn:minionGhosts.map(m=>[scoreReplayRound(m.position.x),scoreReplayRound(m.position.y),scoreReplayRound(m.position.z),m.visible?1:0,m.phase==='sleeping'?0:1,m.color||0x54db63,scoreReplayRound(m.rotation||0)]),
+                tr:ghostTrainAttack?ghostTrainAttack.trail.map(p=>[scoreReplayRound(p.x),scoreReplayRound(p.y),scoreReplayRound(p.z)]):null,
                 p:[scoreReplayRound(pacman.position.x),scoreReplayRound(pacman.position.y),scoreReplayRound(pacman.position.z),scoreReplayRound(pacman.rotation.y),scoreReplayRound(pacman.scale.x),pacman.visible?1:0,topHalf.visible?1:0,bottomHalf.visible?1:0],
                 c:[scoreReplayRound(camera.position.x),scoreReplayRound(camera.position.y),scoreReplayRound(camera.position.z),scoreReplayRound(camera.quaternion.x),scoreReplayRound(camera.quaternion.y),scoreReplayRound(camera.quaternion.z),scoreReplayRound(camera.quaternion.w)],
                 g:ghosts.map(g=>[scoreReplayRound(g.position.x),scoreReplayRound(g.position.y),scoreReplayRound(g.position.z),scoreReplayRound(g.rotation.y),g.visible?1:0,g.bodyGroup?.visible===false?0:1,g.isDead?1:0,bodyColor(g)]),
@@ -5187,8 +5201,8 @@
         async function renderScoreAttackReplayList(){
             const list=document.getElementById('score-attack-replay-list'),count=document.getElementById('score-attack-replay-count');if(!list)return;
             const rows=await getScoreAttackLocalReplays();if(count)count.textContent=`${rows.length}/${SCORE_ATTACK_MAX_LOCAL_REPLAYS}`;
-            if(!rows.length){list.textContent='No local Boss Rush replays yet.';return;}
-            list.innerHTML=rows.map(r=>`<div class="score-replay-row"><div class="score-replay-meta"><strong>${Math.max(0,Number(r.finalScore)||0)} PTS</strong> • ${getScoreAttackRank(r.finalScore).name} • R${Math.max(1,Number(r.round)||1)}<br>${formatScoreAttackReplayDate(r.createdAt)}<br><span style="color:#8fefff">${String(r.ostTitle||'CE OST').replace(/[<>]/g,'')}</span></div><button class="score-replay-btn" data-replay-play="${r.id}">PLAY</button><button class="score-replay-btn" data-replay-video="${r.id}">SAVE VIDEO</button><button class="score-replay-btn delete" data-replay-delete="${r.id}">DELETE</button></div>`).join('');
+            if(!rows.length){list.textContent='No local replays yet.';return;}
+            list.innerHTML=rows.map(r=>`<div class="score-replay-row"><div class="score-replay-meta"><strong>${scoreAttackModeName(r.mode||'boss_rush')} • ${Math.max(0,Number(r.finalScore)||0)} PTS</strong> • ${getScoreAttackRank(r.finalScore).name} • R${Math.max(1,Number(r.round)||1)}<br>${formatScoreAttackReplayDate(r.createdAt)}<br><span style="color:#8fefff">${String(r.ostTitle||'CE OST').replace(/[<>]/g,'')}</span></div><button class="score-replay-btn" data-replay-play="${r.id}">PLAY</button><button class="score-replay-btn" data-replay-video="${r.id}">SAVE VIDEO</button><button class="score-replay-btn delete" data-replay-delete="${r.id}">DELETE</button></div>`).join('');
             list.querySelectorAll('[data-replay-play]').forEach(b=>b.onclick=()=>playScoreAttackReplay(b.dataset.replayPlay));
             list.querySelectorAll('[data-replay-video]').forEach(b=>b.onclick=()=>saveScoreAttackReplayVideo(b.dataset.replayVideo));
             list.querySelectorAll('[data-replay-delete]').forEach(b=>b.onclick=()=>deleteScoreAttackReplay(b.dataset.replayDelete));
@@ -5196,7 +5210,7 @@
         async function deleteScoreAttackReplay(id){
             let rows=await getScoreAttackLocalReplays();rows=rows.filter(r=>r&&r.id!==id);await putScoreAttackLocalReplays(rows);if(scoreAttackLastResult?.replayId===id)scoreAttackLastResult.replayId='';await renderScoreAttackReplayList();
         }
-        async function deleteAllScoreAttackReplays(){if(!confirm('Delete all local Boss Rush replays?'))return;await putScoreAttackLocalReplays([]);await renderScoreAttackReplayList();}
+        async function deleteAllScoreAttackReplays(){if(!confirm('Delete all local replays?'))return;await putScoreAttackLocalReplays([]);await renderScoreAttackReplayList();}
 
         let scoreAttackReplayVideoRecorder=null,scoreAttackReplayVideoChunks=[],scoreAttackReplayVideoExporting=false,scoreAttackReplayVideoId='';
         let scoreAttackReplayExportAudio=null,scoreAttackReplayExportAudioCtx=null,scoreAttackReplayExportAudioStream=null,scoreAttackReplayExportAudioDest=null;
@@ -5640,6 +5654,8 @@
         function applyScoreAttackReplayDotSignature(sig){if(!sig||sig===scoreAttackReplayPlaybackDotSignature)return;scoreAttackReplayPlaybackDotSignature=sig;for(let i=0;i<dots.length&&i<sig.length;i++)dots[i].visible=sig[i]==='1';}
         function applyScoreAttackReplayFrame(frame){
             if(!frame)return;
+            restoreScoreReplayMaze(frame);
+            restoreScoreReplayMinions(frame);
             const p=frame.p||[];if(pacman&&p.length>=8){pacman.position.set(p[0],p[1],p[2]);pacman.rotation.y=p[3];pacman.scale.setScalar(Math.max(.01,p[4]||1));pacman.visible=!!p[5];topHalf.visible=!!p[6];bottomHalf.visible=!!p[7];}
             const c=frame.c||[];if(c.length>=7){camera.position.set(c[0],c[1],c[2]);camera.quaternion.set(c[3],c[4],c[5],c[6]);}
             (frame.g||[]).forEach((gf,i)=>{const g=ghosts[i];if(!g||!gf)return;g.position.set(gf[0],gf[1],gf[2]);g.rotation.y=gf[3];g.visible=!!gf[4];if(g.bodyGroup)g.bodyGroup.visible=!!gf[5];g.isDead=!!gf[6];setMainGhostBodyHex(g,Number(gf[7])||g.baseColor);});
@@ -5677,59 +5693,6 @@
             if(!replay?.frames?.length)return Math.max(1,Number(replay?.playedMs)||Number(replay?.durationMs)||1);
             return Math.max(1,Number(replay.playedMs)||Number(replay.frames[replay.frames.length-1]?.t)||Number(replay.durationMs)||1);
         }
-        function updateScoreAttackReplayTimelineUI(elapsed){
-            const slider=document.getElementById('score-attack-replay-timeline'),label=document.getElementById('score-attack-replay-time');
-            if(!slider||!label||!scoreAttackReplayPlayback)return;
-            const duration=scoreAttackReplayDurationMs();
-            if(!scoreAttackReplayTimelineSeeking){slider.max=String(Math.round(duration));slider.value=String(Math.round(Math.max(0,Math.min(duration,elapsed))));}
-            label.textContent=`${formatScoreAttackTime(Math.max(0,elapsed))} / ${formatScoreAttackTime(duration)}`;
-        }
-        function scoreAttackReplayFrameIndexAt(ms,replay=scoreAttackReplayPlayback){
-            const frames=replay?.frames||[];if(!frames.length)return 0;
-            let lo=0,hi=frames.length-1,best=0;
-            while(lo<=hi){const mid=(lo+hi)>>1,t=Number(frames[mid]?.t)||0;if(t<=ms){best=mid;lo=mid+1;}else hi=mid-1;}
-            return best;
-        }
-        function scoreAttackReplaySfxIndexAt(ms,replay=scoreAttackReplayPlayback){
-            const events=Array.isArray(replay?.sfx)?replay.sfx:[];let lo=0,hi=events.length;
-            while(lo<hi){const mid=(lo+hi)>>1;if((Number(events[mid]?.t)||0)<ms)lo=mid+1;else hi=mid;}
-            return lo;
-        }
-        function seekScoreAttackReplay(ms,keepPlaying=true){
-            const replay=scoreAttackReplayPlayback;if(!scoreAttackReplayPlaying||!replay?.frames?.length)return;
-            const duration=scoreAttackReplayDurationMs(replay),target=Math.max(0,Math.min(duration,Number(ms)||0));
-            cleanupScoreAttackReplaySfxPlayback();
-            scoreAttackReplayPlaybackFrameIndex=scoreAttackReplayFrameIndexAt(target,replay);
-            scoreAttackReplayPlaybackSfxIndex=scoreAttackReplaySfxIndexAt(target,replay);
-            scoreAttackReplayPlaybackDotSignature='';
-            // Reconstruct latest dot visibility snapshot at or before the seek point.
-            for(let i=scoreAttackReplayPlaybackFrameIndex;i>=0;i--){if(replay.frames[i]?.d){applyScoreAttackReplayDotSignature(replay.frames[i].d);break;}}
-            applyScoreAttackReplayFrame(replay.frames[scoreAttackReplayPlaybackFrameIndex]);
-            scoreAttackReplayPlaybackStartedAt=performance.now()-target;
-            if(scoreAttackBgm){
-                try{
-                    if(activeNativeOstAudio===scoreAttackBgm&&nativeOstBridgeAvailable()&&typeof window.NativeAudio.seekOstMs==='function'){
-                        window.NativeAudio.seekOstMs(Math.round(target));
-                    }else{
-                        scoreAttackBgm.currentTime=Math.max(0,target/1000);
-                    }
-                    if(keepPlaying)safePlayOst(scoreAttackBgm);else scoreAttackBgm.pause();
-                }catch(e){}
-            }
-            updateScoreAttackReplayTimelineUI(target);
-        }
-        function bindScoreAttackReplayTimeline(){
-            const slider=document.getElementById('score-attack-replay-timeline');if(!slider||slider.dataset.bound==='1')return;
-            slider.dataset.bound='1';
-            const seek=()=>seekScoreAttackReplay(Number(slider.value)||0,true);
-            slider.addEventListener('pointerdown',()=>{scoreAttackReplayTimelineSeeking=true;});
-            slider.addEventListener('touchstart',()=>{scoreAttackReplayTimelineSeeking=true;},{passive:true});
-            slider.addEventListener('input',()=>{const label=document.getElementById('score-attack-replay-time'),duration=scoreAttackReplayDurationMs();if(label)label.textContent=`${formatScoreAttackTime(Number(slider.value)||0)} / ${formatScoreAttackTime(duration)}`;});
-            slider.addEventListener('change',()=>{scoreAttackReplayTimelineSeeking=false;seek();});
-            slider.addEventListener('pointerup',()=>{if(scoreAttackReplayTimelineSeeking){scoreAttackReplayTimelineSeeking=false;seek();}});
-            slider.addEventListener('touchend',()=>{if(scoreAttackReplayTimelineSeeking){scoreAttackReplayTimelineSeeking=false;seek();}},{passive:true});
-        }
-
         function updateScoreAttackReplayPlayback(now){
             const replay=scoreAttackReplayPlayback;if(!scoreAttackReplayPlaying||!replay?.frames?.length)return;
             const elapsed=Math.max(0,now-scoreAttackReplayPlaybackStartedAt);
@@ -5738,7 +5701,6 @@
             }
             const frame=replay.frames[scoreAttackReplayPlaybackFrameIndex];applyScoreAttackReplayFrame(frame);
             playScoreAttackReplaySfxUntil(elapsed);
-            updateScoreAttackReplayTimelineUI(elapsed);
             if(pacman?.visible)animatePacCharacterMouth(pacman,true,now);
             if(elapsed>=Number(replay.frames[replay.frames.length-1].t||0)+250){if(scoreAttackReplayVideoExporting&&scoreAttackReplayVideoId===replay.id)finishScoreAttackReplayVideoExport(replay);stopScoreAttackReplay(false);}
         }
@@ -5768,8 +5730,15 @@
             scoreAttackBgm=audio;
             currentBgmAudio=audio;
             audio.loop=false;
-            // Native bridge receives a fresh play command after activeNativeOstAudio was cleared.
+            // Fresh runs and replays always start at zero, including bridges that cache assets.
             safePlayOst(audio);
+            if(activeNativeOstAudio===audio&&window.NativeAudio){
+                try{
+                    if(typeof window.NativeAudio.seekOstToMs==='function')window.NativeAudio.seekOstToMs(0);
+                    else if(typeof window.NativeAudio.setOstPositionMs==='function')window.NativeAudio.setOstPositionMs(0);
+                    else if(typeof window.NativeAudio.seekOstMs==='function')window.NativeAudio.seekOstMs(0);
+                }catch(e){}
+            }
         }
 
         async function playScoreAttackReplay(id){
@@ -5778,11 +5747,15 @@
             pauseAllStageBgm(false);stopAllBossCinematicOsts(true);stopLoopAudio();stopAllOneShotAudio();
             document.getElementById('menu-screen').style.display='none';document.getElementById('gameover').style.display='none';document.getElementById('score-attack-results-screen').style.display='none';document.getElementById('score-attack-bonus-screen').style.display='none';document.getElementById('score-attack-finish-screen').style.display='none';
             document.getElementById('ui').style.display='block';document.getElementById('joystick-container').style.display='none';document.getElementById('controls-right').style.display='none';document.getElementById('pause-btn').style.display='none';document.getElementById('minimap').style.display='none';
-            const wasActive=scoreAttackActive;scoreAttackActive=true;level=10;scoreAttackRound=1;bossMiniMazeIndex=SCORE_ATTACK_FIXED_MAZE_INDEX;bossMiniAwaitingApple=false;bossMiniFinalDotsCleared=true;buildMap();initGhosts();resetPositions();hideAllScoreAttackCitizens();scoreAttackActive=wasActive&&false;
+            stopMenuMusic();finishGhostTrainAttack();
+            scoreAttackVariant=replay.mode==='score_attack'?'score_attack':'boss_rush';
+            scoreAttackActive=true;level=scoreAttackVariant==='boss_rush'?10:1;scoreAttackRound=1;
+            scoreAttackReplayMazeOverride=Number.isInteger(replay.frames[0]?.m)?replay.frames[0].m:SCORE_ATTACK_FIRST_MAZE_INDEX;
+            scoreAttackReplayMapIndex=scoreAttackReplayMazeOverride;bossMiniMazeIndex=getScoreAttackMazeIndex();bossMiniAwaitingApple=false;bossMiniFinalDotsCleared=true;
+            buildMap();initGhosts();resetPositions();hideAllScoreAttackCitizens();scoreAttackActive=false;scoreAttackReplayMazeOverride=null;
             scoreAttackReplayPlayback=replay;scoreAttackReplayPlaying=true;scoreAttackReplayPlaybackStartedAt=performance.now();scoreAttackReplayPlaybackFrameIndex=0;scoreAttackReplayPlaybackDotSignature='';scoreAttackReplayPlaybackSfxIndex=0;gameState='scoreAttackReplay';
-            const replayBanner=document.getElementById('score-attack-banner'),bossBanner=document.getElementById('boss-banner'),levelLabel=document.getElementById('level-label');if(replayBanner)replayBanner.style.display='block';if(bossBanner)bossBanner.style.display='none';if(levelLabel)levelLabel.textContent='BOSSES DEFEATED';const ostLabel=document.getElementById('score-attack-ost-name');if(ostLabel)ostLabel.textContent=`REPLAY OST: ${String(replay.ostTitle||'CE OST')}`;
+            const replayBanner=document.getElementById('score-attack-banner'),bossBanner=document.getElementById('boss-banner'),levelLabel=document.getElementById('level-label');if(replayBanner)replayBanner.style.display='block';if(bossBanner)bossBanner.style.display='none';if(levelLabel)levelLabel.textContent=scoreAttackVariant==='boss_rush'?'BOSSES DEFEATED':'ROUNDS CLEARED';const modeTitle=document.getElementById('score-attack-mode-title');if(modeTitle)modeTitle.textContent=scoreAttackModeName();const ostLabel=document.getElementById('score-attack-ost-name');if(ostLabel)ostLabel.textContent=`REPLAY OST: ${String(replay.ostTitle||'CE OST')}`;
             const hud=document.getElementById('score-attack-replay-hud'),txt=document.getElementById('score-attack-replay-hud-text');if(hud)hud.style.display='flex';if(txt)txt.textContent=`LOCAL REPLAY • ${Math.max(0,Number(replay.finalScore)||0)} PTS • ${getScoreAttackRank(replay.finalScore).name}`;
-            bindScoreAttackReplayTimeline();updateScoreAttackReplayTimelineUI(0);
             scoreAttackBgm=scoreAttackAudioForAsset(replay.ostAsset)||scoreAttackBgm;
             if(scoreAttackBgm)restartScoreAttackReplayOst(scoreAttackBgm);
             applyScoreAttackReplayFrame(replay.frames[0]);
@@ -5790,6 +5763,7 @@
         function stopScoreAttackReplay(exitToMenu=false){
             if(!scoreAttackReplayPlaying&&!scoreAttackReplayPlayback)return;
             const replay=scoreAttackReplayPlayback;if(scoreAttackReplayVideoExporting&&scoreAttackReplayVideoRecorder)finishScoreAttackReplayVideoExport(replay);
+            drawGhostTrainTrail([]);clearMinionGhosts();
             scoreAttackReplayPlaying=false;scoreAttackReplayPlayback=null;scoreAttackReplayPlaybackFrameIndex=0;scoreAttackReplayPlaybackDotSignature='';scoreAttackReplayPlaybackSfxIndex=0;
             cleanupScoreAttackReplaySfxPlayback();cleanupScoreAttackReplayVisuals();
             auraMesh.visible=false;auraLight.intensity=0;const replayBeam=pooledLaserBeams.get('pacman');if(replayBeam)replayBeam.line.visible=false;
@@ -5823,7 +5797,7 @@
             if(replayBtn){replayBtn.style.display=result.replayId?'inline-block':'none';replayBtn.onclick=()=>result.replayId&&playScoreAttackReplay(result.replayId);}
             if(videoBtn){videoBtn.style.display=result.replayId?'inline-block':'none';videoBtn.onclick=()=>result.replayId&&saveScoreAttackReplayVideo(result.replayId);}
             if(deleteBtn){deleteBtn.style.display=result.replayId?'inline-block':'none';deleteBtn.onclick=async()=>{if(!result.replayId)return;await deleteScoreAttackReplay(result.replayId);result.replayId='';deleteBtn.style.display='none';if(replayBtn)replayBtn.style.display='none';};}
-            if(publish&&replayMode)publish.style.display='none';
+            if(publish&&(replayMode||result.mode==='score_attack'))publish.style.display='none';
             requestAnimationFrame(()=>drawScoreAttackResultsChart(result));
         }
         async function showScoreAttackFinishFlow(result){
@@ -5870,7 +5844,8 @@
         function updateScoreAttackModeUI(){
             const banner=document.getElementById('score-attack-banner'),bossBanner=document.getElementById('boss-banner'),timer=document.getElementById('score-attack-timer'),citizenPanel=document.getElementById('pac-citizen-panel');
             const levelLabel=document.getElementById('level-label'),levelValue=document.getElementById('level');
-            if(levelLabel)levelLabel.textContent=scoreAttackActive?'BOSSES DEFEATED':'LEVEL';
+            if(levelLabel)levelLabel.textContent=scoreAttackActive?(isBossRushScoreAttack()?'BOSSES DEFEATED':'ROUNDS CLEARED'):'LEVEL';
+            const modeTitle=document.getElementById('score-attack-mode-title');if(modeTitle)modeTitle.textContent=scoreAttackModeName();
             if(levelValue)levelValue.textContent=scoreAttackActive?String(Math.max(0,(Number(scoreAttackRound)||1)-1)):String(level);
             if(banner)banner.style.display=scoreAttackActive?'block':'none';
             if(scoreAttackActive&&bossBanner)bossBanner.style.display='none';
@@ -5889,6 +5864,8 @@
         async function finishScoreAttack(){
             if(!scoreAttackActive||scoreAttackFinishing)return;
             scoreAttackFinishing=true;
+            const finishedVariant=scoreAttackVariant;
+            finishGhostTrainAttack();
             captureScoreAttackReplayFrame(performance.now(),true);
             const baseScore=Math.max(0,Math.floor(score));
             const finalRound=Math.max(1,Math.floor(scoreAttackRound));
@@ -5898,7 +5875,7 @@
             const bombBonus=remainingBombs*SCORE_ATTACK_JUMP_BOMB_BONUS;
             const lifeBonus=remainingLives*SCORE_ATTACK_LIFE_BONUS;
             const finalScore=baseScore+bombBonus+lifeBonus;
-            const previousBest=Math.max(0,Number(scoreAttackStats.bestScore)||0);
+            const previousBest=finishedVariant==='score_attack'?classicScoreAttackBest:Math.max(0,Number(scoreAttackStats.bestScore)||0);
             score=finalScore;const scoreEl=document.getElementById('score');if(scoreEl)scoreEl.textContent=String(finalScore);
             saveScoreAttackOstPosition();
             scoreAttackActive=false;
@@ -5906,10 +5883,10 @@
             gameState='gameover';updateFoodInventoryVisibility();
             pauseAllStageBgm(false);stopAllBossCinematicOsts(true);stopLoopAudio();stopAllOneShotAudio();clearScoreAttackOstPosition();if(scoreAttackBgm)scoreAttackBgm.loop=true;
             await idbDelete('scoreAttackGame');hasScoreAttackSave=false;
-            const meta={baseScore,bombs:remainingBombs,lives:remainingLives,bombBonus,lifeBonus,finalScore,round:finalRound,playedMs,durationMs:scoreAttackRunDurationMs,previousBest,isNewRecord:finalScore>previousBest,ostAsset:scoreAttackSelectedOstAsset,ostTitle:scoreAttackSelectedOstTitle};
+            const meta={mode:finishedVariant,baseScore,bombs:remainingBombs,lives:remainingLives,bombBonus,lifeBonus,finalScore,round:finalRound,playedMs,durationMs:scoreAttackRunDurationMs,previousBest,isNewRecord:finalScore>previousBest,ostAsset:scoreAttackSelectedOstAsset,ostTitle:scoreAttackSelectedOstTitle};
             const replay=await storeCompletedScoreAttackReplay(meta);meta.replayId=replay?.stored?replay.id:'';meta.frames=replay?.frames||[];
             resetScoreAttackTransientState();
-            await recordScoreAttackResult(finalScore,finalRound,playedMs);
+            await recordScoreAttackResult(finalScore,finalRound,playedMs,finishedVariant);
             updateScoreAttackModeUI();updateMenuPersistenceUI();
             document.getElementById('gameover').style.display='none';
             document.getElementById('minimap').style.display='none';
@@ -5928,9 +5905,18 @@
             if(scoreAttackTimeLeft<=0){finishScoreAttack();return true;}
             return false;
         }
-        window.startScoreAttack=async function(){
-            if(openingCinematicRunning)return;
+        window.startScoreAttack=async function(mode='boss_rush'){
+            if(openingCinematicRunning||scoreAttackStarting)return;
+            scoreAttackStarting=true;
+            stopMenuMusic();
+            try{
             await activeSaveReadyPromise;
+            scoreAttackVariant=mode==='score_attack'?'score_attack':'boss_rush';
+            const classicStats=scoreAttackVariant==='score_attack'?await idbGet('classicScoreAttackStats'):null;
+            classicScoreAttackBest=Math.max(0,Number(classicStats?.bestScore)||0);
+            pauseAllStageBgm(true);stopAllBossCinematicOsts(true);stopAllOneShotAudio();
+            clearScoreAttackOstPosition();
+            ['score-attack-results-screen','score-attack-finish-screen','score-attack-bonus-screen'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 
             // Clear transient normal/previous-backup ghost state before Boss Rush.
             clearTimeout(saveTimer);
@@ -5957,19 +5943,20 @@
             document.getElementById('pause-btn').style.display='block';
             stopPowerPelletSiren(true);
             scoreAttackActive=true;scoreAttackFinishing=false;
-            const pauseStatus=document.getElementById('pause-status');if(pauseStatus)pauseStatus.textContent='Boss Rush Score Attack is session-only and is NOT saved.';
+            const pauseStatus=document.getElementById('pause-status');if(pauseStatus)pauseStatus.textContent=`${scoreAttackModeName()} is session-only and is NOT saved.`;
             disableStoreEffectsForBossEnrage();
             if(!resumed){
                 resetGhostRuntimeForBackupSwitch();
                 resetScoreAttackTransientState();
                 scoreAttackTimeLeft=scoreAttackRunDurationMs;scoreAttackRound=1;scoreAttackPlayedMs=0;scoreAttackLastBombAwardRound=0;scoreAttackJumpBombs=3;
-                level=10;score=0;lives=3;remainingDots=0;ghostCombo=0;oneUpAwardedForCurrentCombo=false;nextLifeThreshold=100000;
-                bossTimeLeft=1200000;bossMiniStageLevel=0;bossMiniPhaseTotal=0;bossMiniPhaseIndex=0;bossMiniMazeIndex=SCORE_ATTACK_FIXED_MAZE_INDEX;bossMiniAwaitingApple=false;bossMiniFinalDotsCleared=true;
+                level=scoreAttackVariant==='boss_rush'?10:1;score=0;lives=3;remainingDots=0;ghostCombo=0;oneUpAwardedForCurrentCombo=false;nextLifeThreshold=100000;
+                bossTimeLeft=1200000;bossMiniStageLevel=0;bossMiniPhaseTotal=0;bossMiniPhaseIndex=0;bossMiniMazeIndex=getScoreAttackMazeIndex();bossMiniAwaitingApple=false;bossMiniFinalDotsCleared=true;
                 pauseAllStageBgm(true);clearScoreAttackOstPosition();scoreAttackAudioRestorePending=false;
                 buildMap();initGhosts();resetPositions();hideAllScoreAttackCitizens();
                 document.getElementById('score').innerText=score;updateLivesDisplay();
             }
-            gameState='playing';updateFoodInventoryVisibility();updateScoreAttackModeUI();renderFruitCollectionShowcase();renderBossObjectiveProgressUI();startOutcomePrediction();beginScoreAttackReplayRecording();playScoreAttackBgm();saveGameState(true);
+            gameState='playing';updateFoodInventoryVisibility();updateScoreAttackModeUI();renderFruitCollectionShowcase();renderBossObjectiveProgressUI();startOutcomePrediction();beginScoreAttackReplayRecording();restartScoreAttackReplayOst(scoreAttackBgm);saveGameState(true);
+            }finally{scoreAttackStarting=false;}
         };
 
         // --- FIRST LEVEL PAC-MAN DIALOGUE INTRO ---
@@ -6124,6 +6111,7 @@
         }
 
         window.startGame = async function() {
+            stopMenuMusic();
             if (openingCinematicRunning) return;
             // Prime the normal CLEAR jingle while this call is still inside the PLAY user
             // gesture. This also covers resumed saves that skip the first-level tutorial.
@@ -6221,8 +6209,9 @@
             restoreEffectBarsUI(); updatePacEconomyUI();
         };
         window.exitToMenu = async function() {
+            finishGhostTrainAttack();
             const leavingScoreAttack=scoreAttackActive;
-            if(leavingScoreAttack)saveScoreAttackOstPosition();
+            if(leavingScoreAttack)clearScoreAttackOstPosition();
             else clearNormalModeOstPosition();
             await saveGameState(true);
             scoreAttackActive=false;updateScoreAttackModeUI();
@@ -6238,12 +6227,14 @@
             stopLoopAudio(false,true); stopAllOneShotAudio(); pauseAllStageBgm(true); stopCoffeeBreakAudio(false);
             stopAllBossCinematicOsts(true);
             if(leavingScoreAttack){if(scoreAttackBgm)scoreAttackBgm.loop=true;scoreAttackReplayRecording=null;scoreAttackReplayLastDotSignature='';}
+            clearMinionGhosts();playMenuMusic();
             updateMenuPersistenceUI();
         };
 
         window.addEventListener('beforeunload', () => { if(scoreAttackReplayPlaying){scoreAttackReplayPlaying=false;scoreAttackReplayPlayback=null;pauseAllStageBgm(false);} if(scoreAttackActive)saveScoreAttackOstPosition();else if(gameState==='playing'||gameState==='paused')saveNormalModeOstPosition();if(gameState==='playing' || gameState==='paused') saveGameState(true); });
 
         function playCurrentAudioBGM() {
+            stopMenuMusic();
             if(scoreAttackActive){playScoreAttackBgm();return;}
             ensureMp3AudioMastering();
             stopPacCityBgm(true);
@@ -6675,15 +6666,16 @@
         }
 
         function buildMap() {
+            clearMinionGhosts();
             // Normal stages follow their stage number. Boss mini-phases retain their
             // own saved maze index, which advances only after a reset slam finishes.
-            const stageIsBoss=scoreAttackActive||(level%10===0)||(level===256);
+            const stageIsBoss=scoreAttackActive?isBossRushScoreAttack():((level%10===0)||(level===256));
             const standardMazeIndex=(Math.max(1,Math.floor(level))-1)%FIXED_MAZES.length;
             const newBossStage=bossMiniStageLevel!==level;
-            if(scoreAttackActive)bossMiniMazeIndex=SCORE_ATTACK_FIXED_MAZE_INDEX;
+            if(scoreAttackActive)bossMiniMazeIndex=getScoreAttackMazeIndex();
             else if(newBossStage)bossMiniMazeIndex=standardMazeIndex;
             else bossMiniMazeIndex=((Math.floor(Number(bossMiniMazeIndex)||0)%FIXED_MAZES.length)+FIXED_MAZES.length)%FIXED_MAZES.length;
-            mapTemplate=FIXED_MAZES[scoreAttackActive?SCORE_ATTACK_FIXED_MAZE_INDEX:(stageIsBoss?bossMiniMazeIndex:standardMazeIndex)];
+            mapTemplate=FIXED_MAZES[scoreAttackActive?getScoreAttackMazeIndex():(stageIsBoss?bossMiniMazeIndex:standardMazeIndex)];
             walls.forEach(w => scene.remove(w.mesh));
             ghostBoxWalls.forEach(gW => scene.remove(gW.mesh));
             dots.forEach(d => scene.remove(d));
@@ -6793,6 +6785,7 @@
             rebuildDotGridLookup();
             rebuildMinimapStaticLayer();
             buildHealPellets(); // function now intentionally creates none
+            spawnMinionGhosts();
             // Normal stages expose one cage; boss stages show three citizens together in one large central cage.
             if(scoreAttackActive)hideAllScoreAttackCitizens();
             else{ensureThreeNewCitizenCagesForLevel(level);updateCitizenPlacement();}
@@ -6990,6 +6983,7 @@
         }
 
         function initGhosts() {
+            releaseAllGhostTrains();
             ghosts.forEach(g=>{scene.remove(g);disposePacCityObject(g);});
             // Adventure progression:
             // Level 1 starts with the four classics.
@@ -7677,7 +7671,7 @@
 
         function advanceBossMiniMazeAfterReset() {
             if(!isBossStage || bossResetSlamReturnToDefeat) return;
-            if(scoreAttackActive)bossMiniMazeIndex=SCORE_ATTACK_FIXED_MAZE_INDEX;
+            if(scoreAttackActive){scoreAttackRound++;bossMiniMazeIndex=getScoreAttackMazeIndex();}
             else bossMiniMazeIndex=(bossMiniMazeIndex+1)%FIXED_MAZES.length;
             const preservedBossTime=bossTimeLeft;
             buildMap();
@@ -7687,7 +7681,6 @@
             // so the new bar progresses normally from its newly restored collectibles.
             bossProgressForceZero=false;
             renderBossObjectiveProgressUI();
-            if(scoreAttackActive)scoreAttackRound++;
             pacman.position.set(0,.8,32);
             ghosts.forEach(g=>{g.position.set(0,.3,-4);g.isDead=false;g.bodyGroup.visible=true;g.aStarPath=[];});
             if(scoreAttackActive)hideAllScoreAttackCitizens();else placeActiveCitizensAtMazeSpawn();
@@ -7767,6 +7760,8 @@
 
         // --- STREAMING_CHUNK:Mechanics and Input Controls ---
         function resetPositions(preserveOtherActors=false, preservePowerAcrossLevel=false) {
+            finishGhostTrainAttack();
+            if(!preserveOtherActors)releaseAllGhostTrains();
             pacman.position.set(0, 0.8, 32);
             pacman.rotation.set(0, Math.PI, 0);
             topHalf.rotation.x = 0;
@@ -7867,6 +7862,7 @@
             const aliveAtTick=ghosts.filter(g=>!g.isDead);
             const hitGhosts=aliveAtTick.filter(g=>raycaster.ray.distanceToPoint(g.position)<2.3&&raycaster.ray.origin.distanceTo(g.position)<=maxLaserRange);
             defeatGhostsByLaser(hitGhosts,aliveAtTick);
+            defeatMinionsInLaser(raycaster.ray,maxLaserRange);
             
             pacLaserEnd.copy(pacman.position).addScaledVector(laserDir,maxLaserRange);
         }
@@ -7912,7 +7908,7 @@
         let arcadeGhostDefeatFreezeUntil = 0;
         let arcadeGhostDefeatFreezeCamera = null;
         function triggerArcadeGhostDefeatFreeze(defeaterActor=null,defeatedGhost=null,fromLaser=false){
-            if(isBossDefeatSequence)return;
+            if(isBossDefeatSequence||ghostTrainAttack)return;
             arcadeGhostDefeatFreezeUntil=Math.max(arcadeGhostDefeatFreezeUntil,performance.now()+500);
             // Pac-Man defeats keep the player's current camera. For a Pac-Citizen defeat,
             // the 0.5s arcade cut-in follows the citizen's actual attack. Laser defeats
@@ -7957,6 +7953,7 @@
             // Angry/enraged ghosts are completely invulnerable to every defeat source:
             // power pellet contact, Pac-Man/citizen laser, bombs and Fire Trail included.
             if(!g||g.isDead||g.houseRespawnWaitMs>0||bossEnrageActive)return false;
+            releaseGhostTrain(g);
             g.isDead = true;
             triggerArcadeGhostDefeatFreeze(defeaterActor,g,fromLaser);
             g.returnOriginalAfterPowerDefeat=!!(powerUp&&!bossEnrageActive);
@@ -8097,6 +8094,7 @@
         }
         function gameplaySpawnPoint(){return new THREE.Vector3(0,.8,32);}
         function beginJumpBombTransition(source='inventory'){
+            if(ghostTrainAttack)return false;
             if(gameState!=='playing'||jumpBombTransition||bossResetSlamActive||isBossDefeatSequence||isChargingBoss)return false;
             if(source==='scoreAttack'){
                 if(!scoreAttackActive||scoreAttackJumpBombs<=0)return false;
@@ -8376,6 +8374,7 @@
         }
 
         function requestPlayerJump(){
+            if(ghostTrainAttack)return false;
             if(isJumping||(gameState!=='playing'&&gameState!=='city'))return;
             velocityY=.25; isJumping=true; playSfx(300,.2,'square');
         }
@@ -9168,7 +9167,7 @@
             if(scoreAttackActive){
                 scoreAttackRound++;
                 bossMiniStageLevel=0;
-                bossMiniMazeIndex=SCORE_ATTACK_FIXED_MAZE_INDEX;
+                bossMiniMazeIndex=getScoreAttackMazeIndex();
                 level=10;bossTimeLeft=1200000;
                 buildMap();initGhosts();resetPositions();hideAllScoreAttackCitizens();
                 gameState='playing';updateScoreAttackModeUI();playScoreAttackBgm();saveGameState(true);
@@ -9542,6 +9541,15 @@
             lastTime = now;
             updateMp3LoudnessNormalizer();
             updateOstTimelineProtection();
+            syncMenuMusic(now);
+            if(ghostTrainAttack){
+                if(gameState==='playing'){
+                    if(updateScoreAttackTimer(deltaMs)){renderer.render(scene,camera);return;}
+                    updateGhostTrainAttack(deltaMs,now);
+                    if(scoreAttackActive)captureScoreAttackReplayFrame(now);
+                }
+                renderer.render(scene,camera);return;
+            }
             if(scoreAttackReplayPlaying){updateScoreAttackReplayPlayback(now);renderer.render(scene,camera);return;}
             if(scoreAttackActive)captureScoreAttackReplayFrame(now);
             if(arcadeGhostDefeatFreezeUntil>now && !isBossDefeatSequence && gameState!=='city'){
@@ -10159,7 +10167,7 @@
             }
 
             ghosts.forEach(g => {
-                if (g.bossResetJump || g.ghostHouseReturn || g.bossSlamEyeReturn) return;
+                if (ghostTrainAttack || g.bossResetJump || g.ghostHouseReturn || g.bossSlamEyeReturn) return;
                 let gGrid = worldToGrid(g.position);
 
                 if(g.isDead) {
@@ -10238,11 +10246,7 @@
                     // ICE freezes ghost AI movement, but ghosts still participate
                     // in Pac-Man collision checks instead of being intangible.
                     if(pacman.position.distanceToSquared(g.position)<2.56) {
-                        if(powerUp && !bossEnrageActive && !g.returnOriginalAfterPowerDefeat) {
-                            killGhost(g);
-                        } else if(!isJumping) {
-                            applyPacmanGhostHit(pacman.position.clone());
-                        }
+                        handlePacmanGhostContact(g);
                     }
                     return;
                 }
@@ -10372,14 +10376,12 @@
                 g.lookAt(g.position.x + g.dir.x, g.position.y, g.position.z + g.dir.z);
 
                 if(!jumpBombTransition&&pacman.position.distanceToSquared(g.position)<2.56) {
-                    if(powerUp && !bossEnrageActive && !g.returnOriginalAfterPowerDefeat) {
-                        killGhost(g);
-                    } else if(!isJumping) {
-                        applyPacmanGhostHit(pacman.position.clone());
-                    }
+                    handlePacmanGhostContact(g);
                 }
             });
 
+            if(ghostTrainAttack){renderer.render(scene,camera);return;}
+            updateMinionGhosts(deltaMs,now);
             for(const d of getNearbyDots(pacman.position)) {
                 if(d.visible && pacman.position.distanceToSquared(d.position) < 3.24) {
                     d.visible = false; 
@@ -10537,6 +10539,7 @@
             if(!overlay||!frame)return;
 
             pacShowdownModeOpen=true;
+            stopMenuMusic();
             stopLoopAudio(false,true);
             stopAllOneShotAudio();
             pauseAllStageBgm(true);
@@ -10740,6 +10743,7 @@
         const __handleAllDotsCleared=handleAllDotsCleared;
         handleAllDotsCleared=async function(){
             if(dotClearTransition||gameState!=='playing'||syncRemainingDotsFromScene()>0)return;
+            if(scoreAttackActive&&scoreAttackVariant==='score_attack')return advanceClassicScoreAttackRound();
             if(isBossStage)return __handleAllDotsCleared();
             if(!normalRescueGate){
                 ensureThreeNewCitizenCagesForLevel(level);
@@ -10759,7 +10763,7 @@
             let e=document.getElementById('pac-energy-ui');if(!e){e=document.createElement('div');e.id='pac-energy-ui';e.style.cssText='color:#00ff99;font-weight:bold;margin-top:4px;font-size:11px';document.getElementById('ui')?.appendChild(e);}
             const value=v=>Math.max(0,Math.min(3,Number.isFinite(Number(v))?Number(v):3));
             const squad=scoreAttackActive?'':pacCitizenRoster.filter(c=>c.rescued&&c.active&&c.lives>0&&!c.defeating&&value(c.energy)>0).slice(0,10).map(c=>{const en=Math.max(1,value(c.energy));return `${c.name}:${'▰'.repeat(en)}${'▱'.repeat(3-en)}`;}).join('  ');
-            const pe=value(pacEnergy),html=`PAC-MAN ENERGY: ${'▰'.repeat(pe)}${'▱'.repeat(3-pe)}${squad?'<br>SQUAD ENERGY: '+squad:''}`;if(e&&(force||html!==energyUICache)){energyUICache=html;e.innerHTML=html;}
+            const pe=value(pacEnergy),html=`PAC-MAN ENERGY: ${energyCells(pe)}${squad?'<br>SQUAD ENERGY: '+squad:''}`;if(e&&(force||html!==energyUICache)){energyUICache=html;e.innerHTML=html;}
         };
 
         // ---------- Faster Fire Trail + visible timers + synchronized Bomb ----------
@@ -10793,7 +10797,14 @@
 
         // ---------- Manual Boss Rush publication ----------
         const __recordScoreAttackResult=recordScoreAttackResult;
-        recordScoreAttackResult=async function(finalScore,finalRound,playedMs){
+        recordScoreAttackResult=async function(finalScore,finalRound,playedMs,mode='boss_rush'){
+            if(mode==='score_attack'){
+                const previous=await idbGet('classicScoreAttackStats')||{};
+                const points=Math.max(0,Math.floor(Number(finalScore)||0));
+                await idbPut('classicScoreAttackStats',{runs:(Number(previous.runs)||0)+1,bestScore:Math.max(Number(previous.bestScore)||0,points),lastScore:points,bestRound:Math.max(Number(previous.bestRound)||0,finalRound),totalPlayMs:(Number(previous.totalPlayMs)||0)+playedMs,lastPlayedAt:Date.now()});
+                const button=document.getElementById('publish-stats-btn');if(button)button.style.display='none';
+                return;
+            }
             const submitRef=submitScoreAttackLeaderboard;
             submitScoreAttackLeaderboard=()=>{};
             try{await __recordScoreAttackResult(finalScore,finalRound,playedMs);}finally{submitScoreAttackLeaderboard=submitRef;}
@@ -11190,7 +11201,7 @@
 
         // ---------- Controls hidden during animations/cinematics; Skip remains visible ----------
         function updateFeatureAnimationLock(){
-            const overlayOpening=document.getElementById('opening-cinematic')?.classList.contains('active'),locked=overlayOpening||isDialogueActive||isBossDefeatSequence||['intermission','bossIntro','levelclear','dying','tutorial'].includes(gameState);
+            const overlayOpening=document.getElementById('opening-cinematic')?.classList.contains('active'),locked=!!ghostTrainAttack||overlayOpening||isDialogueActive||isBossDefeatSequence||['intermission','bossIntro','levelclear','dying','tutorial'].includes(gameState);
             document.body.classList.toggle('feature-animation-lock',!!locked);applyControlSchemeUI();
             if(gameState!=='city')showPacCityNavigationUI(false);const fr=document.getElementById('final-rescue-portrait-floating');if(fr&&!finalCitizenDialogueEl)fr.style.display='none';
             if(gameState==='city'){const controls=document.getElementById('pac-city-controls');if(controls&&!locked)controls.style.display='flex';}
@@ -11922,6 +11933,329 @@
             return result;
         };
 
+        // ---------- Requested modes, menu music and ghost trains ----------
+        let menuMusicLastCheck=0;
+        function menuMusicVisible(){
+            return gameState==='lobby'&&!scoreAttackStarting&&!openingCinematicRunning
+                &&document.getElementById('menu-screen')?.style.display!=='none';
+        }
+        function stopMenuMusic(){
+            if(!bgmMenu)return;
+            stopOstExpectation(bgmMenu);bgmMenu.pause();
+        }
+        function playMenuMusic(){
+            if(!menuMusicVisible()||!bgmMenu||document.hidden)return;
+            bgmMenu.loop=true;bgmMenu.muted=false;safePlayOst(bgmMenu);
+        }
+        function syncMenuMusic(now){
+            if(now-menuMusicLastCheck<400)return;
+            menuMusicLastCheck=now;
+            if(menuMusicVisible())playMenuMusic();
+            else if(expectedOstAudioElements.has(bgmMenu)||!bgmMenu.paused)stopMenuMusic();
+        }
+        // Browsers unlock menu music on the first gesture; Android can start it directly.
+        window.addEventListener('pointerdown',playMenuMusic,{capture:true,passive:true});
+        window.addEventListener('keydown',playMenuMusic,{capture:true});
+        document.getElementById('btnMineChaos')?.addEventListener('click',stopMenuMusic);
+        function energyCells(value){
+            const energy=Math.max(0,Math.min(3,Number(value)||0)),whole=Math.floor(energy),half=energy-whole>=.5;
+            return `${'▰'.repeat(whole)}${half?'◧':''}${'▱'.repeat(Math.max(0,3-whole-(half?1:0)))} ${energy}/3`;
+        }
+        function advanceClassicScoreAttackRound(){
+            if(!scoreAttackActive||scoreAttackVariant!=='score_attack'||dotClearTransition||gameState!=='playing')return;
+            dotClearTransition=true;
+            if(scoreAttackLastBombAwardRound!==scoreAttackRound){scoreAttackLastBombAwardRound=scoreAttackRound;scoreAttackJumpBombs++;}
+            addScore(10000,pacman.position);
+            playFruitCollectForCollector();
+            scoreAttackRound++;level=Math.min(255,scoreAttackRound);
+            bossMiniStageLevel=0;bossMiniPhaseTotal=0;bossMiniAwaitingApple=false;
+            buildMap();initGhosts();resetPositions();hideAllScoreAttackCitizens();
+            gameState='playing';updateScoreAttackModeUI();
+            showFloatingText(`ROUND ${scoreAttackRound} • +10000 • +1 JUMP BOMB`,pacman.position);
+            // The run's single OST and countdown continue across every fresh maze.
+            captureScoreAttackReplayFrame(performance.now(),true);
+        }
+
+        const MINION_TRAIN_SPACING=.95,MINION_WAKE_RADIUS=5.5;
+        let minionGhosts=[],minionBatches=null,ghostTrainAttack=null,ghostTrainTrailGroup=null;
+        const ghostTrains=new Map();
+        const minionMatrix=new THREE.Object3D(),minionColor=new THREE.Color();
+        const minionVector=new THREE.Vector3(),minionTarget=new THREE.Vector3();
+        // One small skirted ghost body; instancing keeps hundreds of minions at three draw calls.
+        function makeMinionGhostGeometry(){
+            const positions=[],indices=[],segments=12;
+            const rings=[[.09,.88],[.22,.83],[.33,.7],[.36,.5],[.36,.12]];
+            rings.forEach(([radius,y],r)=>{
+                for(let j=0;j<segments;j++){
+                    const angle=j/segments*Math.PI*2;
+                    positions.push(Math.sin(angle)*radius,y-(r===rings.length-1&&j%2===0?.14:0),Math.cos(angle)*radius);
+                }
+            });
+            for(let r=0;r<rings.length-1;r++)for(let j=0;j<segments;j++){
+                const a=r*segments+j,b=r*segments+(j+1)%segments,c=a+segments,d=b+segments;
+                indices.push(a,c,b,b,c,d);
+            }
+            const top=positions.length/3;positions.push(0,.9,0);
+            for(let j=0;j<segments;j++)indices.push(top,j,(j+1)%segments);
+            const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
+        }
+        function selectMinionCells(layout,progress){
+            const cells=[];
+            for(let z=2;z<layout.length-2;z++)for(let x=2;x<layout[z].length-2;x++){
+                if(layout[z][x]!==0)continue;
+                const px=(x-13.5)*4,pz=(z-15)*4;
+                if(px*px+(pz-32)*(pz-32)<80)continue;
+                cells.push({x,z});
+            }
+            const count=Math.min(cells.length,144,64+Math.min(20,Math.max(1,progress))*4);
+            return Array.from({length:count},(_,i)=>cells[Math.floor(i*cells.length/count)]);
+        }
+        function clearMinionGhosts(){
+            finishGhostTrainAttack();ghostTrains.clear();minionGhosts=[];
+            if(minionBatches){
+                scene.remove(minionBatches.root);
+                const geometries=new Set(),materials=new Set();
+                minionBatches.root.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)materials.add(o.material);o.dispose?.();});
+                geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());minionBatches=null;
+            }
+        }
+        function spawnMinionGhosts(){
+            const cells=selectMinionCells(mapTemplate,scoreAttackActive?scoreAttackRound:level);if(!cells.length)return;
+            const root=new THREE.Group();root.name='minionGhosts';
+            const body=new THREE.InstancedMesh(makeMinionGhostGeometry(),new THREE.MeshPhongMaterial({color:0xffffff,shininess:45}),cells.length);
+            const eyeGeometry=new THREE.SphereGeometry(1,6,4);
+            const eyes=new THREE.InstancedMesh(eyeGeometry,new THREE.MeshBasicMaterial({color:0xffffff}),cells.length*2);
+            const pupils=new THREE.InstancedMesh(eyeGeometry,new THREE.MeshBasicMaterial({color:0x121225}),cells.length*2);
+            [body,eyes,pupils].forEach(batch=>{batch.instanceMatrix.setUsage(THREE.DynamicDrawUsage);batch.frustumCulled=false;root.add(batch);});
+            scene.add(root);minionBatches={root,body,eyes,pupils};
+            minionGhosts=cells.map((cell,id)=>{const home=gridToWorld(cell.x,cell.z).clone();home.y=.22;return {id,home,position:home.clone(),rotation:0,visible:true,phase:'sleeping',leader:null,path:[],think:id*13,color:0x54db63};});
+            drawMinionGhosts(0);
+        }
+        function drawMinionGhosts(now){
+            if(!minionBatches)return;
+            const {body,eyes,pupils}=minionBatches;
+            for(const m of minionGhosts){
+                const sleeping=m.phase==='sleeping',scale=m.visible?1:0,angle=m.rotation||0;
+                minionMatrix.position.copy(m.position);minionMatrix.rotation.set(0,angle,0);minionMatrix.scale.setScalar(scale*1.2);minionMatrix.updateMatrix();body.setMatrixAt(m.id,minionMatrix.matrix);
+                minionColor.setHex(m.color||0x54db63);body.setColorAt(m.id,minionColor);
+                for(let eye=0;eye<2;eye++){
+                    const side=eye===0?-.174:.174,forward=.378;
+                    const x=m.position.x+side*Math.cos(angle)+forward*Math.sin(angle),z=m.position.z-side*Math.sin(angle)+forward*Math.cos(angle);
+                    const eyeScale=sleeping?0:scale;
+                    minionMatrix.position.set(x,m.position.y+.756,z);minionMatrix.scale.set(.144*eyeScale,.174*eyeScale,.066*eyeScale);minionMatrix.updateMatrix();eyes.setMatrixAt(m.id*2+eye,minionMatrix.matrix);
+                    minionMatrix.position.x+=Math.sin(angle)*.054;minionMatrix.position.z+=Math.cos(angle)*.054;minionMatrix.scale.set(.062*eyeScale,.094*eyeScale,.036*eyeScale);minionMatrix.updateMatrix();pupils.setMatrixAt(m.id*2+eye,minionMatrix.matrix);
+                }
+            }
+            [body,eyes,pupils].forEach(batch=>batch.instanceMatrix.needsUpdate=true);
+            if(body.instanceColor)body.instanceColor.needsUpdate=true;
+        }
+        function releaseGhostTrain(leader){
+            const train=ghostTrains.get(leader);if(!train)return;
+            for(const m of minionGhosts)if(m.leader===leader&&m.phase!=='attacking'&&m.phase!=='defeated'){
+                m.leader=null;m.phase='seeking';m.path=[];m.think=0;
+            }
+            ghostTrains.delete(leader);
+        }
+        function releaseAllGhostTrains(){
+            for(const leader of ghostTrains.keys())releaseGhostTrain(leader);
+            ghostTrains.clear();
+        }
+        function liveTrainMembers(leader){return (ghostTrains.get(leader)?.members||[]).filter(m=>m.visible&&m.phase==='following'&&m.leader===leader);}
+        function minionLeaderAvailable(g){
+            if(!g||g.isDead||g.houseRespawnWaitMs>0||g.ghostHouseReturn||g.bossResetJump||g.bossSlamEyeReturn)return false;
+            const cell=worldToGrid(g.position);return mapTemplate[cell.z]?.[cell.x]!==9;
+        }
+        function nearestMinionLeader(position){
+            let best=null,bestDistance=Infinity;
+            for(const g of ghosts){if(!minionLeaderAvailable(g))continue;const d=position.distanceToSquared(g.position);if(d<bestDistance){bestDistance=d;best=g;}}
+            return best;
+        }
+        function wrappedTrainDelta(a,b){let dx=b.x-a.x;if(dx>56)dx-=112;else if(dx< -56)dx+=112;return {x:dx,y:b.y-a.y,z:b.z-a.z};}
+        function sampleGhostTrain(train,distance,out){
+            const history=train.history;
+            for(let i=0;i<history.length-1;i++){
+                const a=history[i],b=history[i+1],delta=wrappedTrainDelta(a,b),length=Math.hypot(delta.x,delta.y,delta.z);
+                if(length>=distance&&length>.001){out.copy(a);out.x+=delta.x*distance/length;out.y+=delta.y*distance/length;out.z+=delta.z*distance/length;if(out.x>56)out.x-=112;else if(out.x< -56)out.x+=112;return out;}
+                distance-=length;
+            }
+            return out.copy(history[history.length-1]||train.leader.position);
+        }
+        function pushPacmanFromMinion(m){
+            minionVector.copy(pacman.position).sub(m.position);minionVector.y=0;
+            let distance=minionVector.length();if(distance>=1.15)return;
+            if(distance<.001){minionVector.set(-Math.sin(pacman.rotation.y),0,-Math.cos(pacman.rotation.y));distance=0;}else minionVector.multiplyScalar(1/distance);
+            minionTarget.copy(pacman.position).addScaledVector(minionVector,1.15-distance);
+            if(!checkCol(minionTarget))pacman.position.copy(minionTarget);
+        }
+        function updateMinionGhosts(deltaMs,now){
+            if(!minionBatches||gameState!=='playing'||ghostTrainAttack||isBossDefeatSequence)return;
+            let pathBudget=4,woken=0;
+            for(const [leader,train] of ghostTrains){
+                if(!minionLeaderAvailable(leader)){releaseGhostTrain(leader);continue;}
+                const delta=wrappedTrainDelta(train.history[0]||leader.position,leader.position);
+                if(Math.hypot(delta.x,delta.y,delta.z)>.16)train.history.unshift(leader.position.clone());
+                train.history.length=Math.min(train.history.length,Math.max(80,(train.members.length+4)*10));
+                train.members=train.members.filter(m=>m.visible&&m.phase==='following'&&m.leader===leader);
+                train.members.forEach((m,index)=>{
+                    const oldX=m.position.x,oldZ=m.position.z;sampleGhostTrain(train,(index+1)*MINION_TRAIN_SPACING,m.position);m.position.y=.24+Math.sin(now*.012-index*.4)*.05;
+                    const d=wrappedTrainDelta({x:oldX,y:m.position.y,z:oldZ},m.position);if(Math.abs(d.x)+Math.abs(d.z)>.01)m.rotation=Math.atan2(d.x,d.z);
+                    m.color=getMainGhostBodyMaterial(leader)?.color?.getHex?.()??leader.baseColor;
+                });
+            }
+            for(const m of minionGhosts){
+                if(!m.visible||m.phase==='attacking')continue;
+                if(m.phase==='sleeping'){
+                    m.position.y=.22+Math.sin(now*.002+m.id)*.035;
+                    if(m.position.distanceToSquared(pacman.position)<MINION_WAKE_RADIUS*MINION_WAKE_RADIUS){m.phase='seeking';m.think=0;woken++;}
+                }
+                if(m.phase==='seeking'||m.phase==='joining'){
+                    if(!minionLeaderAvailable(m.leader)){m.leader=nearestMinionLeader(m.position);m.path=[];m.think=0;}
+                    if(m.leader&&!freezeMode){
+                        m.phase='joining';m.color=getMainGhostBodyMaterial(m.leader)?.color?.getHex?.()??m.leader.baseColor;
+                        let train=ghostTrains.get(m.leader);
+                        if(!train){train={leader:m.leader,members:[],history:[m.leader.position.clone()]};ghostTrains.set(m.leader,train);}
+                        const tail=train.members[train.members.length-1],target=tail?.position||m.leader.position;
+                        m.think-=deltaMs;
+                        if(m.think<=0&&pathBudget>0){m.path=computeAStarPath(worldToGrid(m.position),worldToGrid(target),false);m.think=300;pathBudget--;}
+                        minionTarget.copy(target);
+                        if(m.path?.length>1){gridToWorld(m.path[1].x,m.path[1].z,minionTarget);minionTarget.y=m.position.y;if(m.position.distanceToSquared(minionTarget)<.5)m.path.shift();}
+                        minionVector.copy(minionTarget).sub(m.position);minionVector.y=0;
+                        const length=minionVector.length(),step=Math.min(length,deltaMs*.045);
+                        if(length>.01){minionVector.multiplyScalar(1/length);minionTarget.copy(m.position).addScaledVector(minionVector,step);if(!checkGhostWallCol(minionTarget,.9))m.position.copy(minionTarget);m.rotation=Math.atan2(minionVector.x,minionVector.z);}
+                        if(m.position.distanceToSquared(target)<2.6){m.phase='following';m.path=[];train.members.push(m);}
+                    }
+                }
+                if(!jumpBombTransition&&!isJumping&&m.position.distanceToSquared(pacman.position)<1.35){
+                    if(m.phase==='following'&&!powerUp)applyPacmanGhostHit(pacman.position,.5);
+                    else pushPacmanFromMinion(m);
+                }
+            }
+            if(woken)playSfx(640,.08,'sine',.06);
+            drawMinionGhosts(now);
+        }
+        function defeatMinion(m,fromLaser=false){
+            if(!m?.visible||m.phase==='defeated'||bossEnrageActive)return false;
+            m.visible=false;m.phase='defeated';m.leader=null;
+            const points=fromLaser?200:200*Math.pow(2,Math.min(ghostCombo++,4));
+            addScore(points,m.position);playOneShotAudio(audioGhostDefeated);
+            return true;
+        }
+        function defeatMinionsInLaser(ray,range){
+            if(bossEnrageActive)return;
+            for(const m of minionGhosts){
+                if(!m.visible)continue;
+                minionVector.copy(m.position).sub(ray.origin);
+                const along=minionVector.dot(ray.direction);
+                if(along>=0&&along<=range&&ray.distanceToPoint(m.position)<.9)defeatMinion(m,true);
+            }
+        }
+        function handlePacmanGhostContact(leader){
+            if(ghostTrainAttack||jumpBombTransition||gameState!=='playing')return;
+            const members=liveTrainMembers(leader);
+            if(powerUp&&!bossEnrageActive&&!leader.returnOriginalAfterPowerDefeat){
+                if(members.length)beginGhostTrainAttack(leader,members);
+                else killGhost(leader);
+            }else if(!isJumping)applyPacmanGhostHit(pacman.position,members.length ? .5 : null);
+        }
+        function ghostTrainAttackDuration(count){return 3500+Math.max(0,count-8)*120;}
+        function beginGhostTrainAttack(leader,members=liveTrainMembers(leader)){
+            if(ghostTrainAttack||!powerUp||bossEnrageActive||leader.isDead||!members.length)return false;
+            resetGhostDefeatedPitchCombo();
+            const total=members.length+1,origin=pacman.position.clone();
+            const entries=[{leader,position:leader.position.clone(),original:leader.position.clone()},...members.map(m=>({minion:m,position:m.position.clone(),original:m.position.clone()}))];
+            if(total>8)entries.forEach((entry,i)=>{
+                const u=(i+1)/total;
+                entry.position.set(origin.x+Math.sin(u*3.4)*18,origin.y+7+u*29,origin.z-6-u*32);
+            });
+            else entries.forEach((entry,i)=>entry.position.y=origin.y+3+Math.sin((i+1)/total*Math.PI)*3);
+            ghostTrainAttack={leader,entries,elapsed:0,duration:ghostTrainAttackDuration(total),eaten:0,origin,rotation:pacman.rotation.clone(),scale:pacman.scale.clone(),visible:pacman.visible,topVisible:topHalf.visible,bottomVisible:bottomHalf.visible,cameraPosition:camera.position.clone(),cameraQuaternion:camera.quaternion.clone(),trail:[]};
+            members.forEach(m=>m.phase='attacking');
+            entries.forEach(entry=>{if(entry.minion){entry.minion.position.copy(entry.position);entry.minion.color=0x4848ff;}else{leader.position.copy(entry.position);setMainGhostBodyHex(leader,0x3232ed);}});
+            ghostTrains.delete(leader);arcadeGhostDefeatFreezeUntil=0;arcadeGhostDefeatFreezeCamera=null;
+            isMoving=false;pacman.visible=true;topHalf.visible=bottomHalf.visible=true;
+            hideExpiredLaserBeams(performance.now(),true);updateFeatureAnimationLock();
+            showFloatingText(`GHOST TRAIN • ${total} COMBO!`,origin);playSfx(900,.3,'sawtooth',.15);
+            drawMinionGhosts(performance.now());return true;
+        }
+        function drawGhostTrainTrail(points){
+            if(!ghostTrainTrailGroup){
+                ghostTrainTrailGroup=new THREE.Group();ghostTrainTrailGroup.name='ghostTrainStreak';
+                const geometry=new THREE.CylinderGeometry(1,1,1,6),material=new THREE.MeshBasicMaterial({color:0xfff52e,transparent:true,opacity:.68,depthWrite:false});
+                for(let i=0;i<18;i++){const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;ghostTrainTrailGroup.add(mesh);}scene.add(ghostTrainTrailGroup);
+            }
+            ghostTrainTrailGroup.visible=points.length>1;
+            ghostTrainTrailGroup.children.forEach((mesh,i)=>{
+                const a=points[i],b=points[i+1];mesh.visible=!!a&&!!b;if(!mesh.visible)return;
+                minionVector.copy(b).sub(a);const length=minionVector.length();
+                mesh.position.copy(a).add(b).multiplyScalar(.5);mesh.scale.set(.42*(1-i/20),Math.max(.001,length),.42*(1-i/20));
+                if(length>.001)mesh.quaternion.setFromUnitVectors(movementAxisY,minionVector.multiplyScalar(1/length));
+            });
+        }
+        function updateGhostTrainAttack(deltaMs,now){
+            const attack=ghostTrainAttack;if(!attack)return;
+            attack.elapsed=Math.min(attack.duration,attack.elapsed+deltaMs);
+            const launch=350,landing=450,eatDuration=attack.duration-launch-landing;
+            const travel=Math.max(0,Math.min(1,(attack.elapsed-launch)/eatDuration)),scaled=travel*attack.entries.length;
+            const index=Math.min(attack.entries.length-1,Math.floor(scaled)),local=travel>=1?1:scaled-index;
+            const a=index===0?attack.origin:attack.entries[index-1].position,b=attack.entries[index].position;
+            if(attack.elapsed<launch){pacman.position.copy(attack.origin);pacman.position.y+=Math.sin(attack.elapsed/launch*Math.PI)*2;}
+            else if(attack.elapsed<=attack.duration-landing){
+                pacman.position.lerpVectors(a,b,local);pacman.position.y+=Math.sin(local*Math.PI)*.55;
+                minionVector.copy(b).sub(a);if(minionVector.lengthSq()>.001)pacman.lookAt(b);
+            }else{
+                const p=(attack.elapsed-(attack.duration-landing))/landing,smooth=p*p*(3-2*p);
+                pacman.position.lerpVectors(attack.entries[attack.entries.length-1].position,attack.origin,smooth);pacman.rotation.copy(attack.rotation);
+            }
+            const reached=Math.min(attack.entries.length,Math.floor(scaled));
+            while(attack.eaten<reached){
+                const entry=attack.entries[attack.eaten++];
+                if(entry.minion)defeatMinion(entry.minion);
+                else{killGhost(entry.leader,false,pacman);entry.leader.visible=false;}
+            }
+            attack.trail.unshift(pacman.position.clone());attack.trail.length=Math.min(19,attack.trail.length);drawGhostTrainTrail(attack.trail);
+            topHalf.rotation.x=-(.18+Math.abs(Math.sin(now*.045))*.45);bottomHalf.rotation.x=-topHalf.rotation.x;
+            camera.position.copy(pacman.position).add(new THREE.Vector3(8,6,12));camera.lookAt(pacman.position);
+            light.position.copy(pacman.position).add(new THREE.Vector3(0,5,0));drawMinionGhosts(now);
+            if(attack.elapsed>=attack.duration){
+                if(ghostCombo>=getGhostComboMaximum())grantMaximumGhostComboReward(attack.origin);
+                finishGhostTrainAttack();
+            }
+        }
+        function finishGhostTrainAttack(){
+            const attack=ghostTrainAttack;if(!attack)return;
+            ghostTrainAttack=null;
+            resetGhostDefeatedPitchCombo();
+            pacman.position.copy(attack.origin);pacman.rotation.copy(attack.rotation);pacman.scale.copy(attack.scale);pacman.visible=true;
+            topHalf.visible=attack.topVisible;bottomHalf.visible=attack.bottomVisible;topHalf.rotation.x=bottomHalf.rotation.x=0;
+            camera.position.copy(attack.cameraPosition);camera.quaternion.copy(attack.cameraQuaternion);
+            attack.entries.forEach(entry=>{
+                if(entry.leader){entry.leader.position.copy(entry.original);entry.leader.visible=true;}
+                else if(entry.minion?.visible){entry.minion.position.copy(entry.original);entry.minion.phase='seeking';entry.minion.leader=null;entry.minion.path=[];entry.minion.think=0;}
+            });
+            drawGhostTrainTrail([]);pacHitCooldown=Math.max(pacHitCooldown,500);pacShieldTimer=Math.max(pacShieldTimer,500);
+            updateFeatureAnimationLock();drawMinionGhosts(performance.now());
+        }
+        function restoreScoreReplayMaze(frame){
+            const desired=Number.isInteger(frame.m)?Math.max(0,Math.min(FIXED_MAZES.length-1,frame.m)):SCORE_ATTACK_FIRST_MAZE_INDEX;
+            if(desired===scoreAttackReplayMapIndex)return;
+            scoreAttackReplayMapIndex=desired;scoreAttackReplayMazeOverride=desired;
+            const wasActive=scoreAttackActive;scoreAttackActive=true;scoreAttackRound=Math.max(1,Number(frame.r)||1);level=scoreAttackVariant==='boss_rush'?10:Math.min(255,scoreAttackRound);
+            buildMap();initGhosts();hideAllScoreAttackCitizens();scoreAttackActive=wasActive;scoreAttackReplayMazeOverride=null;scoreAttackReplayPlaybackDotSignature='';
+            const frames=scoreAttackReplayPlayback?.frames||[];
+            for(let i=scoreAttackReplayPlaybackFrameIndex;i>=0;i--){
+                const snapshot=frames[i];if(!snapshot||snapshot.m!==desired)break;
+                if(snapshot.d){applyScoreAttackReplayDotSignature(snapshot.d);break;}
+            }
+        }
+        function restoreScoreReplayMinions(frame){
+            if(minionBatches)minionBatches.root.visible=Array.isArray(frame.mn);
+            if(Array.isArray(frame.mn))frame.mn.forEach((row,index)=>{
+                const m=minionGhosts[index];if(!m)return;m.position.set(row[0],row[1],row[2]);m.visible=!!row[3];m.phase=row[4]?'following':'sleeping';m.color=row[5];m.rotation=row[6]||0;
+            });
+            drawMinionGhosts(performance.now());
+            drawGhostTrainTrail(Array.isArray(frame.tr)?frame.tr.map(p=>new THREE.Vector3(...p)):[]);
+        }
+
         installSeptemberFeatureUI();
         loadCustomization();applyPacCustomization();
 
@@ -11929,6 +12263,7 @@
         initGhosts();
         initPacCitizenSystem();
         resetPositions();
+        playMenuMusic();
         animate();
 
     </script>
