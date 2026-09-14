@@ -4553,86 +4553,50 @@
         const pacCityScene = new THREE.Scene();
 
         // Shared animated neon-sky background for the outside of the maze and for Pac-City.
+        const neonSkyLowPower=((navigator.hardwareConcurrency||8)<=4)||((navigator.deviceMemory||8)<=4);
         const neonSkyCanvas=document.createElement('canvas');
-        neonSkyCanvas.width=1024;neonSkyCanvas.height=512;
+        neonSkyCanvas.width=neonSkyLowPower?320:512;neonSkyCanvas.height=neonSkyLowPower?160:256;
         const neonSkyCtx=neonSkyCanvas.getContext('2d',{alpha:false});
         const neonSkyTexture=new THREE.CanvasTexture(neonSkyCanvas);
         neonSkyTexture.colorSpace=THREE.SRGBColorSpace;
-        neonSkyTexture.wrapS=THREE.RepeatWrapping;
-        neonSkyTexture.wrapT=THREE.ClampToEdgeWrapping;
-        neonSkyTexture.needsUpdate=true;
-        function drawNeonSky(now=0){
+        neonSkyTexture.wrapS=THREE.RepeatWrapping;neonSkyTexture.wrapT=THREE.ClampToEdgeWrapping;
+        neonSkyTexture.generateMipmaps=false;neonSkyTexture.minFilter=THREE.LinearFilter;neonSkyTexture.magFilter=THREE.LinearFilter;
+        const neonSkyStars=Array.from({length:neonSkyLowPower?16:28},(_,i)=>({x:((i*73)%509)/509,y:((i*137+29)%251)/251,r:.55+(i%4)*.28,phase:i*.71}));
+        let neonSkyLastDraw=-1e9;
+        function drawNeonSky(now=0,force=false){
+            if(!force&&now-neonSkyLastDraw<66)return;
+            neonSkyLastDraw=now;
             const ctx=neonSkyCtx,w=neonSkyCanvas.width,h=neonSkyCanvas.height,t=now*.00009;
             const grad=ctx.createLinearGradient(0,0,w,h);
-            grad.addColorStop(0,'#02061b');
-            grad.addColorStop(.34,'#07144e');
-            grad.addColorStop(.68,'#18084d');
-            grad.addColorStop(1,'#02040f');
+            grad.addColorStop(0,'#02061b');grad.addColorStop(.34,'#07144e');grad.addColorStop(.68,'#18084d');grad.addColorStop(1,'#02040f');
             ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
-
-            for(let i=0;i<48;i++){
-                const x=(Math.sin(t*0.8+i*17.13)*.5+.5)*w;
-                const y=(Math.cos(t*1.1+i*11.31)*.5+.5)*h;
-                const r=1.5+(i%5)*.55;
-                const g=ctx.createRadialGradient(x,y,0,x,y,r*7);
-                g.addColorStop(0,'rgba(255,255,255,.95)');
-                g.addColorStop(.25,i%2?'rgba(81,228,255,.45)':'rgba(255,105,234,.42)');
-                g.addColorStop(1,'rgba(0,0,0,0)');
-                ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r*7,0,Math.PI*2);ctx.fill();
-            }
-
+            ctx.fillStyle='#dffcff';
+            for(let i=0;i<neonSkyStars.length;i++){const s=neonSkyStars[i];ctx.globalAlpha=.30+.55*(.5+.5*Math.sin(t*4+s.phase));ctx.beginPath();ctx.arc(s.x*w,s.y*h,s.r,0,Math.PI*2);ctx.fill();}
+            ctx.globalAlpha=1;
             const ribbons=[
-                {color:'rgba(255,82,213,.82)',width:16,amp:48,freq:.9,speed:.9,offset:0},
-                {color:'rgba(64,206,255,.84)',width:14,amp:54,freq:1.12,speed:1.15,offset:1.2},
-                {color:'rgba(146,105,255,.60)',width:22,amp:65,freq:.72,speed:.62,offset:2.4},
-                {color:'rgba(255,255,255,.23)',width:8,amp:58,freq:1.35,speed:1.45,offset:3.6},
-                {color:'rgba(110,255,232,.58)',width:10,amp:38,freq:1.5,speed:1.05,offset:4.8}
-            ];
-            ribbons.forEach((r,idx)=>{
-                ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=r.color;ctx.lineWidth=r.width;
-                ctx.shadowBlur=idx<2?28:18;ctx.shadowColor=r.color;
-                ctx.beginPath();
-                for(let x=0;x<=w;x+=14){
-                    const nx=x/w;
-                    const y=h*(.18+.15*idx)+Math.sin(nx*Math.PI*2*r.freq+t*r.speed+r.offset)*r.amp
-                        +Math.cos(nx*Math.PI*(1.7+idx*.24)-t*(r.speed*.7)+r.offset*1.4)*r.amp*.35;
-                    if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
-                }
-                ctx.stroke();
-            });
+                {color:'rgba(255,82,213,.82)',width:neonSkyLowPower?6:8,amp:.095,freq:.9,speed:.9,offset:0},
+                {color:'rgba(64,206,255,.84)',width:neonSkyLowPower?5:7,amp:.105,freq:1.12,speed:1.15,offset:1.2},
+                {color:'rgba(146,105,255,.58)',width:neonSkyLowPower?7:10,amp:.125,freq:.72,speed:.62,offset:2.4},
+                {color:'rgba(110,255,232,.52)',width:neonSkyLowPower?4:6,amp:.075,freq:1.5,speed:1.05,offset:4.8}
+            ],step=neonSkyLowPower?26:20;
+            ribbons.forEach((r,idx)=>{ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=r.color;ctx.lineWidth=r.width;ctx.shadowBlur=neonSkyLowPower?7:11;ctx.shadowColor=r.color;ctx.beginPath();for(let x=0;x<=w+step;x+=step){const nx=x/w,amp=h*r.amp,y=h*(.18+.18*idx)+Math.sin(nx*Math.PI*2*r.freq+t*r.speed+r.offset)*amp+Math.cos(nx*Math.PI*(1.7+idx*.24)-t*(r.speed*.7)+r.offset*1.4)*amp*.35;if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.stroke();});
             ctx.shadowBlur=0;
-
-            for(let i=0;i<3;i++){
-                const cx=w*(.18+i*.3+.06*Math.sin(t*.7+i));
-                const cy=h*(.28+.22*i)+Math.sin(t*.9+i*2.3)*24;
-                const rg=ctx.createRadialGradient(cx,cy,8,cx,cy,190);
-                rg.addColorStop(0,i===1?'rgba(255,91,221,.18)':'rgba(66,219,255,.18)');
-                rg.addColorStop(.55,i===2?'rgba(255,255,255,.06)':'rgba(140,98,255,.10)');
-                rg.addColorStop(1,'rgba(0,0,0,0)');
-                ctx.fillStyle=rg;ctx.beginPath();ctx.arc(cx,cy,190,0,Math.PI*2);ctx.fill();
-            }
-
+            for(let i=0;i<2;i++){const cx=w*(.28+i*.44+.04*Math.sin(t*.7+i)),cy=h*(.30+.34*i)+Math.sin(t*.9+i*2.3)*h*.04,radius=h*.48,rg=ctx.createRadialGradient(cx,cy,4,cx,cy,radius);rg.addColorStop(0,i?'rgba(255,91,221,.16)':'rgba(66,219,255,.16)');rg.addColorStop(.55,'rgba(140,98,255,.07)');rg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=rg;ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.fill();}
             neonSkyTexture.needsUpdate=true;
         }
         function getExteriorSkyBackground(){return neonSkyTexture;}
-        function refreshWorldSkyBackgrounds(){
-            scene.background=getExteriorSkyBackground();
-            if(!(typeof pacCityInteriorActive!=='undefined'&&pacCityInteriorActive)){
-                pacCityScene.background=getExteriorSkyBackground();
-            }
-        }
-        drawNeonSky(0);
-        refreshWorldSkyBackgrounds();
+        function refreshWorldSkyBackgrounds(){scene.background=neonSkyTexture;if(!(typeof pacCityInteriorActive!=='undefined'&&pacCityInteriorActive))pacCityScene.background=neonSkyTexture;}
+        drawNeonSky(0,true);refreshWorldSkyBackgrounds();
         const pacCityAmbientLight = new THREE.AmbientLight(0x6070aa, 1.15);
         const pacCityFollowLight = new THREE.PointLight(0xffffff, 38, 70);
         pacCityScene.add(pacCityAmbientLight, pacCityFollowLight);
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const PERF_LOW_POWER = ((navigator.hardwareConcurrency || 8) <= 4) || ((navigator.deviceMemory || 8) <= 4);
         const renderer = new THREE.WebGLRenderer({antialias:!PERF_LOW_POWER,powerPreference:'high-performance',stencil:false,preserveDrawingBuffer:false});
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PERF_LOW_POWER ? 1 : 1.35));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PERF_LOW_POWER ? 0.9 : 1.15));
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/Math.max(1,window.innerHeight);camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,PERF_LOW_POWER?1:1.35));renderer.setSize(window.innerWidth,window.innerHeight,false);},{passive:true});
+        window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/Math.max(1,window.innerHeight);camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,PERF_LOW_POWER?.9:1.15));renderer.setSize(window.innerWidth,window.innerHeight,false);},{passive:true});
         function refreshAndroidOrientationLayout(){const width=window.innerWidth,height=(window.visualViewport?.height||window.innerHeight);document.documentElement.style.setProperty('--pac-android-visible-height',`${Math.max(1,Math.round(height))}px`);camera.aspect=width/Math.max(1,height);camera.updateProjectionMatrix();renderer.setSize(width,height,false);}
         /* Orientation is automatic. The old manual preference hook remains inert for saved pages. */
         function enableAutomaticAndroidOrientation(){document.documentElement.dataset.pacPreferredOrientation='auto';try{if(screen.orientation?.unlock)screen.orientation.unlock();}catch(e){}refreshAndroidOrientationLayout();}
@@ -10028,15 +9992,6 @@ function captureScoreAttackReplayFrame(now,force=false){
             updateOstTimelineProtection();
             syncMenuMusic(now);
             drawNeonSky(now);
-            refreshWorldSkyBackgrounds();
-            try{
-                const hueA=(now%9000)/9000,hueB=((now+2600)%9000)/9000;
-                const cA=new THREE.Color().setHSL(hueA,.95,.62),cB=new THREE.Color().setHSL(hueB,.85,.72);
-                if(typeof ambientLight!=='undefined'&&ambientLight?.color)ambientLight.color.copy(cA);
-                if(typeof light!=='undefined'&&light?.color)light.color.copy(cB);
-                if(typeof pacCityAmbientLight!=='undefined'&&pacCityAmbientLight?.color)pacCityAmbientLight.color.copy(cA);
-                if(typeof pacCityFollowLight!=='undefined'&&pacCityFollowLight?.color)pacCityFollowLight.color.copy(cB);
-            }catch(e){}
             if(ghostTrainAttack){
                 if(gameState==='playing'){
                     if(updateScoreAttackTimer(deltaMs)){renderer.render(scene,camera);return;}

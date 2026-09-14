@@ -747,11 +747,113 @@
         // --- THREE.JS SCENE SETUP ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const showdownLowPower=((navigator.hardwareConcurrency||8)<=4)||((navigator.deviceMemory||8)<=4);
+        const renderer = new THREE.WebGLRenderer({antialias:!showdownLowPower,powerPreference:'high-performance',stencil:false});
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,showdownLowPower?.9:1.15));
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        scene.add(new THREE.AmbientLight(0x505050));
+                // Optimized animated neon background: same visual style, much cheaper to update.
+        const neonSkyLowPower = ((navigator.hardwareConcurrency || 8) <= 4) || ((navigator.deviceMemory || 8) <= 4);
+        const neonSkyCanvas = document.createElement('canvas');
+        neonSkyCanvas.width = neonSkyLowPower ? 320 : 512;
+        neonSkyCanvas.height = neonSkyLowPower ? 160 : 256;
+        const neonSkyCtx = neonSkyCanvas.getContext('2d', { alpha: false });
+        const neonSkyTexture = new THREE.CanvasTexture(neonSkyCanvas);
+        neonSkyTexture.colorSpace = THREE.SRGBColorSpace;
+        neonSkyTexture.wrapS = THREE.RepeatWrapping;
+        neonSkyTexture.wrapT = THREE.ClampToEdgeWrapping;
+        neonSkyTexture.generateMipmaps = false;
+        neonSkyTexture.minFilter = THREE.LinearFilter;
+        neonSkyTexture.magFilter = THREE.LinearFilter;
+        neonSkyTexture.needsUpdate = true;
+        
+        const neonSkyStars = Array.from({length: neonSkyLowPower ? 16 : 28}, (_, i) => ({
+            x: ((i * 73) % 509) / 509,
+            y: ((i * 137 + 29) % 251) / 251,
+            r: 0.55 + (i % 4) * 0.28,
+            phase: i * 0.71
+        }));
+        let neonSkyLastDraw = -1e9;
+        
+        function drawNeonSky(now = 0, force = false) {
+            // The sky is deliberately updated at ~15 FPS; gameplay still renders at full FPS.
+            // This keeps the fluid neon look while avoiding a full canvas upload every frame.
+            if (!force && now - neonSkyLastDraw < 66) return;
+            neonSkyLastDraw = now;
+        
+            const ctx = neonSkyCtx, w = neonSkyCanvas.width, h = neonSkyCanvas.height, t = now * 0.00009;
+            const grad = ctx.createLinearGradient(0, 0, w, h);
+            grad.addColorStop(0, '#02061b');
+            grad.addColorStop(0.34, '#07144e');
+            grad.addColorStop(0.68, '#18084d');
+            grad.addColorStop(1, '#02040f');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+        
+            // Lightweight twinkling star field: no per-star radial gradients.
+            ctx.fillStyle = '#dffcff';
+            for (let i = 0; i < neonSkyStars.length; i++) {
+                const s = neonSkyStars[i];
+                ctx.globalAlpha = 0.30 + 0.55 * (0.5 + 0.5 * Math.sin(t * 4 + s.phase));
+                ctx.beginPath();
+                ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        
+            const ribbons = [
+                { color: 'rgba(255,82,213,.82)', width: neonSkyLowPower ? 6 : 8, amp: 0.095, freq: 0.90, speed: 0.90, offset: 0 },
+                { color: 'rgba(64,206,255,.84)', width: neonSkyLowPower ? 5 : 7, amp: 0.105, freq: 1.12, speed: 1.15, offset: 1.2 },
+                { color: 'rgba(146,105,255,.58)', width: neonSkyLowPower ? 7 : 10, amp: 0.125, freq: 0.72, speed: 0.62, offset: 2.4 },
+                { color: 'rgba(110,255,232,.52)', width: neonSkyLowPower ? 4 : 6, amp: 0.075, freq: 1.50, speed: 1.05, offset: 4.8 }
+            ];
+            const step = neonSkyLowPower ? 26 : 20;
+            ribbons.forEach((r, idx) => {
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = r.color;
+                ctx.lineWidth = r.width;
+                ctx.shadowBlur = neonSkyLowPower ? 7 : 11;
+                ctx.shadowColor = r.color;
+                ctx.beginPath();
+                for (let x = 0; x <= w + step; x += step) {
+                    const nx = x / w;
+                    const amp = h * r.amp;
+                    const y = h * (0.18 + 0.18 * idx)
+                        + Math.sin(nx * Math.PI * 2 * r.freq + t * r.speed + r.offset) * amp
+                        + Math.cos(nx * Math.PI * (1.7 + idx * 0.24) - t * (r.speed * 0.7) + r.offset * 1.4) * amp * 0.35;
+                    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            });
+            ctx.shadowBlur = 0;
+        
+            // Two broad aurora washes instead of several expensive gradients.
+            for (let i = 0; i < 2; i++) {
+                const cx = w * (0.28 + i * 0.44 + 0.04 * Math.sin(t * 0.7 + i));
+                const cy = h * (0.30 + 0.34 * i) + Math.sin(t * 0.9 + i * 2.3) * h * 0.04;
+                const radius = h * 0.48;
+                const wash = ctx.createRadialGradient(cx, cy, 4, cx, cy, radius);
+                wash.addColorStop(0, i ? 'rgba(255,91,221,.16)' : 'rgba(66,219,255,.16)');
+                wash.addColorStop(0.55, 'rgba(140,98,255,.07)');
+                wash.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = wash;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        
+            neonSkyTexture.needsUpdate = true;
+        }
+        
+        function applyNeonSkyBackground(targetScene) {
+            if (targetScene && targetScene.background !== neonSkyTexture) targetScene.background = neonSkyTexture;
+        }
+        drawNeonSky(0, true);
+
+        const ambientLight = new THREE.AmbientLight(0x505050);
+        scene.add(ambientLight);
         const dirLight = new THREE.PointLight(0xffffff, 40, 80);
         scene.add(dirLight);
 
@@ -762,12 +864,15 @@
 
         // --- LOBBY 3D PREVIEW SCENE SETUP ---
         const lobbyScene = new THREE.Scene();
+        applyNeonSkyBackground(lobbyScene);
         const lobbyCamera = new THREE.PerspectiveCamera(60, 2, 0.1, 100);
         lobbyCamera.position.set(0, 3, 10);
         lobbyCamera.lookAt(0, 0, 0);
 
-        const lobbyRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        lobbyScene.add(new THREE.AmbientLight(0x808080));
+        const lobbyRenderer = new THREE.WebGLRenderer({antialias:!showdownLowPower,alpha:true,powerPreference:'high-performance'});
+        lobbyRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,showdownLowPower?.9:1.15));
+        const lobbyAmbientLight = new THREE.AmbientLight(0x808080);
+        lobbyScene.add(lobbyAmbientLight);
         const lobbyLight = new THREE.DirectionalLight(0xffffff, 2);
         lobbyLight.position.set(2, 5, 5);
         lobbyScene.add(lobbyLight);
@@ -2296,6 +2401,8 @@
             const now = performance.now();
             const deltaMs = now - lastTime;
             lastTime = now;
+
+            drawNeonSky(now);
 
             if (gameState === 'lobby') {
                 animateLobby3D();
